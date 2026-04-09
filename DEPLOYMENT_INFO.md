@@ -48,3 +48,14 @@ You **MUST** add these variables in the Render "Environment" tab:
 - [/package.json](file:///c:/Users/91897/Desktop/LeaveApproved/package.json): Root script for Render to build both frontend and backend.
 - [/.gitignore](file:///c:/Users/91897/Desktop/LeaveApproved/.gitignore): Prevents `node_modules` and `.env` from being leaked to GitHub.
 - [/backend/server.js](file:///c:/Users/91897/Desktop/LeaveApproved/backend/server.js): Updated to serve the built frontend files.
+
+## 5. OPTIONAL: Deploy as a separate "Static Site"
+If you want to separate the frontend for better performance:
+1. **New Render Service**: Choose "Static Site".
+2. **Root Directory**: `frontend`
+3. **Build Command**: `npm install && npm run build`
+4. **Publish Directory**: `dist`
+5. **Environment Variable**: `VITE_API_URL` = `https://leaveapproved.onrender.com`
+
+---
+**Your Live Website is currently served at:** [https://leaveapproved.onrender.com](https://leaveapproved.onrender.com)

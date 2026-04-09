@@ -302,3 +302,50 @@ html, body {
     padding: 1.2rem !important;
   }
 }
+
+/* Admin Trigger Styles */
+.admin-trigger-fixed {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 10001;
+}
+
+.admin-trigger-fixed a {
+  text-decoration: none;
+  background: var(--secondary);
+  padding: 10px 20px;
+  font-size: 0.85rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: var(--border-thick);
+  box-shadow: 4px 4px 0px #000;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.admin-trigger-fixed a:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px #000;
+}
+
+.admin-trigger-fixed a:active {
+  transform: translate(4px, 4px);
+  box-shadow: 0px 0px 0px #000;
+}
+
+@media (max-width: 768px) {
+  .admin-trigger-fixed {
+    right: 50%;
+    transform: translateX(50%);
+    bottom: 20px;
+    top: auto;
+    width: max-content;
+  }
+  
+  .admin-trigger-fixed a {
+    font-size: 0.75rem;
+    padding: 8px 16px;
+  }
+}

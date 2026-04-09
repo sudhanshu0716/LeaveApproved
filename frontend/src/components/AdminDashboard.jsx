@@ -257,7 +257,6 @@ Make sure 'position' uses x spaced out horizontally for each node.`;
             <input type="password" className="input-field" placeholder="Password" value={credentials.password} onChange={e => setCredentials({...credentials, password: e.target.value})} />
             <button type="submit" className="btn-primary" style={{ marginTop: '1rem' }}>Verify Override</button>
           </form>
-          <p style={{ marginTop: '1rem', fontSize: '0.8rem', color: '#000' }}>Hint: admin / admin</p>
         </motion.div>
       </div>
     );

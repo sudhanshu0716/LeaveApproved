@@ -25,23 +25,13 @@ function AdminTrigger() {
     <AnimatePresence>
       {visible && (
         <motion.div 
-          initial={{ opacity: 0, scale: 0 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0 }}
-          style={{ position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 10001 }}
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 50 }}
+          className="admin-trigger-fixed"
         >
-          <Link to="/admin" className="btn-outline" style={{ 
-            textDecoration: 'none', 
-            background: '#FF90E8', 
-            padding: '8px 16px', 
-            fontSize: '0.8rem', 
-            fontWeight: 900, 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '8px', 
-            boxShadow: '4px 4px 0px #000' 
-          }}>
-            <Settings size={14} /> Admin Console
+          <Link to="/admin">
+            <Settings size={16} /> Admin Console
           </Link>
         </motion.div>
       )}

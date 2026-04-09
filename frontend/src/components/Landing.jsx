@@ -186,7 +186,7 @@ export default function Landing() {
         {step === 1 && (
           <motion.div key="step1" initial={{ opacity: 0, x: 100 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -100 }} transition={{ type: 'spring', bounce: 0.4 }} style={{ width: '100%', maxWidth: '1000px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
             
-            <button onClick={logout} style={{ position: 'absolute', top: 0, right: 0, background: 'transparent', border: 'none', fontWeight: 'bold', textDecoration: 'underline' }}>Not {user.name}? Switch user</button>
+            <button onClick={logout} style={{ position: 'relative', top: -20, background: 'transparent', border: 'none', fontWeight: 'bold', textDecoration: 'underline', color: '#666', fontSize: '0.8rem', cursor: 'pointer' }}>Not {user.name}? Switch user</button>
 
             <div style={{ marginBottom: '2rem' }}>
               <motion.div initial={{ scale: 0 }} animate={{ scale: 1, rotate: 360 }} transition={{ type: 'spring', stiffness: 50, damping: 20 }} style={{ width: '80px', height: '80px', background: '#fff', borderRadius: '0', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', border: '3px solid #000', boxShadow: '4px 4px 0px #000' }}>

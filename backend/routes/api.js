@@ -107,19 +107,55 @@ router.post('/places/:id/comment', async (req, res) => {
   }
 });
 
-// Proxy for Gemini AI (Security)
+// Proxy for AI Generation (Supports Groq or Gemini)
 router.post('/ai/generate', async (req, res) => {
   try {
     const { prompt } = req.body;
-    const aiApiKey = process.env.GEMINI_API_KEY;
-    
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${aiApiKey}`, {
+    const groqKey = process.env.GROQ_API_KEY;
+    const geminiKey = process.env.GEMINI_API_KEY;
+
+    // 1. Try Groq first (Fastest & Free)
+    if (groqKey) {
+      try {
+        const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${groqKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: "llama-3.3-70b-versatile",
+            messages: [{ role: "user", content: prompt }],
+            temperature: 0.1
+          })
+        });
+
+        const groqData = await groqResponse.json();
+        if (groqData.choices && groqData.choices[0]) {
+          // Translate Groq response to Gemini structure for Frontend compatibility
+          return res.json({
+            candidates: [{
+              content: {
+                parts: [{ text: groqData.choices[0].message.content }]
+              }
+            }]
+          });
+        }
+      } catch (e) {
+        console.error("Groq Failed, falling back to Gemini:", e);
+      }
+    }
+
+    // 2. Fallback to Gemini
+    if (!geminiKey) return res.status(500).json({ error: "No AI API keys configured." });
+
+    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
     });
-    
-    const data = await response.json();
+
+    const data = await geminiResponse.json();
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });

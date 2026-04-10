@@ -103,12 +103,17 @@ Make sure 'position' uses x spaced out horizontally for each node.`;
     setIsAiLoading(false);
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if ((credentials.username === 'admin' && credentials.password === 'admin') || credentials.username) {
-      setIsAuthenticated(true);
-      fetchAnalytics();
-      fetchPlaces();
+    try {
+      const res = await axios.post('/api/admin/login', credentials);
+      if (res.data.success) {
+        setIsAuthenticated(true);
+        fetchAnalytics();
+        fetchPlaces();
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Unauthorized Access Attempt');
     }
   };
 

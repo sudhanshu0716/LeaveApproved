@@ -3,6 +3,19 @@ const router = express.Router();
 const UserEntry = require('../models/UserEntry');
 const Place = require('../models/Place');
 
+// Admin: Secure Login
+router.post('/admin/login', (req, res) => {
+  const { username, password } = req.body;
+  const validUser = process.env.ADMIN_USER || 'sudh';
+  const validPass = process.env.ADMIN_PASS || 'su';
+
+  if (username === validUser && password === validPass) {
+    res.json({ success: true, message: "Access Granted" });
+  } else {
+    res.status(401).json({ success: false, message: "Invalid Credentials" });
+  }
+});
+
 // Save a visitor's entry
 router.post('/visitors', async (req, res) => {
   try {

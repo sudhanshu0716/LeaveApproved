@@ -149,7 +149,7 @@ router.post('/ai/generate', async (req, res) => {
     // 2. Fallback to Gemini
     if (!geminiKey) return res.status(500).json({ error: "No AI API keys configured." });
 
-    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
+    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })

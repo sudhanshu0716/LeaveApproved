@@ -202,4 +202,78 @@ router.post('/ai/generate', async (req, res) => {
   }
 });
 
+// Admin: Get All Reviews globally for moderation
+router.get('/admin/all-reviews', async (req, res) => {
+  try {
+    const places = await Place.find();
+    let allReviews = [];
+    places.forEach(p => {
+      p.comments?.forEach(c => {
+        allReviews.push({
+          placeId: p._id,
+          placeName: p.name,
+          _id: c._id,
+          user: c.user,
+          text: c.text,
+          date: c.date
+        });
+      });
+    });
+    res.json(allReviews.sort((a, b) => new Date(b.date) - new Date(a.date)));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin: Delete any review
+router.delete('/admin/reviews/:id/:commentId', async (req, res) => {
+  try {
+    const place = await Place.findById(req.params.id);
+    if (!place) return res.status(404).json({ error: "Place not found" });
+    place.comments = place.comments.filter(c => c._id.toString() !== req.params.commentId);
+    await place.save();
+    res.json({ success: true, message: "Review purged" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin: Get Social Stats (Top Liked & Latest Reviews)
+router.get('/admin/social-stats', async (req, res) => {
+  try {
+    const places = await Place.find();
+    
+    // Sort by likes (likedBy array length)
+    const bestPlaces = [...places]
+      .sort((a, b) => (b.likedBy?.length || 0) - (a.likedBy?.length || 0))
+      .slice(0, 5)
+      .map(p => ({
+        _id: p._id,
+        name: p.name,
+        likes: p.likedBy?.length || 0
+      }));
+
+    // Get all comments and sort by date
+    let allReviews = [];
+    places.forEach(p => {
+      p.comments?.forEach(c => {
+        allReviews.push({
+          placeName: p.name,
+          user: c.user,
+          text: c.text,
+          date: c.date
+        });
+      });
+    });
+
+    const latestReviews = allReviews
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, 10);
+
+    res.json({ bestPlaces, latestReviews });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

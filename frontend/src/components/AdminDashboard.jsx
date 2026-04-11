@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Settings, Plus, Users, Map, Lock, Edit2 } from 'lucide-react';
+import { Settings, Plus, Users, Map, Lock, Edit2, Star, MessageSquare, ShieldAlert, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import FlowBuilder from './FlowBuilder';
 
@@ -8,9 +8,14 @@ export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [credentials, setCredentials] = useState({ username: '', password: '' });
 
-  const [activeTab, setActiveTab] = useState('places'); 
+  const [activeTab, setActiveTab] = useState('analytics'); 
   const [analytics, setAnalytics] = useState([]);
   const [places, setPlaces] = useState([]);
+  const [socialStats, setSocialStats] = useState({ bestPlaces: [], latestReviews: [] });
+  const [moderationReviews, setModerationReviews] = useState([]);
+  const [filterSuspicious, setFilterSuspicious] = useState(false);
+
+  const BAD_WORDS = ['bad', 'stupid', 'hate', 'spam', 'fake', 'worst', 'scam', 'ignore', 'fuck', 'shit', 'idiot', 'useless'];
   
   // States for Flow Builder
   const [nodes, setNodes] = useState([]);
@@ -111,6 +116,8 @@ Make sure 'position' uses x spaced out horizontally for each node.`;
         setIsAuthenticated(true);
         fetchAnalytics();
         fetchPlaces();
+        fetchSocialStats();
+        fetchModerationReviews();
       }
     } catch (err) {
       alert(err.response?.data?.message || 'Unauthorized Access Attempt');
@@ -129,6 +136,47 @@ Make sure 'position' uses x spaced out horizontally for each node.`;
       const res = await axios.get('/api/admin/places');
       setPlaces(res.data);
     } catch(err) {}
+  };
+
+  const fetchSocialStats = async () => {
+    try {
+      const res = await axios.get('/api/admin/social-stats');
+      setSocialStats(res.data);
+    } catch(err) {}
+  };
+
+  const fetchModerationReviews = async () => {
+    try {
+      const res = await axios.get('/api/admin/all-reviews');
+      setModerationReviews(res.data);
+    } catch(err) {}
+  };
+
+  const deleteReview = async (placeId, reviewId) => {
+    if(!window.confirm('IRREVERSIBLE: Purge this review from history?')) return;
+    try {
+      await axios.delete(`/api/admin/reviews/${placeId}/${reviewId}`);
+      fetchModerationReviews();
+      fetchSocialStats(); 
+    } catch(err) {
+      alert('Failed to delete review');
+    }
+  };
+
+  const handlePurgeAllSuspicious = async () => {
+    const toPurge = moderationReviews.filter(r => BAD_WORDS.some(word => r.text.toLowerCase().includes(word)));
+    if (toPurge.length === 0) return;
+    
+    if (!window.confirm(`NUCLEAR ACTION: This will permanently delete ALL ${toPurge.length} suspicious reviews. Continue?`)) return;
+    
+    try {
+      await Promise.all(toPurge.map(r => axios.delete(`/api/admin/reviews/${r.placeId}/${r._id}`)));
+      alert('Content sanitized successfully.');
+      fetchModerationReviews();
+      fetchSocialStats();
+    } catch (err) {
+      alert('Partial failure during bulk purge. Please refresh.');
+    }
   };
 
   const handleAddPlace = async (e) => {
@@ -284,6 +332,9 @@ Make sure 'position' uses x spaced out horizontally for each node.`;
           <button onClick={() => { setActiveTab('analytics'); resetForm(); }} style={{ padding: '1rem', background: activeTab === 'analytics' ? 'var(--secondary)' : 'transparent', color: '#000', borderRadius: '0', display: 'flex', alignItems: 'center', gap: '1rem', textAlign: 'left', transition: 'all 0.3s', fontWeight: 900, border: activeTab === 'analytics' ? '3px solid #000' : 'none' }}>
             <Users size={22} /> User Analytics
           </button>
+          <button onClick={() => { setActiveTab('moderation'); fetchModerationReviews(); }} style={{ padding: '1rem', background: activeTab === 'moderation' ? '#FF5D73' : 'transparent', color: activeTab === 'moderation' ? '#fff' : '#000', borderRadius: '0', display: 'flex', alignItems: 'center', gap: '1rem', textAlign: 'left', transition: 'all 0.3s', fontWeight: 900, border: activeTab === 'moderation' ? '3px solid #000' : 'none' }}>
+            <ShieldAlert size={22} /> Moderation
+          </button>
         </div>
       </motion.div>
 
@@ -347,9 +398,9 @@ Make sure 'position' uses x spaced out horizontally for each node.`;
                </div>
             </div>
 
-            <h4 style={{ fontWeight: 900, textTransform: 'uppercase', marginBottom: '1rem' }}>Live Feed</h4>
+             <h4 style={{ fontWeight: 900, textTransform: 'uppercase', marginBottom: '1rem' }}>Live Feed</h4>
             {analytics.length === 0 ? <p style={{ fontSize: '1.2rem', color: '#666' }}>No one checking out yet.</p> : (
-              <div style={{ overflowY: 'auto', overflowX: 'auto', maxHeight: '400px', border: '3px solid #000' }}>
+              <div style={{ overflowY: 'auto', overflowX: 'auto', maxHeight: '400px', border: '3px solid #000', marginBottom: '3rem' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                   <thead style={{ background: '#FFE600', borderBottom: '3px solid #000', position: 'sticky', top: 0, zIndex: 5 }}>
                     <tr style={{ color: '#000', fontSize: '1.2rem' }}>
@@ -370,6 +421,134 @@ Make sure 'position' uses x spaced out horizontally for each node.`;
                 </table>
               </div>
             )}
+
+            <div className="mobile-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) 2fr', gap: '2rem' }}>
+               {/* BEST PLACES leaderboard */}
+               <div style={{ border: '4px solid #000', background: '#fff', padding: '1.5rem', boxShadow: '6px 6px 0px #000' }}>
+                  <h4 style={{ fontWeight: 900, textTransform: 'uppercase', marginBottom: '1.5rem', borderBottom: '3px solid #000', paddingBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                     <Star fill="#FFE600" /> Top Appreciation
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {socialStats.bestPlaces.map((p, i) => (
+                      <div key={p._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: i === 0 ? '#FFE600' : '#f0f0f0', border: '2px solid #000', boxShadow: '3px 3px 0px #000' }}>
+                        <span style={{ fontWeight: 900 }}>{i+1}. {p.name}</span>
+                        <span style={{ background: '#000', color: '#fff', padding: '2px 8px', borderRadius: '20px', fontSize: '0.8rem' }}>{p.likes} Likes</span>
+                      </div>
+                    ))}
+                  </div>
+               </div>
+
+               {/* LATEST REVIEWS feed */}
+               <div style={{ border: '4px solid #000', background: '#fff', padding: '1.5rem', boxShadow: '6px 6px 0px #FF5D73' }}>
+                  <h4 style={{ fontWeight: 900, textTransform: 'uppercase', marginBottom: '1.5rem', borderBottom: '3px solid #FF5D73', paddingBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                     <MessageSquare color="#FF5D73" /> Global Review Feed
+                  </h4>
+                  <div style={{ maxHeight: '400px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', paddingRight: '10px' }}>
+                    {socialStats.latestReviews.map((r, i) => (
+                      <div key={i} style={{ border: '2px solid #000', padding: '12px', background: '#fff' }}>
+                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                            <span style={{ fontSize: '0.7rem', fontWeight: 900, color: '#FF5D73' }}>{r.user.toUpperCase()} on {r.placeName}</span>
+                            <span style={{ fontSize: '0.6rem', fontWeight: 'bold', color: '#666' }}>{new Date(r.date).toLocaleDateString()}</span>
+                         </div>
+                         <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 'bold' }}>"{r.text}"</p>
+                      </div>
+                    ))}
+                    {socialStats.latestReviews.length === 0 && <p style={{ textAlign: 'center', opacity: 0.5 }}>No reviews to display.</p>}
+                  </div>
+               </div>
+            </div>
+          </motion.div>
+        )}
+
+        {activeTab === 'moderation' && (
+          <motion.div key="4" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="glass-card" style={{ padding: '3rem' }}>
+             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                <h3 className="title" style={{ margin: 0, fontSize: '2rem' }}>Content Moderation</h3>
+                <div style={{ background: '#FF5D73', color: '#fff', padding: '8px 16px', fontWeight: 900, border: '3px solid #000', boxShadow: '4px 4px 0px #000' }}>
+                  PROTECTING BRAND INTEGRITY
+                </div>
+             </div>
+
+             <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+                <button 
+                  onClick={() => setFilterSuspicious(!filterSuspicious)}
+                  style={{ 
+                    flex: 1, 
+                    padding: '1rem', 
+                    background: filterSuspicious ? '#FF5D73' : '#fff', 
+                    color: filterSuspicious ? '#fff' : '#000',
+                    border: '4px solid #000',
+                    fontWeight: 900,
+                    boxShadow: '4px 4px 0px #000',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {filterSuspicious ? 'SHOW ALL REVIEWS' : `SHOW SUSPICIOUS ONLY (${moderationReviews.filter(r => BAD_WORDS.some(w => r.text.toLowerCase().includes(w))).length})`}
+                </button>
+                
+                {moderationReviews.some(r => BAD_WORDS.some(w => r.text.toLowerCase().includes(w))) && (
+                  <button 
+                    onClick={handlePurgeAllSuspicious}
+                    style={{ 
+                      flex: 1, 
+                      padding: '1rem', 
+                      background: '#000', 
+                      color: '#FF5D73',
+                      border: '4px solid #FF5D73',
+                      fontWeight: 900,
+                      boxShadow: '4px 4px 0px #FF5D73',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    ☢️ PURGE ALL FLAGGED
+                  </button>
+                )}
+             </div>
+
+             <div style={{ display: 'grid', gap: '1rem' }}>
+                {moderationReviews
+                 .filter(r => filterSuspicious ? BAD_WORDS.some(word => r.text.toLowerCase().includes(word)) : true)
+                 .map((r) => {
+                   const isSuspicious = BAD_WORDS.some(word => r.text.toLowerCase().includes(word));
+                   
+                   return (
+                     <motion.div 
+                        key={r._id} 
+                        layout
+                        style={{ 
+                          padding: '1.5rem', 
+                          background: '#fff', 
+                          border: isSuspicious ? '4px solid #FF5D73' : '3px solid #000', 
+                          boxShadow: '6px 6px 0px #000',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          gap: '2rem'
+                        }}
+                     >
+                        <div style={{ flex: 1 }}>
+                           <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '8px' }}>
+                              <span style={{ fontWeight: 900, color: '#FF5D73', background: '#fff', border: '2px solid #000', padding: '2px 8px' }}>{r.user}</span>
+                              <span style={{ fontWeight: 'bold', fontSize: '0.8rem' }}>on {r.placeName}</span>
+                              {isSuspicious && <span style={{ background: '#FF5D73', color: '#fff', padding: '2px 8px', fontSize: '0.7rem', fontWeight: 900 }}>🚩 FLAG: SUSPICIOUS</span>}
+                           </div>
+                           <p style={{ margin: 0, fontSize: '1.1rem', fontWeight: 'bold' }}>"{r.text}"</p>
+                           <p style={{ margin: '8px 0 0', fontSize: '0.7rem', color: '#666', fontWeight: 'bold' }}>Posted: {new Date(r.date).toLocaleString()}</p>
+                        </div>
+                        <button 
+                          onClick={() => deleteReview(r.placeId, r._id)}
+                          style={{ background: '#FF5D73', color: '#fff', border: '3px solid #000', padding: '12px 24px', fontWeight: 900, boxShadow: '4px 4px 0px #000', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+                        >
+                          <Trash2 size={18} /> PURGE
+                        </button>
+                     </motion.div>
+                   );
+                })}
+                {moderationReviews.length === 0 && <p style={{ textAlign: 'center', fontSize: '1.5rem', fontWeight: 900, opacity: 0.5 }}>ENVIRONMENT IS CLEAN. NO REVIEWS FOUND.</p>}
+                {filterSuspicious && moderationReviews.filter(r => BAD_WORDS.some(word => r.text.toLowerCase().includes(word))).length === 0 && (
+                   <p style={{ textAlign: 'center', fontSize: '1.2rem', fontWeight: 900, color: '#FF5D73' }}>NO SUSPICIOUS CONTENT DETECTED IN THIS VIEW.</p>
+                )}
+             </div>
           </motion.div>
         )}
 

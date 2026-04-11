@@ -14,7 +14,7 @@ const placeSchema = new mongoose.Schema({
     rooms: { type: String }
   },
   imageUrl: { type: String },
-  likes: { type: Number, default: 0 },
+  likedBy: [{ type: String }], 
   comments: [{
     user: String,
     text: String,

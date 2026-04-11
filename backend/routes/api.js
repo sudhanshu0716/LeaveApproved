@@ -75,10 +75,14 @@ router.post('/admin/places', async (req, res) => {
   }
 });
 
-// Admin: Update Place
+// Admin: Update Place (Protected from overwriting social data)
 router.put('/admin/places/:id', async (req, res) => {
   try {
-    const updatedPlace = await Place.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const updatedPlace = await Place.findByIdAndUpdate(
+      req.params.id, 
+      { $set: req.body }, // Only update fields present in the body
+      { new: true }
+    );
     res.json(updatedPlace);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -95,13 +99,24 @@ router.delete('/admin/places/:id', async (req, res) => {
   }
 });
 
-// User: Like a place
+// User: Like/Unlike Toggle a place
 router.post('/places/:id/like', async (req, res) => {
   try {
+    const { user } = req.body;
+    if (!user) return res.status(400).json({ error: "User required" });
+    
     const place = await Place.findById(req.params.id);
-    place.likes = (place.likes || 0) + 1;
+    if (!place.likedBy) place.likedBy = [];
+    
+    const index = place.likedBy.indexOf(user);
+    if (index === -1) {
+      place.likedBy.push(user);
+    } else {
+      place.likedBy.splice(index, 1);
+    }
+    
     await place.save();
-    res.json({ likes: place.likes });
+    res.json({ likedBy: place.likedBy });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -113,6 +128,18 @@ router.post('/places/:id/comment', async (req, res) => {
     const { user, text } = req.body;
     const place = await Place.findById(req.params.id);
     place.comments.push({ user, text });
+    await place.save();
+    res.json(place.comments);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// User: Remove their own comment
+router.delete('/places/:id/comment/:commentId', async (req, res) => {
+  try {
+    const place = await Place.findById(req.params.id);
+    place.comments = place.comments.filter(c => c._id.toString() !== req.params.commentId);
     await place.save();
     res.json(place.comments);
   } catch (err) {

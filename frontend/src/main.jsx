@@ -4,7 +4,7 @@ import axios from 'axios'
 import './index.css'
 import App from './App.jsx'
 
-axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'https://leaveapproved.onrender.com';
+axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

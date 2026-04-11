@@ -6,38 +6,7 @@ import { PlaneTakeoff, Settings } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import './index.css';
 
-function AdminTrigger() {
-  const [visible, setVisible] = useState(false);
-  const { pathname } = useLocation();
 
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrolledToBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 50;
-      setVisible(scrolledToBottom);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  if (pathname === '/admin') return null;
-
-  return (
-    <AnimatePresence>
-      {visible && (
-        <motion.div 
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 50 }}
-          className="admin-trigger-fixed"
-        >
-          <Link to="/admin">
-            <Settings size={16} /> Admin Console
-          </Link>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-}
 
 function App() {
   return (
@@ -55,7 +24,6 @@ function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/admin" element={<AdminDashboard />} />
         </Routes>
-        <AdminTrigger />
       </div>
     </Router>
   );

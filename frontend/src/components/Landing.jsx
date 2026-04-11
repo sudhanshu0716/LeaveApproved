@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, MapPin, Navigation, Map, Compass, Calendar, Briefcase, Plane, Star, Award, Shield, Zap } from 'lucide-react';
+import { ArrowRight, MapPin, Navigation, Map, Compass, Calendar, Briefcase, Plane, Star, Award, Shield, Zap, Heart, Settings } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import confetti from 'canvas-confetti';
 import ItineraryFlow from './ItineraryFlow';
 
@@ -244,7 +245,12 @@ export default function Landing() {
                      <MapPin size={48} color="#000" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }} />
                   </div>
                   <div style={{ padding: '2rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                    <h3 className="title" style={{ fontSize: '1.8rem', marginBottom: '1rem' }}>{place.name}</h3>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                      <h3 className="title" style={{ fontSize: '1.8rem', margin: 0 }}>{place.name}</h3>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', background: '#FF5D73', color: '#fff', padding: '2px 8px', border: '2px solid #000', fontSize: '0.9rem', fontWeight: 900 }}>
+                        <Heart size={14} fill="#fff" /> {place.likedBy?.length || 0}
+                      </div>
+                    </div>
                     <p style={{ color: '#000', marginBottom: '2rem', fontSize: '1.1rem', flex: 1, lineHeight: 1.6, fontWeight: 'bold' }}>{place.description || 'A beautiful place for your getaway.'}</p>
                     <div className="btn-primary" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.8rem', padding: '12px' }}>
                       <Navigation size={20} /> View Setup
@@ -336,6 +342,46 @@ export default function Landing() {
         </AnimatePresence>
         </>
       )}
+      
+      {/* Admin Console Trigger - Only on Main Search Steps */}
+      {step < 2 && (
+        <AdminTrigger />
+      )}
     </div>
+  );
+}
+
+function AdminTrigger() {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // Only show if page is long enough and we are at bottom
+      const totalHeight = document.body.offsetHeight;
+      const windowHeight = window.innerHeight;
+      const isScrollable = totalHeight > windowHeight + 100;
+      const scrolledToBottom = windowHeight + window.scrollY >= totalHeight - 50;
+      
+      setVisible(isScrollable && scrolledToBottom);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  return (
+    <AnimatePresence>
+      {visible && (
+        <motion.div 
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 50 }}
+          className="admin-trigger-fixed"
+        >
+          <Link to="/admin" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', color: '#fff' }}>
+            <Settings size={16} /> Admin Console
+          </Link>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

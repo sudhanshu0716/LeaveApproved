@@ -4,7 +4,10 @@ import axios from 'axios'
 import './index.css'
 import App from './App.jsx'
 
-axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+// Dynamic Environment Awareness: Smart API Routing
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const prodURL = 'https://leaveapproved.onrender.com';
+axios.defaults.baseURL = import.meta.env.VITE_API_URL || (isLocal ? 'http://localhost:5000' : prodURL);
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

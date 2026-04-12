@@ -44,7 +44,13 @@ router.get('/places', async (req, res) => {
     const { type, value } = req.query; 
     let query = {};
     if (type === 'budget') query.budgetRange = value;
-    else if (type === 'days') query.days = value;
+    else if (type === 'days') {
+      if (value === 'over 3 days') {
+        query.days = { $nin: ['1 day', '2 day', '3 day'] };
+      } else {
+        query.days = value;
+      }
+    }
     else if (type === 'distance') query.distance = value;
 
     const places = await Place.find(query);

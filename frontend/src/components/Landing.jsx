@@ -212,7 +212,7 @@ export default function Landing() {
                 <Calendar size={48} style={{ margin: '0 auto 1.5rem', display: 'block' }} />
                 <h3 className="title" style={{ marginBottom: '1.5rem', fontSize: '1.5rem' }}>By Days</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  {['1 day', '2 day', '3 day', '4 days', '1 week'].map((d, i) => (
+                  {['1 day', '2 day', '3 day', 'over 3 days'].map((d, i) => (
                     <motion.button key={d} onClick={() => handleSelection('days', d)} className="btn-outline">{d}</motion.button>
                   ))}
                 </div>

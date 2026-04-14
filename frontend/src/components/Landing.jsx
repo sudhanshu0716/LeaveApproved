@@ -493,9 +493,9 @@ export default function Landing() {
               <div ref={scrollContainerRef} className="horizontal-scroll-section" style={{ height: '300vh', position: 'relative' }}>
                 <div ref={horizontalRef} className="horizontal-content" style={{ display: 'flex', width: '300%', height: '100vh', position: 'sticky', top: 0, alignItems: 'center', willChange: 'transform' }}>
                   {[
-                    { title: 'BUDGET ALLOCATION', icon: <Briefcase size={32} />, options: ['under 50k', 'under 100k', 'under 200k', 'over 200k'], type: 'budget' },
-                    { title: 'DISCOVERY DURATION', icon: <Calendar size={32} />, options: ['1-2 days', '3-5 days', '1 week', 'over 1 week'], type: 'days' },
-                    { title: 'PROXIMITY RADIUS', icon: <MapPin size={32} />, options: ['within 250km', 'within 500km', 'within 1000km', 'Anywhere'], type: 'distance' }
+                    { title: 'BUDGET ALLOCATION', icon: <Briefcase size={32} />, options: ['under 1000', 'under 2000', 'under 5000', 'over 5000'], type: 'budget' },
+                    { title: 'DISCOVERY DURATION', icon: <Calendar size={32} />, options: ['1 day', '2 day', '3 day', '3+ days'], type: 'days' },
+                    { title: 'PROXIMITY RADIUS', icon: <MapPin size={32} />, options: ['under 100km', 'under 250km', 'under 500km', 'over 500km'], type: 'distance' }
                   ].map((cat, i) => (
                     <section key={i} className="horizontal-panel" style={{ width: '100vw', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '0 20px' }}>
                       <div className="glass-panel" style={{ width: '100%', maxWidth: '600px', padding: '60px 40px', textAlign: 'center', filter: 'drop-shadow(0 20px 50px rgba(0,0,0,0.3))' }}>

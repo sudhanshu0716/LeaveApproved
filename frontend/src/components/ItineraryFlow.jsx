@@ -14,6 +14,19 @@ function FlowContent({ place }) {
   const [comments, setComments] = useState(place.comments || []);
   const [newComment, setNewComment] = useState('');
   const [isLiking, setIsLiking] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const toggleFullScreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => {
+        alert(`Error attempting to enable fullscreen mode: ${err.message}`);
+      });
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
 
   const isLiked = savedUser.name ? likedBy.includes(savedUser.name) : false;
 
@@ -21,7 +34,6 @@ function FlowContent({ place }) {
   const edgeTypes = useMemo(() => ({ customEdge: ReadOnlyEdge }), []);
 
   const handleLike = async () => {
-    // Re-verify the user on every click to ensure reliability
     const currentUser = JSON.parse(localStorage.getItem('travel_user') || '{}');
     if (isLiking || !currentUser.name) {
       if(!currentUser.name) alert('Traveler identity missing. Please enter your name on the home page first!');
@@ -33,16 +45,12 @@ function FlowContent({ place }) {
       const res = await axios.post(`/api/places/${place._id}/like`, { user: currentUser.name });
       const newLikedBy = Array.isArray(res.data.likedBy) ? res.data.likedBy : [];
       
-      // Animation only on true new Like (not toggle-off)
       if (newLikedBy.includes(currentUser.name) && !likedBy.includes(currentUser.name)) {
         confetti({
-          particleCount: 80,
-          spread: 70,
-          origin: { y: 0.8 },
-          colors: ['#FF5D73', '#FFE600', '#FFFFFF', '#000000']
+          particleCount: 80, spread: 70, origin: { y: 0.8 },
+          colors: ['#FF5D73', '#FFE600', '#FFFFFF', '#1b4332']
         });
       }
-      
       setLikedBy(newLikedBy);
     } catch (err) { 
       console.error("Like Error:", err);
@@ -73,85 +81,128 @@ function FlowContent({ place }) {
   };
 
   return (
-    <div className="glass-card" style={{ padding: '0', width: '100%', position: 'relative', background: '#E2E2E2', border: '4px solid #000', boxShadow: '10px 10px 0px #000', overflow: 'hidden' }}>
-      <div style={{ padding: '1.5rem', borderBottom: '4px solid #000', background: '#FFE600', position: 'relative', overflow: 'hidden' }}>
-         <h2 className="title" style={{ textAlign: 'center', fontSize: '2rem', color: '#000', margin: 0, position: 'relative', zIndex: 1 }}>
-           🗺️ BLUEPRINT: {place.name}
-         </h2>
+    <div className="vibrant-mission-panel" style={{ 
+      padding: '0', width: '100%', position: 'relative', background: '#fff', 
+      border: '1px solid #eee', borderRadius: '40px',
+      boxShadow: '0 40px 80px rgba(0,0,0,0.1)', overflow: 'hidden' 
+    }}>
+      <div style={{ 
+        padding: '30px 45px', borderBottom: '1px solid #edf5ee', 
+        background: 'linear-gradient(135deg, #1b4332, #2d6a4f)', 
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        position: 'relative', overflow: 'hidden' 
+      }}>
+         <div style={{ display: 'flex', alignItems: 'center', gap: '20px', position: 'relative', zIndex: 2 }}>
+            <div style={{ background: '#ffb703', padding: '12px', borderRadius: '15px', boxShadow: '0 8px 20px rgba(255, 183, 3, 0.4)' }}>
+              <Maximize size={22} color="#1b4332" />
+            </div>
+            <h2 className="title" style={{ fontSize: '1.8rem', color: '#fff', margin: 0, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>
+              {place.name}
+            </h2>
+         </div>
+         
+         <button 
+           onClick={toggleFullScreen}
+           style={{ 
+             background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)',
+             border: '1px solid rgba(255,255,255,0.2)', padding: '12px 30px', 
+             borderRadius: '50px', color: 'white', fontSize: '0.8rem', 
+             fontWeight: 900, letterSpacing: '1px', cursor: 'pointer',
+             display: 'flex', alignItems: 'center', gap: '12px',
+             transition: 'all 0.3s ease', position: 'relative', zIndex: 2
+           }}
+           className="glass-btn-vibrant"
+         >
+           {isFullscreen ? 'EXIT_FULLSCREEN' : 'ENGAGE_FULLSCREEN'} <Send size={14} style={{ transform: 'rotate(-45deg)' }} />
+         </button>
+         <div style={{ position: 'absolute', right: '-20px', top: '-20px', width: '150px', height: '150px', background: 'rgba(255,255,255,0.03)', borderRadius: '50%' }} />
       </div>
       
-      <div style={{ height: '400px', width: '100%', overflow: 'hidden', position: 'relative' }}>
+      <div style={{ height: '600px', width: '100%', overflow: 'hidden', position: 'relative', background: '#fafafa' }}>
         <ReactFlow
           nodes={place.nodes.map(n => ({ ...n, draggable: false }))}
-          edges={(place.edges || []).map(e => ({
-            ...e,
-            type: 'customEdge',
-            animated: true,
-            style: { stroke: '#000', strokeWidth: 5 }
-          }))}
+          edges={(place.edges || []).map(e => ({ ...e, type: 'customEdge', animated: true }))}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           fitView
           nodesConnectable={false}
           elementsSelectable={false}
         >
-          <Background color="#000" gap={30} size={1} />
+          <Background color="#ccc" gap={40} size={1} />
           
-          <div className="itinerary-controls" style={{ position: 'absolute', bottom: '15px', left: '15px', zIndex: 10, display: 'flex', gap: '8px' }}>
-            <button onClick={() => zoomIn()} style={{ background: '#fff', border: '2px solid #000', padding: '8px', boxShadow: '3px 3px 0px #000' }}><ZoomIn size={18}/></button>
-            <button onClick={() => zoomOut()} style={{ background: '#fff', border: '2px solid #000', padding: '8px', boxShadow: '3px 3px 0px #000' }}><ZoomOut size={18}/></button>
-            <button onClick={() => fitView()} style={{ background: '#FFE600', border: '2px solid #000', padding: '8px', boxShadow: '3px 3px 0px #000' }}><Maximize size={18}/></button>
+          <div className="itinerary-controls" style={{ position: 'absolute', bottom: '30px', left: '30px', zIndex: 10, display: 'flex', gap: '15px' }}>
+            <button onClick={() => zoomIn()} style={{ background: '#fff', border: '1px solid #ddd', boxShadow: '0 10px 25px rgba(0,0,0,0.08)', padding: '14px', borderRadius: '18px', color: '#1b4332', cursor: 'pointer' }}><ZoomIn size={22}/></button>
+            <button onClick={() => zoomOut()} style={{ background: '#fff', border: '1px solid #ddd', boxShadow: '0 10px 25px rgba(0,0,0,0.08)', padding: '14px', borderRadius: '18px', color: '#1b4332', cursor: 'pointer' }}><ZoomOut size={22}/></button>
+            <button onClick={() => fitView()} style={{ background: '#fff', border: '1px solid #ddd', boxShadow: '0 10px 25px rgba(0,0,0,0.08)', padding: '14px', borderRadius: '18px', color: '#1b4332', cursor: 'pointer' }}><Maximize size={22}/></button>
           </div>
         </ReactFlow>
       </div>
 
-      <div style={{ padding: '1rem', background: '#fff', borderTop: '4px solid #000', display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+      <div style={{ padding: '24px 40px', background: '#fff', borderTop: '1px solid #eee', display: 'flex', gap: '24px', alignItems: 'center' }}>
         <motion.button 
           whileTap={{ scale: 0.9 }}
           whileHover={{ scale: 1.05 }}
           onClick={handleLike}
-          style={{ background: isLiked ? '#FF5D73' : '#fff', color: isLiked ? '#fff' : '#000', border: '3px solid #000', padding: '8px 16px', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '3px 3px 0px #000' }}
+          style={{ 
+            background: isLiked ? '#FF5D73' : '#f8f9fa', 
+            color: isLiked ? '#fff' : '#1b4332', 
+            border: isLiked ? 'none' : '1.5px solid #eee', 
+            padding: '12px 28px', borderRadius: '20px',
+            fontWeight: 900, display: 'flex', alignItems: 'center', 
+            gap: '12px', boxShadow: isLiked ? '0 10px 20px rgba(255,93,115,0.3)' : 'none',
+            cursor: 'pointer'
+          }}
         >
-          <motion.div
-            animate={{ scale: isLiked ? [1, 1.5, 1] : 1 }}
-            transition={{ duration: 0.3, type: 'spring' }}
-          >
-            <Heart fill={isLiked ? "white" : "none"} size={20} />
-          </motion.div>
-          {likedBy.length}
+          <Heart fill={isLiked ? "white" : "none"} size={22} color={isLiked ? "white" : "#FF5D73"} />
+          <span style={{ fontSize: '1.1rem' }}>{likedBy.length}</span>
         </motion.button>
-        <div style={{ flex: 1, fontWeight: 900, fontSize: '0.9rem' }}>{comments.length} REVIEWS</div>
+        <div style={{ fontWeight: 900, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '2px', color: '#999' }}>
+          {comments.length} TRAVELER REVIEWS
+        </div>
       </div>
 
-      <div style={{ padding: '1rem', background: '#f0f0f0', borderTop: '2px solid #000' }}>
-        <form onSubmit={handleComment} style={{ display: 'flex', gap: '8px', marginBottom: '1rem' }}>
+      <div style={{ padding: '40px', background: '#fcfdfc', borderTop: '1px solid #edf5ee' }}>
+        <form onSubmit={handleComment} style={{ display: 'flex', gap: '20px', marginBottom: '35px' }}>
           <input 
-            className="input-field" 
-            placeholder="Review this plan..." 
+            className="nodrag" 
+            placeholder="SHARE YOUR TRAVEL INSIGHTS..." 
             value={newComment}
             onChange={e => setNewComment(e.target.value)}
-            style={{ flex: 1, padding: '8px', fontSize: '0.9rem' }}
+            style={{ 
+              flex: 1, padding: '20px 25px', fontSize: '1rem', background: '#fff', 
+              border: '1.5px solid #eee', borderRadius: '24px', color: '#333', 
+              outline: 'none', boxShadow: '0 5px 15px rgba(0,0,0,0.02)', fontWeight: '600'
+            }}
           />
-          <button type="submit" style={{ background: '#000', color: '#fff', border: 'none', padding: '0 15px', fontWeight: 900 }}>
-            <Send size={16} />
+          <button type="submit" style={{ background: '#1b4332', color: '#fff', border: 'none', padding: '0 40px', borderRadius: '24px', fontWeight: 900, cursor: 'pointer', boxShadow: '0 10px 25px rgba(27,67,50,0.2)' }}>
+            SEND_POST
           </button>
         </form>
 
-        <div style={{ maxHeight: '250px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.8rem', paddingRight: '5px' }}>
+        <div style={{ maxHeight: '400px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px', paddingRight: '15px' }}>
           {comments.map((c, i) => (
-            <div key={c._id || i} style={{ border: '2px solid #000', padding: '10px', background: '#fff', boxShadow: '3px 3px 0px #000', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div>
-                <span style={{ fontSize: '0.7rem', fontWeight: 900, color: '#FF5D73' }}>{c.user}</span>
-                <p style={{ margin: '3px 0 0', fontWeight: 'bold', fontSize: '0.85rem' }}>{c.text}</p>
+            <div key={c._id || i} style={{ border: '1px solid #eee', padding: '24px', borderRadius: '28px', background: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', boxShadow: '0 5px 10px rgba(0,0,0,0.02)' }}>
+              <div style={{ display: 'flex', gap: '18px' }}>
+                <div style={{ width: '45px', height: '45px', background: 'linear-gradient(135deg, #d8f3dc, #b7e4c7)', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1b4332', fontWeight: 900 }}>
+                  {c.user.charAt(0)}
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 900, color: '#1b4332', letterSpacing: '1px', marginBottom: '6px' }}>{c.user.toUpperCase()}</div>
+                  <div style={{ color: '#444', lineHeight: '1.5', fontSize: '1rem', fontWeight: '500' }}>{c.text}</div>
+                </div>
               </div>
               {c.user === savedUser.name && (
-                <button onClick={() => handleDeleteComment(c._id)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer', padding: '2px' }}>
-                   <Trash2 size={16} />
+                <button onClick={() => handleDeleteComment(c._id)} style={{ background: 'none', border: 'none', color: '#ff5d73', cursor: 'pointer', padding: '8px' }}>
+                  <Trash2 size={18} />
                 </button>
               )}
             </div>
           ))}
-          {comments.length === 0 && <p style={{ fontSize: '0.8rem', fontWeight: 900, opacity: 0.5, textAlign: 'center' }}>NO REVIEWS YET. BE THE FIRST!</p>}
+          {comments.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '40px', color: '#999', fontWeight: 600 }}>
+              No travel logs yet. Be the first to brief others on this mission!
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -159,7 +210,7 @@ function FlowContent({ place }) {
 }
 
 export default function ItineraryFlow({ place }) {
-  if (!place.nodes || place.nodes.length === 0) return null;
+  if (!place) return null;
   return (
     <ReactFlowProvider>
       <FlowContent place={place} />

@@ -21,13 +21,15 @@ export default function CustomEdge({
   }
   
   const isReturn = data?.direction === 'Return';
-  const dynamicArc = Math.max(100, length * 0.3);
+  const dynamicArc = data?.customArc || Math.max(100, length * 0.3);
   
   let autoOffsetAmount = 0;
   if (edgeIndex === 0) {
       autoOffsetAmount = isReturn ? dynamicArc : -dynamicArc;
   } else {
-      autoOffsetAmount = (edgeIndex % 2 === 0 ? 1 : -1) * Math.ceil(edgeIndex / 2) * dynamicArc;
+      // Increase separation for multi-trail bundles
+      const bundleMultiplier = 120; // Aggressive separation
+      autoOffsetAmount = (edgeIndex % 2 === 0 ? 1 : -1) * Math.ceil(edgeIndex / 2) * bundleMultiplier;
   }
   
   const controlX = sourceX + dx/2 + nx * autoOffsetAmount + customOffsetX;
@@ -48,9 +50,12 @@ export default function CustomEdge({
     }
   };
 
+  const edgeColor = data?.color || '#000';
+  const edgeStyle = data?.lineStyle === 'dashed' ? { strokeDasharray: '8 8' } : {};
+
   return (
     <>
-      <BaseEdge path={edgePath} markerEnd={markerEnd} style={{ ...style, stroke: 'var(--primary-green)', strokeWidth: 3, opacity: 0.4 }} />
+      <BaseEdge path={edgePath} markerEnd={markerEnd} style={{ ...style, ...edgeStyle, stroke: edgeColor, strokeWidth: 4 }} />
       <EdgeLabelRenderer>
         <div style={{ position: 'absolute', left: labelX, top: labelY, pointerEvents: 'all', zIndex: 1000 }} className="nopan">
           <motion.div
@@ -77,20 +82,6 @@ export default function CustomEdge({
                </button>
             )}
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid rgba(0,0,0,0.05)', paddingBottom: '8px' }}>
-            <ArrowRightLeft size={14} color="var(--primary-green)" />
-            <select
-              value={data?.direction || 'Outbound'}
-              onChange={(e) => {
-                if (data?.onDataChange) data.onDataChange(id, 'direction', e.target.value);
-              }}
-              style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', fontWeight: '900', fontSize: '0.7rem', color: 'var(--primary-green)', cursor: 'inherit' }}
-            >
-              <option value="Outbound">OUTBOUND</option>
-              <option value="Return">RETURN TRIP</option>
-              <option value="Connecting">CONNECTING</option>
-            </select>
-          </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ position: 'relative' }}>

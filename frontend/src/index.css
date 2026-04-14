@@ -285,3 +285,27 @@ body, html {
   .nav-logo-icon { padding: 6px !important; }
   .nav-logo-icon svg { width: 22px; height: 22px; }
 }
+
+.cartography-canvas {
+  cursor: crosshair !important;
+}
+
+.cartography-canvas * {
+  cursor: inherit !important;
+}
+
+.cartography-canvas .react-flow__pane {
+  cursor: crosshair !important;
+}
+
+.react-flow__node {
+  cursor: grab !important;
+}
+
+.react-flow__node:active {
+  cursor: grabbing !important;
+}
+
+.react-flow__handle {
+  cursor: crosshair !important;
+}

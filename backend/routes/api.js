@@ -16,13 +16,42 @@ router.post('/admin/login', (req, res) => {
   }
 });
 
-// Save a visitor's entry
+// Save/Retrieve a visitor's entry (Identity Persistence Layer)
 router.post('/visitors', async (req, res) => {
   try {
-    const { name, company } = req.body;
-    const newEntry = new UserEntry({ name, company });
+    const { name, company, uid } = req.body;
+    
+    // Check if traveler already exists in the mission logs
+    const existingEntry = await UserEntry.findOne({ name, company });
+    
+    if (existingEntry) {
+      // Re-Authenticate legacy user and restore their previous UID
+      return res.json(existingEntry);
+    }
+    
+    // Initialize new identity for first-time explorer
+    const newEntry = new UserEntry({ name, company, uid });
     await newEntry.save();
     res.status(201).json(newEntry);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update visitor identity metadata (Email/Contact Linkage)
+router.put('/visitors/:uid', async (req, res) => {
+  try {
+    const { email } = req.body;
+    const { uid } = req.params;
+    
+    const updatedEntry = await UserEntry.findOneAndUpdate(
+      { uid },
+      { $set: { email } },
+      { new: true }
+    );
+    
+    if (!updatedEntry) return res.status(404).json({ error: "Mission signature not found" });
+    res.json(updatedEntry);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -43,15 +72,22 @@ router.get('/places', async (req, res) => {
   try {
     const { type, value } = req.query; 
     let query = {};
-    if (type === 'budget') query.budgetRange = value;
+    if (type === 'budget') {
+      // Suffix-Agnostic Regex: Match both "under 1000" and "under 1000 rupees"
+      query.budgetRange = new RegExp(value, 'i');
+    }
     else if (type === 'days') {
-      if (value === 'over 3 days') {
+      // Unified Tactical Signature: Handle both "over 3 days" and "3+ days"
+      if (value === 'over 3 days' || value === '3+ days') {
         query.days = { $nin: ['1 day', '2 day', '3 day'] };
       } else {
         query.days = value;
       }
     }
-    else if (type === 'distance') query.distance = value;
+    else if (type === 'distance') {
+      // Matches both "under 100km" and "under 100 km"
+      query.distance = new RegExp(value, 'i');
+    }
 
     const places = await Place.find(query);
     res.json(places);

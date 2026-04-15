@@ -382,7 +382,14 @@ export default function Dashboard() {
           )}
         </AnimatePresence>
         ) : (
-          <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ 
+            minHeight: '100vh', 
+            display: 'flex', 
+            alignItems: activeTab === 'buddy' ? 'flex-start' : 'center', 
+            justifyContent: 'center',
+            paddingTop: activeTab === 'buddy' ? '120px' : '0',
+            paddingBottom: '100px'
+          }}>
             <AnimatePresence mode="wait">
               <motion.div
                 initial={{ opacity: 0, y: 30 }}

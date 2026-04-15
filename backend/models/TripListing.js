@@ -23,7 +23,7 @@ const tripListingSchema = new mongoose.Schema({
   destination: { type: String, required: true },
   budget: { type: String, required: true },
   days: { type: String, required: true },
-  date: { type: Date, required: true },
+  date: { type: Date, required: true, expires: 1209600 }, // Auto-delete exactly 14 days after the trip start date
   status: { type: String, enum: ['listed', 'started'], default: 'listed' },
   matches: [matchRequestSchema],
   messages: [chatMessageSchema],

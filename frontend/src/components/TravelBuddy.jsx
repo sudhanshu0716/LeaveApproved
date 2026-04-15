@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PlaneTakeoff, MapPin, Calendar, Briefcase, PlusCircle, Search, Users, CheckCircle, XCircle, Send, MessageSquare, Compass, ArrowRight } from 'lucide-react';
+import { PlaneTakeoff, MapPin, Calendar, Briefcase, PlusCircle, Search, Users, CheckCircle, XCircle, Send, MessageSquare, Compass, ArrowRight, Ticket, Plane, Globe, Trash2 } from 'lucide-react';
 
 export default function TravelBuddy({ user, onXpGain }) {
   const [view, setView] = useState('feed'); // 'feed', 'list', 'my_trips'
@@ -18,7 +18,7 @@ export default function TravelBuddy({ user, onXpGain }) {
   const [activeChat, setActiveChat] = useState(null);
   const [chatMessage, setChatMessage] = useState('');
   const [messages, setMessages] = useState([]);
-  const messagesEndRef = React.useRef(null);
+  const chatContainerRef = React.useRef(null);
 
   // When a chat is opened, clear previous session messages and start polling
   useEffect(() => {
@@ -32,6 +32,7 @@ export default function TravelBuddy({ user, onXpGain }) {
     };
 
     if (activeChat) {
+      window.scrollTo({ top: 0, behavior: 'instant' });
       fetchMessages();
       interval = setInterval(fetchMessages, 1000); // 1s aggressive polling
     }
@@ -43,8 +44,10 @@ export default function TravelBuddy({ user, onXpGain }) {
 
   // Auto-scroll to bottom of chat
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [messages.length]);
 
   const handleSendMessage = async () => {
     if (!chatMessage.trim() || !activeChat) return;
@@ -125,6 +128,17 @@ export default function TravelBuddy({ user, onXpGain }) {
     }
   };
 
+  const handleDeleteTrip = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this trip request?")) return;
+    try {
+      await axios.delete(`/api/buddy/trips/${id}`, { data: { uid: user.uid } });
+      await fetchTrips();
+      await fetchMyTrips();
+    } catch (err) {
+      alert("Error deleting trip: " + (err.response?.data?.error || err.message));
+    }
+  };
+
   if (activeChat) {
     return (
       <div className="glass-panel" style={{ width: '100%', maxWidth: '800px', padding: '30px', borderRadius: '30px', background: 'rgba(20, 35, 30, 0.6)', border: '1px solid rgba(255,255,255,0.1)' }}>
@@ -139,7 +153,7 @@ export default function TravelBuddy({ user, onXpGain }) {
           </div>
         </div>
         
-        <div style={{ height: '300px', background: 'rgba(0,0,0,0.3)', borderRadius: '20px', padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '15px', border: '1px solid rgba(216, 243, 220, 0.1)' }}>
+        <div ref={chatContainerRef} style={{ height: '300px', background: 'rgba(0,0,0,0.3)', borderRadius: '20px', padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '15px', border: '1px solid rgba(216, 243, 220, 0.1)' }}>
            <div style={{ alignSelf: 'center', background: 'rgba(255,183,3,0.1)', color: '#ffb703', padding: '8px 16px', borderRadius: '50px', fontSize: '0.65rem', fontWeight: 900, letterSpacing: '1px' }}>CHAT STARTED</div>
            
            {messages.map((msg, idx) => {
@@ -161,7 +175,6 @@ export default function TravelBuddy({ user, onXpGain }) {
                </div>
              );
            })}
-           <div ref={messagesEndRef} />
         </div>
         
         <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
@@ -187,64 +200,80 @@ export default function TravelBuddy({ user, onXpGain }) {
       {/* Navigation Headers */}
       <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginBottom: '40px' }}>
         {[
-          { id: 'feed', label: 'TRIP FEED', icon: <Search size={16} /> },
-          { id: 'list', label: 'LIST A TRIP', icon: <PlusCircle size={16} /> },
-          { id: 'my_trips', label: 'MY TRIPS', icon: <Compass size={16} /> }
+          { id: 'feed', label: 'EXPLORE TRIPS', icon: <Globe size={18} /> },
+          { id: 'list', label: 'LIST A TRIP', icon: <Ticket size={18} /> },
+          { id: 'my_trips', label: 'MY TRIPS', icon: <Compass size={18} /> }
         ].map(tab => (
           <button
             key={tab.id}
             onClick={() => setView(tab.id)}
             className="glass-btn"
             style={{
-              padding: '12px 24px', borderRadius: '50px', display: 'flex', alignItems: 'center', gap: '10px',
-              background: view === tab.id ? '#ffb703' : 'rgba(255,255,255,0.05)',
+              padding: '12px 30px', borderRadius: '50px', display: 'flex', alignItems: 'center', gap: '10px',
+              background: view === tab.id ? 'linear-gradient(135deg, #ffb703, #ff8c00)' : 'rgba(255,255,255,0.05)',
               color: view === tab.id ? '#081c15' : 'white',
-              border: '1px solid', borderColor: view === tab.id ? '#ffb703' : 'rgba(255,255,255,0.1)',
-              fontWeight: 900, transition: 'all 0.3s ease'
+              border: '1px solid', borderColor: view === tab.id ? 'transparent' : 'rgba(255,255,255,0.1)',
+              fontWeight: 900, transition: 'all 0.3s ease',
+              boxShadow: view === tab.id ? '0 10px 20px rgba(255,183,3,0.3)' : 'none',
+              letterSpacing: '1px'
             }}
           >
-            {tab.icon} {tab.label}
+            {React.cloneElement(tab.icon || <Compass/>, { color: view === tab.id ? '#081c15' : '#ffb703' })} {tab.label}
           </button>
         ))}
       </div>
 
       <AnimatePresence mode="wait">
-        <motion.div key={view} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+        <motion.div key={view} initial={{ opacity: 0, y: 30, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -30, scale: 0.98 }} transition={{ duration: 0.4 }}>
           
           {view === 'list' && (
-            <form onSubmit={handleListTrip} className="glass-panel" style={{ padding: '40px', borderRadius: '30px', background: 'rgba(20, 35, 30, 0.6)', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <h2 className="title" style={{ color: 'white', marginBottom: '30px', fontSize: '1.8rem' }}>CREATE NEW TRIP</h2>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '25px', marginBottom: '30px' }}>
-                <div>
-                  <label style={{ display: 'block', color: '#ffb703', fontSize: '0.7rem', fontWeight: 900, marginBottom: '10px' }}>STARTING POINT</label>
-                  <input required value={origin} onChange={e => setOrigin(e.target.value)} placeholder="e.g. Mumbai" style={{ width: '100%', padding: '15px', borderRadius: '15px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none' }} />
-                </div>
-                <div>
-                  <label style={{ display: 'block', color: '#ffb703', fontSize: '0.7rem', fontWeight: 900, marginBottom: '10px' }}>DESTINATION</label>
-                  <input required value={destination} onChange={e => setDestination(e.target.value)} placeholder="e.g. Goa" style={{ width: '100%', padding: '15px', borderRadius: '15px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none' }} />
-                </div>
-                <div>
-                  <label style={{ display: 'block', color: '#ffb703', fontSize: '0.7rem', fontWeight: 900, marginBottom: '10px' }}>BUDGET</label>
-                  <select value={budget} onChange={e => setBudget(e.target.value)} style={{ width: '100%', padding: '15px', borderRadius: '15px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none' }}>
-                    <option>under 1000 rupees</option><option>under 2000 rupees</option><option>under 5000 rupees</option><option>over 5000 rupees</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={{ display: 'block', color: '#ffb703', fontSize: '0.7rem', fontWeight: 900, marginBottom: '10px' }}>DURATION</label>
-                  <select value={days} onChange={e => setDays(e.target.value)} style={{ width: '100%', padding: '15px', borderRadius: '15px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none' }}>
-                    <option>1 day</option><option>2 day</option><option>3 day</option><option>3+ days</option>
-                  </select>
-                </div>
-                <div style={{ gridColumn: 'span 2' }}>
-                  <label style={{ display: 'block', color: '#ffb703', fontSize: '0.7rem', fontWeight: 900, marginBottom: '10px' }}>TRIP DATE</label>
-                  <input type="date" required value={date} onChange={e => setDate(e.target.value)} style={{ width: '100%', padding: '15px', borderRadius: '15px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none' }} />
-                </div>
+            <form onSubmit={handleListTrip} style={{ margin: '0 auto', maxWidth: '800px', display: 'flex', background: 'rgba(255,255,255,0.95)', borderRadius: '25px', overflow: 'hidden', boxShadow: '0 25px 50px rgba(0,0,0,0.5)' }}>
+              {/* Left Side: Itinerary Graphic */}
+              <div style={{ flex: '0 0 250px', background: 'linear-gradient(135deg, #081c15, #1b4332)', padding: '40px', color: 'white', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                 <PlaneTakeoff size={50} color="#ffb703" style={{ marginBottom: '20px' }} />
+                 <h2 style={{ fontSize: '2rem', fontWeight: 900, lineHeight: 1.1, margin: 0 }}>TRIP<br/>PLANNER</h2>
+                 <p style={{ opacity: 0.7, fontSize: '0.8rem', marginTop: '10px' }}>Create a new trip listing</p>
+                 <div style={{ marginTop: 'auto', fontSize: '2rem', letterSpacing: '4px', opacity: 0.3, fontWeight: 900, transform: 'rotate(-90deg)', transformOrigin: 'left bottom', position: 'absolute', bottom: 40, left: 20 }}>ITINERARY</div>
               </div>
               
-              <button type="submit" className="glass-btn" style={{ width: '100%', padding: '18px', background: '#d8f3dc', color: '#081c15', border: 'none', borderRadius: '15px', fontWeight: 900, fontSize: '1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
-                <PlaneTakeoff size={20} /> LIST TRIP
-              </button>
+              {/* Right Side: Inputs */}
+              <div style={{ flex: 1, padding: '40px', position: 'relative' }}>
+                {/* Dotted separator visual */}
+                <div style={{ position: 'absolute', left: '-10px', top: '0', bottom: '0', width: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '10px 0' }}>
+                   {[...Array(15)].map((_, i) => <div key={i} style={{ width: '6px', height: '12px', background: 'rgba(0,0,0,0.1)', borderRadius: '10px' }}/> )}
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '25px', marginBottom: '40px' }}>
+                  <div>
+                    <label style={{ display: 'block', color: '#081c15', fontSize: '0.7rem', fontWeight: 900, marginBottom: '8px', letterSpacing: '1px' }}>DEPARTURE ORIGIN</label>
+                    <input required value={origin} onChange={e => setOrigin(e.target.value)} placeholder="e.g. Mumbai (BOM)" style={{ width: '100%', padding: '12px 0', border: 'none', borderBottom: '2px solid rgba(8,28,21,0.1)', background: 'transparent', color: '#081c15', fontSize: '1.2rem', fontWeight: 900, outline: 'none' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', color: '#081c15', fontSize: '0.7rem', fontWeight: 900, marginBottom: '8px', letterSpacing: '1px' }}>ARRIVAL DESTINATION</label>
+                    <input required value={destination} onChange={e => setDestination(e.target.value)} placeholder="e.g. Goa (GOI)" style={{ width: '100%', padding: '12px 0', border: 'none', borderBottom: '2px solid rgba(8,28,21,0.1)', background: 'transparent', color: '#081c15', fontSize: '1.2rem', fontWeight: 900, outline: 'none' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', color: '#081c15', fontSize: '0.7rem', fontWeight: 900, marginBottom: '8px', letterSpacing: '1px' }}>CLASS / BUDGET</label>
+                    <select value={budget} onChange={e => setBudget(e.target.value)} style={{ width: '100%', padding: '12px 0', border: 'none', borderBottom: '2px solid rgba(8,28,21,0.1)', background: 'transparent', color: '#081c15', fontSize: '1.1rem', fontWeight: 900, outline: 'none' }}>
+                      <option>under 1000 rupees</option><option>under 2000 rupees</option><option>under 5000 rupees</option><option>over 5000 rupees</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', color: '#081c15', fontSize: '0.7rem', fontWeight: 900, marginBottom: '8px', letterSpacing: '1px' }}>LAYOVER / DURATION</label>
+                    <select value={days} onChange={e => setDays(e.target.value)} style={{ width: '100%', padding: '12px 0', border: 'none', borderBottom: '2px solid rgba(8,28,21,0.1)', background: 'transparent', color: '#081c15', fontSize: '1.1rem', fontWeight: 900, outline: 'none' }}>
+                      <option>1 day</option><option>2 day</option><option>3 day</option><option>3+ days</option>
+                    </select>
+                  </div>
+                  <div style={{ gridColumn: 'span 2' }}>
+                    <label style={{ display: 'block', color: '#081c15', fontSize: '0.7rem', fontWeight: 900, marginBottom: '8px', letterSpacing: '1px' }}>TRIP DATE</label>
+                    <input type="date" required value={date} onChange={e => setDate(e.target.value)} style={{ width: '100%', padding: '12px 0', border: 'none', borderBottom: '2px solid rgba(8,28,21,0.1)', background: 'transparent', color: '#081c15', fontSize: '1.1rem', fontWeight: 900, outline: 'none' }} />
+                  </div>
+                </div>
+                
+                <button type="submit" className="glass-btn" style={{ width: '100%', padding: '20px', background: 'linear-gradient(135deg, #ffb703, #ff8c00)', color: '#081c15', border: 'none', borderRadius: '15px', fontWeight: 900, fontSize: '1.2rem', letterSpacing: '2px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', boxShadow: '0 10px 20px rgba(255,183,3,0.4)', transition: 'all 0.3s' }}>
+                  <Plane size={24} /> CREATE TRIP PLAN
+                </button>
+              </div>
             </form>
           )}
 
@@ -265,32 +294,70 @@ export default function TravelBuddy({ user, onXpGain }) {
                  </button>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '25px' }}>
-                {trips.length === 0 && <div style={{ color: 'white', opacity: 0.5 }}>No trips found...</div>}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '30px' }}>
+                {trips.length === 0 && <div style={{ color: 'white', opacity: 0.5, textAlign: 'center', width: '100%', padding: '40px' }}>Scanning for open trip requests...</div>}
               {trips.map(trip => {
                 const requested = trip.matches?.some(m => m.requesterUid === user.uid);
+                const shortOrig = trip.origin.substring(0,3).toUpperCase();
+                const shortDest = trip.destination.substring(0,3).toUpperCase();
                 return (
-                <div key={trip._id} className="glass-panel" style={{ padding: '25px', borderRadius: '25px', background: 'rgba(20, 35, 30, 0.4)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                  <div style={{ fontSize: '0.6rem', color: '#ffb703', fontWeight: 900, letterSpacing: '2px', marginBottom: '15px' }}>HOST: {trip.creatorName.toUpperCase()}</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'white', marginBottom: '20px' }}>
-                    <div style={{ flex: 1, fontSize: '1.2rem', fontWeight: 900 }}>{trip.origin}</div>
-                    <ArrowRight size={16} color="#d8f3dc" />
-                    <div style={{ flex: 1, fontSize: '1.2rem', fontWeight: 900, textAlign: 'right' }}>{trip.destination}</div>
+                <div key={trip._id} className="ticket-card" style={{ display: 'flex', background: 'rgba(255,255,255,0.95)', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.3)', transition: 'transform 0.2s', position: 'relative' }}>
+                  {/* Left Main Ticket Panel */}
+                  <div style={{ flex: 1, padding: '25px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                     <div>
+                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                          <div style={{ color: '#081c15', fontWeight: 900, letterSpacing: '2px', fontSize: '0.7rem' }}>TRIP HOST</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#ffb703', fontWeight: 900, background: 'rgba(255,183,3,0.1)', padding: '4px 10px', borderRadius: '50px', fontSize: '0.65rem' }}>
+                            <CheckCircle size={12}/> VERIFIED
+                          </div>
+                       </div>
+                       <div style={{ fontSize: '1.1rem', color: '#081c15', fontWeight: 900, marginBottom: '25px' }}>{trip.creatorName.toUpperCase()}</div>
+                       
+                       {/* Trip Route UI */}
+                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '25px' }}>
+                          <div style={{ textAlign: 'left' }}>
+                             <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#081c15', lineHeight: 1 }}>{shortOrig}</div>
+                             <div style={{ fontSize: '0.7rem', color: 'rgba(8,28,21,0.5)', fontWeight: 900, marginTop: '4px' }}>{trip.origin}</div>
+                          </div>
+                          <Plane color="#ffb703" size={30} style={{ opacity: 0.8 }} />
+                          <div style={{ textAlign: 'right' }}>
+                             <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#081c15', lineHeight: 1 }}>{shortDest}</div>
+                             <div style={{ fontSize: '0.7rem', color: 'rgba(8,28,21,0.5)', fontWeight: 900, marginTop: '4px' }}>{trip.destination}</div>
+                          </div>
+                       </div>
+                     </div>
+                     
+                     <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '2px solid rgba(8,28,21,0.1)', paddingTop: '15px' }}>
+                        <div>
+                           <div style={{ fontSize: '0.6rem', color: 'rgba(8,28,21,0.5)', fontWeight: 900 }}>DATE</div>
+                           <div style={{ fontSize: '0.9rem', color: '#081c15', fontWeight: 900 }}>{new Date(trip.date).toLocaleDateString()}</div>
+                        </div>
+                        <div>
+                           <div style={{ fontSize: '0.6rem', color: 'rgba(8,28,21,0.5)', fontWeight: 900 }}>CLASS</div>
+                           <div style={{ fontSize: '0.9rem', color: '#081c15', fontWeight: 900 }}>{trip.budget}</div>
+                        </div>
+                     </div>
                   </div>
                   
-                  <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
-                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'rgba(216, 243, 220, 0.6)', fontSize: '0.75rem' }}><Calendar size={14}/> {new Date(trip.date).toLocaleDateString()}</div>
-                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'rgba(216, 243, 220, 0.6)', fontSize: '0.75rem' }}><Briefcase size={14}/> {trip.budget}</div>
+                  {/* Right Stub Line separator */}
+                  <div style={{ width: '25px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#ffb703', position: 'relative' }}>
+                     <div style={{ position: 'absolute', top: -10, width: 20, height: 20, borderRadius: '50%', background: '#081c15' }} />
+                     <div style={{ position: 'absolute', bottom: -10, width: 20, height: 20, borderRadius: '50%', background: '#081c15' }} />
+                     <div style={{ borderLeft: '3px dashed rgba(8,28,21,0.2)', height: '80%' }} />
                   </div>
                   
-                  <button 
-                    onClick={() => handleRequestMatch(trip._id)}
-                    disabled={requested}
-                    className="glass-btn" 
-                    style={{ width: '100%', padding: '12px', background: requested ? 'rgba(255,255,255,0.1)' : '#ffb703', color: requested ? 'white' : '#081c15', border: 'none', borderRadius: '12px', fontWeight: 900, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
-                  >
-                    {requested ? <><CheckCircle size={16}/> REQUEST PENDING</> : <><Search size={16}/> REQUEST TO JOIN</>}
-                  </button>
+                  {/* Right Stub Buttons */}
+                  <div style={{ width: '120px', background: '#ffb703', padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '15px', alignItems: 'center' }}>
+                     <div style={{ transform: 'rotate(-90deg)', whiteSpace: 'nowrap', fontSize: '0.7rem', fontWeight: 900, letterSpacing: '4px', color: 'rgba(8,28,21,0.5)', marginBottom: '40px' }}>TRIP</div>
+                     <button 
+                        onClick={() => handleRequestMatch(trip._id)}
+                        disabled={requested}
+                        style={{ width: '50px', height: '50px', borderRadius: '50%', background: requested ? 'rgba(8,28,21,0.1)' : '#081c15', color: requested ? '#081c15' : '#ffb703', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', boxShadow: requested ? 'none' : '0 10px 15px rgba(0,0,0,0.2)', transition: 'all 0.2s' }}
+                     >
+                        {requested ? <CheckCircle size={24}/> : <PlusCircle size={24}/>}
+                     </button>
+                     <div style={{ fontSize: '0.6rem', fontWeight: 900, textAlign: 'center', color: '#081c15' }}>{requested ? 'PENDING' : 'JOIN TRIP'}</div>
+                  </div>
                 </div>
               )})}
             </div>
@@ -298,44 +365,71 @@ export default function TravelBuddy({ user, onXpGain }) {
           )}
 
           {view === 'my_trips' && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '30px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '40px' }}>
                {/* Created Trips */}
                <div>
-                  <h3 className="title" style={{ color: 'white', fontSize: '1.4rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>MY LISTED TRIPS</h3>
-                  {myTrips.created.map(trip => (
-                    <div key={trip._id} className="glass-panel" style={{ padding: '20px', borderRadius: '20px', marginBottom: '20px', background: 'rgba(255,255,255,0.05)', border: trip.status === 'started' ? '1px solid #ffb703' : '1px solid rgba(255,255,255,0.1)' }}>
-                       <div style={{ color: 'white', fontWeight: 900, marginBottom: '5px' }}>{trip.destination}</div>
-                       <div style={{ fontSize: '0.7rem', color: '#ffb703', marginBottom: '15px' }}>STATE: {trip.status.toUpperCase()}</div>
+                  <h3 className="title" style={{ color: 'white', fontSize: '1.4rem', borderBottom: '2px dashed rgba(255,255,255,0.2)', paddingBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}><Plane color="#ffb703" size={24}/> CREATED TRIPS</h3>
+                  {myTrips.created.length === 0 && <div style={{ color: 'white', opacity: 0.5, marginTop: '20px' }}>No trips issued yet.</div>}
+                  {myTrips.created.map(trip => {
+                    const hasAccepted = trip.matches.some(m => m.status === 'accepted');
+                    return (
+                    <div key={trip._id} style={{ padding: '20px', borderRadius: '15px', marginBottom: '20px', background: 'rgba(255,255,255,0.95)', borderLeft: hasAccepted ? '8px solid #ffb703' : '8px solid #081c15', boxShadow: '0 10px 20px rgba(0,0,0,0.3)', position: 'relative', overflow: 'hidden' }}>
+                       {/* Background logo */}
+                       <Globe size={150} color="black" style={{ position: 'absolute', right: -30, bottom: -30, opacity: 0.03, pointerEvents: 'none' }} />
                        
-                       {trip.status === 'listed' && trip.matches.map(req => (
-                         <div key={req._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '10px', marginTop: '10px' }}>
-                            <div style={{ color: 'white', fontSize: '0.8rem' }}>{req.requesterName}</div>
+                       <div style={{ fontSize: '0.65rem', color: '#081c15', fontWeight: 900, opacity: 0.5, letterSpacing: '2px', marginBottom: '10px' }}>TRIP DETAILS</div>
+                       
+                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                         <div style={{ fontSize: '1.4rem', color: '#081c15', fontWeight: 900 }}>{trip.origin} <ArrowRight size={14} style={{ margin: '0 5px' }}/> {trip.destination}</div>
+                         <button title="Delete Trip" onClick={() => handleDeleteTrip(trip._id)} style={{ background: 'transparent', border: 'none', color: '#9e2a2b', cursor: 'pointer', padding: '5px' }}>
+                           <Trash2 size={20} />
+                         </button>
+                       </div>
+                       <div style={{ fontSize: '0.7rem', color: hasAccepted ? '#ffb703' : 'rgba(8,28,21,0.5)', fontWeight: 900, marginBottom: '20px', padding: '4px 10px', background: hasAccepted ? 'rgba(255,183,3,0.1)' : 'rgba(8,28,21,0.05)', borderRadius: '50px', display: 'inline-block', marginTop: '10px' }}>{hasAccepted ? 'TRIP STARTED' : 'TRIP LISTED'}</div>
+                       
+                       {trip.matches.map(req => (
+                         <div key={req._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(8,28,21,0.05)', padding: '12px 15px', borderRadius: '10px', marginTop: '10px', border: '1px solid rgba(8,28,21,0.1)' }}>
+                            <div style={{ color: '#081c15', fontSize: '0.9rem', fontWeight: 900 }}>TRAVELER: {req.requesterName}</div>
                             {req.status === 'pending' ? (
-                              <button onClick={() => handleAcceptMatch(trip._id, req.requesterUid)} style={{ background: '#d8f3dc', color: '#081c15', padding: '4px 10px', borderRadius: '6px', border: 'none', fontSize: '0.7rem', fontWeight: 900, cursor: 'pointer' }}>ACCEPT</button>
+                              <button onClick={() => handleAcceptMatch(trip._id, req.requesterUid)} style={{ background: '#ffb703', color: '#081c15', padding: '6px 15px', borderRadius: '50px', border: 'none', fontSize: '0.7rem', fontWeight: 900, cursor: 'pointer', boxShadow: '0 5px 10px rgba(255,183,3,0.3)' }}>ACCEPT</button>
                             ) : (
-                              <div style={{ color: '#ffb703', fontSize: '0.7rem', fontWeight: 900 }}>{req.status.toUpperCase()}</div>
+                              <div style={{ color: '#1b4332', fontSize: '0.7rem', fontWeight: 900 }}>{req.status.toUpperCase()}</div>
                             )}
                          </div>
                        ))}
-                       {trip.status === 'started' && (
-                         <button onClick={() => setActiveChat(trip)} style={{ width: '100%', marginTop: '15px', padding: '10px', background: '#ffb703', border: 'none', borderRadius: '10px', fontWeight: 900, color: '#081c15', cursor: 'pointer' }}>OPEN CHAT</button>
-                       )}
+                       <button onClick={() => setActiveChat(trip)} style={{ width: '100%', marginTop: '15px', padding: '12px', background: '#081c15', border: 'none', borderRadius: '10px', fontWeight: 900, color: '#ffb703', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
+                         <MessageSquare size={16}/> OPEN CHAT
+                       </button>
                     </div>
-                  ))}
+                  )})}
                </div>
 
                {/* Requested Trips */}
                <div>
-                  <h3 className="title" style={{ color: 'white', fontSize: '1.4rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>MY JOIN REQUESTS</h3>
+                  <h3 className="title" style={{ color: 'white', fontSize: '1.4rem', borderBottom: '2px dashed rgba(255,255,255,0.2)', paddingBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}><Ticket color="#d8f3dc" size={24}/> MY TRIP REQUESTS</h3>
+                  {myTrips.requested.length === 0 && <div style={{ color: 'white', opacity: 0.5, marginTop: '20px' }}>No trip requests sent yet.</div>}
                   {myTrips.requested.map(trip => {
                     const myReq = trip.matches.find(m => m.requesterUid === user.uid) || {};
+                    const isAccepted = myReq.status === 'accepted';
                     return (
-                    <div key={trip._id} className="glass-panel" style={{ padding: '20px', borderRadius: '20px', marginBottom: '20px', background: 'rgba(255,255,255,0.05)', border: myReq.status === 'accepted' ? '1px solid #ffb703' : '1px solid rgba(255,255,255,0.1)' }}>
-                       <div style={{ color: 'white', fontWeight: 900, marginBottom: '5px' }}>{trip.destination} (Host: {trip.creatorName})</div>
-                       <div style={{ fontSize: '0.7rem', color: myReq.status === 'accepted' ? '#ffb703' : 'white', opacity: myReq.status === 'accepted' ? 1 : 0.5 }}>STATUS: {myReq.status?.toUpperCase()}</div>
+                    <div key={trip._id} style={{ padding: '20px', borderRadius: '15px', marginBottom: '20px', background: 'rgba(255,255,255,0.95)', borderLeft: isAccepted ? '8px solid #d8f3dc' : '8px solid #ffb703', boxShadow: '0 10px 20px rgba(0,0,0,0.3)', position: 'relative', overflow: 'hidden' }}>
+                       {/* Background logo */}
+                       <Globe size={150} color="black" style={{ position: 'absolute', right: -30, bottom: -30, opacity: 0.03, pointerEvents: 'none' }} />
                        
-                       {myReq.status === 'accepted' && (
-                         <button onClick={() => setActiveChat(trip)} style={{ width: '100%', marginTop: '15px', padding: '10px', background: '#ffb703', border: 'none', borderRadius: '10px', fontWeight: 900, color: '#081c15', cursor: 'pointer' }}>OPEN CHAT</button>
+                       <div style={{ fontSize: '0.65rem', color: '#081c15', fontWeight: 900, opacity: 0.5, letterSpacing: '2px', marginBottom: '10px' }}>TRIP HOST: {trip.creatorName.toUpperCase()}</div>
+                       
+                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                         <div style={{ fontSize: '1.4rem', color: '#081c15', fontWeight: 900 }}>{trip.origin} <ArrowRight size={14} style={{ margin: '0 5px' }}/> {trip.destination}</div>
+                       </div>
+                       
+                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem', fontWeight: 900, color: isAccepted ? '#1b4332' : '#ffb703', marginTop: '15px' }}>
+                          {isAccepted ? <CheckCircle size={14}/> : <Search size={14}/>} STATUS: {myReq.status?.toUpperCase()}
+                       </div>
+                       
+                       {isAccepted && (
+                         <button onClick={() => setActiveChat(trip)} style={{ width: '100%', marginTop: '20px', padding: '12px', background: '#081c15', border: 'none', borderRadius: '10px', fontWeight: 900, color: '#ffb703', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
+                           <MessageSquare size={16}/> OPEN CHAT
+                         </button>
                        )}
                     </div>
                   )})}

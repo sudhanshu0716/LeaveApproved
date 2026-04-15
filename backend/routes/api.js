@@ -343,7 +343,16 @@ router.post('/buddy/trips', async (req, res) => {
 router.get('/buddy/trips', async (req, res) => {
   try {
     const { origin, uid } = req.query;
-    let query = { status: 'listed' };
+    
+    // Auto-hide trips that are in the past
+    // Subtract 1 day so trips for "today" are still visible natively
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    let query = { 
+      status: 'listed',
+      date: { $gte: yesterday } 
+    };
     
     if (origin) {
       query.origin = new RegExp(origin, 'i');
@@ -386,10 +395,8 @@ router.post('/buddy/trips/:id/accept-match', async (req, res) => {
     const trip = await TripListing.findById(req.params.id);
     if (!trip) return res.status(404).json({ error: "Trip not found" });
     
-    // "Delete the entry of this trip when the trip got started" -> we can remove it entirely, 
-    // or just mark the match as accepted and send response, then frontend handles chat.
-    // Assuming UI keeps it temporarily for chat logic, we'll mark it 'started'.
-    trip.status = 'started';
+    // Group trip modification: Do not set trip.status to 'started'.
+    // Keep it 'listed' so the trip remains publicly visible and can accept infinite members.
     const matchDetails = trip.matches.find(m => m.requesterUid === acceptedUid);
     if (matchDetails) {
       matchDetails.status = 'accepted';
@@ -442,6 +449,20 @@ router.get('/buddy/trips/:id/chat', async (req, res) => {
     const trip = await TripListing.findById(req.params.id);
     if (!trip) return res.status(404).json({ error: "Trip not found" });
     res.json(trip.messages || []);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete('/buddy/trips/:id', async (req, res) => {
+  try {
+    const { uid } = req.body;
+    const trip = await TripListing.findById(req.params.id);
+    if (!trip) return res.status(404).json({ error: "Trip not found" });
+    if (trip.creatorUid !== uid) return res.status(403).json({ error: "Not authorized to delete this trip" });
+    
+    await TripListing.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

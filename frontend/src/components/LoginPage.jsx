@@ -143,8 +143,8 @@ export default function LoginPage() {
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                       <Plane size={24} color="#d8f3dc" />
-                       <span style={{ fontSize: '0.8rem', fontWeight: 900, letterSpacing: '4px', opacity: 0.8 }}>TURBO AIRLINE</span>
+                       <Settings size={22} color="#ffb703" />
+                       <span style={{ fontSize: '1rem', fontWeight: 950, letterSpacing: '2px', color: 'white' }}>LEAVE<span style={{ color: '#d8f3dc' }}>APPROVED</span></span>
                     </div>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                       <span style={{ fontSize: '0.6rem', fontWeight: 900, border: '1px solid #d8f3dc', padding: '4px 12px', borderRadius: '50px', color: '#d8f3dc' }}>PRIORITY SYNTHESIS</span>

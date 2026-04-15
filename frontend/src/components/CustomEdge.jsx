@@ -6,6 +6,7 @@ import { X, Plane, ArrowRightLeft } from 'lucide-react';
 export default function CustomEdge({
   id, sourceX, sourceY, targetX, targetY, style = {}, markerEnd, data
 }) {
+  const isReadOnly = data?.readOnly;
   const edgeIndex = data?.edgeIndex || 0;
   const customOffsetX = data?.customOffsetX || 0;
   const customOffsetY = data?.customOffsetY || 0;
@@ -27,8 +28,7 @@ export default function CustomEdge({
   if (edgeIndex === 0) {
       autoOffsetAmount = isReturn ? dynamicArc : -dynamicArc;
   } else {
-      // Increase separation for multi-trail bundles
-      const bundleMultiplier = 120; // Aggressive separation
+      const bundleMultiplier = 120; 
       autoOffsetAmount = (edgeIndex % 2 === 0 ? 1 : -1) * Math.ceil(edgeIndex / 2) * bundleMultiplier;
   }
   
@@ -44,7 +44,7 @@ export default function CustomEdge({
   };
 
   const handleDragEnd = (event, info) => {
-    if (data?.onDataChange) {
+    if (!isReadOnly && data?.onDataChange) {
       data.onDataChange(id, 'customOffsetX', customOffsetX + info.offset.x * 2);
       data.onDataChange(id, 'customOffsetY', customOffsetY + info.offset.y * 2);
     }
@@ -55,58 +55,68 @@ export default function CustomEdge({
 
   return (
     <>
-      <BaseEdge path={edgePath} markerEnd={markerEnd} style={{ ...style, ...edgeStyle, stroke: edgeColor, strokeWidth: 4 }} />
+      <BaseEdge path={edgePath} markerEnd={markerEnd} style={{ ...style, ...edgeStyle, stroke: edgeColor, strokeWidth: 4, opacity: isReadOnly ? 0.3 : 1 }} />
       <EdgeLabelRenderer>
-        <div style={{ position: 'absolute', left: labelX, top: labelY, pointerEvents: 'all', zIndex: 1000 }} className="nopan">
+        <div style={{ position: 'absolute', left: labelX, top: labelY, pointerEvents: isReadOnly ? 'none' : 'all', zIndex: 1000 }} className="nopan">
           <motion.div
-            drag
+            drag={!isReadOnly}
             dragMomentum={false}
             onDragEnd={handleDragEnd}
             className="glass-panel"
             style={{
               x: '-50%', y: '-50%',
-              padding: '16px',
+              padding: isReadOnly ? '12px 20px' : '16px',
               display: 'flex',
               flexDirection: 'column',
-              gap: '12px',
-              width: '180px',
-              cursor: 'grab',
+              gap: isReadOnly ? '4px' : '12px',
+              width: isReadOnly ? 'auto' : '180px',
+              cursor: isReadOnly ? 'default' : 'grab',
               background: 'white',
-              border: '1px solid rgba(0,0,0,0.1)',
-              boxShadow: 'var(--shadow-premium)'
+              border: isReadOnly ? '2px solid #000' : '1px solid rgba(0,0,0,0.1)',
+              boxShadow: isReadOnly ? '8px 8px 0px #000' : 'var(--shadow-premium)',
+              borderRadius: isReadOnly ? '16px' : '12px'
             }}
           >
-            {data?.onDeleteEdge && (
+            {!isReadOnly && data?.onDeleteEdge && (
                <button type="button" onClick={handleDelete} style={{ position: 'absolute', top: -10, right: -10, background: '#9e2a2b', color: '#fff', border: 'none', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}>
                  <X size={14} />
                </button>
             )}
 
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ position: 'relative' }}>
-               <Plane size={12} style={{ position: 'absolute', left: '8px', top: '10px', color: 'var(--primary-green)', opacity: 0.6 }} />
-               <input 
-                className="modern-input"
-                value={data?.transport || ''} 
-                onChange={(e) => {
-                  if (data?.onDataChange) data.onDataChange(id, 'transport', e.target.value);
-                }} 
-                placeholder="Mode"
-                style={{ padding: '6px 10px 6px 28px', fontSize: '0.75rem' }}
-              />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: isReadOnly ? 'center' : 'stretch', color: '#000' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: isReadOnly ? 'center' : 'flex-start' }}>
+                 <span style={{ fontSize: isReadOnly ? '1.2rem' : '1rem' }}>
+                    {(data?.transport || '').toLowerCase().includes('flight') ? '✈️' : 
+                     (data?.transport || '').toLowerCase().includes('train') ? '🚆' : 
+                     (data?.transport || '').toLowerCase().includes('bus') ? '🚌' : 
+                     (data?.transport || '').toLowerCase().includes('car') || (data?.transport || '').toLowerCase().includes('cab') ? '🚕' : '🚀'}
+                 </span>
+                 {isReadOnly ? (
+                   <span style={{ fontWeight: 900, textTransform: 'uppercase', fontSize: '0.9rem', color: '#000' }}>{data?.transport || 'TRAVEL'}</span>
+                 ) : (
+                   <input 
+                    className="modern-input"
+                    value={data?.transport || ''} 
+                    onChange={(e) => data?.onDataChange && data.onDataChange(id, 'transport', e.target.value)} 
+                    placeholder="Mode"
+                    style={{ padding: '6px 10px', fontSize: '0.75rem', flex: 1 }}
+                  />
+                 )}
+              </div>
+              
+              {isReadOnly ? (
+                data?.transportDetails && <span style={{ fontSize: '0.7rem', opacity: 0.7, fontWeight: '700', color: '#000' }}>{data.transportDetails}</span>
+              ) : (
+                <input 
+                  className="modern-input"
+                  value={data?.transportDetails || ''} 
+                  onChange={(e) => data?.onDataChange && data.onDataChange(id, 'transportDetails', e.target.value)} 
+                  placeholder="Ref / Flight #"
+                  style={{ padding: '6px 10px', fontSize: '0.7rem', opacity: 0.8 }}
+                />
+              )}
             </div>
-            <input 
-              className="modern-input"
-              value={data?.transportDetails || ''} 
-              onChange={(e) => {
-                if (data?.onDataChange) data.onDataChange(id, 'transportDetails', e.target.value);
-              }} 
-              placeholder="Ref / Flight #"
-              style={{ padding: '6px 10px', fontSize: '0.7rem', opacity: 0.8 }}
-            />
-          </div>
-        </motion.div>
+          </motion.div>
         </div>
       </EdgeLabelRenderer>
     </>

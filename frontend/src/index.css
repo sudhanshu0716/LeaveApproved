@@ -166,8 +166,8 @@ body, html {
   image-rendering: high-quality;
 }
 
-/* GLOBAL CLARITY OVERRIDE */
-.safari-portal-theme, body {
+/* GLOBAL CLARITY OVERRIDE - Scoped to Login/Landing sectors only */
+.safari-portal-theme {
   text-shadow: 0 2px 10px rgba(0,0,0,0.5);
 }
 

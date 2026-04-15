@@ -3,7 +3,8 @@ import ReactFlow, { Background, useReactFlow, ReactFlowProvider } from 'reactflo
 import axios from 'axios';
 import 'reactflow/dist/style.css';
 import { motion } from 'framer-motion';
-import { ReadOnlyCityNode, ReadOnlyEdge } from './CustomNodes';
+import { CityNode, NoteNode, StickerNode, HubNode } from './CustomNodes';
+import CustomEdge from './CustomEdge';
 import { Heart, MessageSquare, ZoomIn, ZoomOut, Maximize, Send, Trash2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -30,8 +31,33 @@ function FlowContent({ place }) {
 
   const isLiked = savedUser.name ? likedBy.includes(savedUser.name) : false;
 
-  const nodeTypes = useMemo(() => ({ cityNode: ReadOnlyCityNode }), []);
-  const edgeTypes = useMemo(() => ({ customEdge: ReadOnlyEdge }), []);
+  const nodeTypes = useMemo(() => ({
+    cityNode: CityNode,
+    noteNode: NoteNode,
+    stickerNode: StickerNode,
+    hubNode: HubNode
+  }), []);
+
+  const edgeTypes = useMemo(() => ({
+    customEdge: CustomEdge
+  }), []);
+
+  const readOnlyNodes = useMemo(() => 
+    place.nodes.map(n => ({ 
+      ...n, 
+      draggable: false,
+      selectable: true,
+      data: { ...n.data, readOnly: true } 
+    })), [place.nodes]);
+
+  const readOnlyEdges = useMemo(() => 
+    (place.edges || []).map(e => ({ 
+      ...e, 
+      type: 'customEdge', 
+      animated: true,
+      selectable: true,
+      data: { ...e.data, readOnly: true } 
+    })), [place.edges]);
 
   const handleLike = async () => {
     const currentUser = JSON.parse(localStorage.getItem('travel_user') || '{}');
@@ -120,13 +146,14 @@ function FlowContent({ place }) {
       
       <div style={{ height: '600px', width: '100%', overflow: 'hidden', position: 'relative', background: '#fafafa' }}>
         <ReactFlow
-          nodes={place.nodes.map(n => ({ ...n, draggable: false }))}
-          edges={(place.edges || []).map(e => ({ ...e, type: 'customEdge', animated: true }))}
+          nodes={readOnlyNodes}
+          edges={readOnlyEdges}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           fitView
+          nodesDraggable={false}
           nodesConnectable={false}
-          elementsSelectable={false}
+          elementsSelectable={true}
         >
           <Background color="#ccc" gap={40} size={1} />
           

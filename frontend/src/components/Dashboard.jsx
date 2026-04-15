@@ -12,6 +12,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import ItineraryFlow from './ItineraryFlow';
 import TravelBuddy from './TravelBuddy';
+import TripComparison from './TripComparison';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -30,11 +31,11 @@ export default function Dashboard() {
   const [user, setUser] = useState({ name: '', company: '' });
   const [xp, setXp] = useState(45);
   const levels = [
-    { name: 'Novice Nomad', xp: 0 },
-    { name: 'Occasional Backpacker', xp: 100 },
-    { name: 'Seasoned Traveler', xp: 200 },
-    { name: 'Global Voyager', xp: 300 },
-    { name: 'Elite Explorer', xp: 400 }
+    { name: 'Starter', xp: 0 },
+    { name: 'Explorer', xp: 100 },
+    { name: 'Adventurer', xp: 200 },
+    { name: 'Globetrotter', xp: 300 },
+    { name: 'Legend', xp: 400 }
   ];
 
   const currentLevelIndex = Math.floor(xp / 100);
@@ -385,9 +386,9 @@ export default function Dashboard() {
           <div style={{ 
             minHeight: '100vh', 
             display: 'flex', 
-            alignItems: activeTab === 'buddy' ? 'flex-start' : 'center', 
+            alignItems: (activeTab === 'buddy' || activeTab === 'comparison') ? 'flex-start' : 'center', 
             justifyContent: 'center',
-            paddingTop: activeTab === 'buddy' ? '120px' : '0',
+            paddingTop: (activeTab === 'buddy' || activeTab === 'comparison') ? '120px' : '0',
             paddingBottom: '100px'
           }}>
             <AnimatePresence mode="wait">
@@ -395,8 +396,8 @@ export default function Dashboard() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -30 }} 
-                className={activeTab === 'buddy' ? '' : 'glass-panel'}
-                style={ activeTab === 'buddy' ? { width: '100%', display: 'flex', justifyContent: 'center' } : {
+                className={(activeTab === 'buddy' || activeTab === 'comparison') ? '' : 'glass-panel'}
+                style={ (activeTab === 'buddy' || activeTab === 'comparison') ? { width: '100%', display: 'flex', justifyContent: 'center', zIndex: 100 } : {
                   padding: '60px',
                   textAlign: 'center',
                   background: 'rgba(20, 35, 30, 0.4)',
@@ -409,6 +410,8 @@ export default function Dashboard() {
               >
                 {activeTab === 'buddy' ? (
                   <TravelBuddy user={user} onXpGain={handleXpGain} />
+                ) : activeTab === 'comparison' ? (
+                  <TripComparison />
                 ) : (
                   <>
                     <h2 className="title" style={{ fontSize: '2.5rem', color: 'white', marginBottom: '20px' }}>
@@ -436,59 +439,32 @@ export default function Dashboard() {
             onClick={() => setShowProfile(true)}
             style={{ position: 'fixed', bottom: '40px', right: '40px', zIndex: 1000, cursor: 'pointer' }}
         >
-            <div className="glass-panel" style={{ 
-              padding: '16px 28px', 
-              borderRadius: '24px', 
-              background: 'rgba(8, 28, 21, 0.7)', 
-              backdropFilter: 'blur(30px)', 
-              border: '1px solid rgba(216, 243, 220, 0.2)', 
+            <div className="glass-panel xp-hover-pill" style={{ 
+              padding: '8px', 
+              borderRadius: '50px', 
+              background: 'rgba(8, 28, 21, 0.9)', 
+              backdropFilter: 'blur(20px)', 
+              border: '1px solid rgba(255, 183, 3, 0.4)', 
               display: 'flex', 
               alignItems: 'center', 
-              gap: '24px',
-              boxShadow: '0 20px 50px rgba(0,0,0,0.4), inset 0 0 20px rgba(216, 243, 220, 0.05)'
+              boxShadow: '0 10px 30px rgba(0,0,0,0.6), 0 0 20px rgba(255, 183, 3, 0.15)',
+              overflow: 'hidden'
             }}>
-              <div style={{ position: 'relative' }}>
-                  <div style={{ 
-                    background: '#ffb703', 
-                    width: '44px', 
-                    height: '44px', 
-                    borderRadius: '12px', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    color: '#081c15',
-                    boxShadow: '0 0 20px rgba(255, 183, 3, 0.4)'
-                  }}>
-                    <span style={{ fontSize: '1.2rem' }}>{levelData.icon}</span>
-                  </div>
-                  <div style={{ position: 'absolute', inset: '-4px', border: '1px solid #ffb703', borderRadius: '14px', opacity: 0.3, animation: 'pulse 2s infinite' }} />
-              </div>
+               <div style={{ position: 'relative', width: '46px', height: '46px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  {/* SVG Circular Progress */}
+                  <svg width="46" height="46" viewBox="0 0 46 46" style={{ position: 'absolute', transform: 'rotate(-90deg)' }}>
+                     <circle cx="23" cy="23" r="20" fill="rgba(0,0,0,0.5)" stroke="rgba(255,255,255,0.05)" strokeWidth="3" />
+                     <circle cx="23" cy="23" r="20" fill="none" stroke="#ffb703" strokeWidth="3" strokeDasharray="125" strokeDashoffset={125 - (125 * progressXp) / 100} style={{ transition: 'stroke-dashoffset 1s ease-out' }} strokeLinecap="round" />
+                  </svg>
+                  <div style={{ color: '#ffb703', fontWeight: 900, fontSize: '0.9rem', zIndex: 2, textShadow: '0 2px 5px rgba(0,0,0,0.5)' }}>{currentLevel}</div>
+               </div>
 
-              <div style={{ textAlign: 'left' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '0.6rem', fontWeight: 900, color: '#ffb703', letterSpacing: '2px' }}>LEVEL 0{currentLevel}</span>
-                    <span style={{ width: '4px', height: '4px', background: 'rgba(216, 243, 220, 0.3)', borderRadius: '50%' }} />
-                    <span style={{ fontSize: '0.6rem', fontWeight: 900, color: '#d8f3dc', opacity: 0.6, letterSpacing: '1px' }}>TRAVELER</span>
+               <div className="xp-widget-details" style={{ overflow: 'hidden', whiteSpace: 'nowrap', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                     <div style={{ fontSize: '0.7rem', fontWeight: 900, color: '#ffb703', letterSpacing: '1px', textTransform: 'uppercase' }}>{levelData.name}</div>
+                     <div style={{ fontSize: '0.55rem', color: '#d8f3dc', opacity: 0.7, fontWeight: 900, marginTop: '2px' }}>{progressXp} / 100 XP</div>
                   </div>
-                  <div className="title" style={{ fontSize: '1.1rem', color: 'white', letterSpacing: '1px', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>{levelData.name.toUpperCase()}</div>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.55rem', fontWeight: 900, color: '#d8f3dc', opacity: 0.5 }}>XP PROGRESS</span>
-                    <span style={{ fontSize: '0.55rem', fontWeight: 900, color: '#ffb703' }}>{progressXp} / 100</span>
-                  </div>
-                  <div style={{ width: '120px', height: '6px', background: 'rgba(0,0,0,0.5)', borderRadius: '10px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)' }}>
-                    <motion.div 
-                      animate={{ width: `${progressXp}%` }} 
-                      style={{ 
-                        height: '100%', 
-                        background: 'linear-gradient(90deg, #ffb703, #fb8500)', 
-                        borderRadius: '10px'
-                      }} 
-                    />
-                  </div>
-              </div>
+               </div>
             </div>
         </motion.div>
       )}
@@ -619,6 +595,23 @@ export default function Dashboard() {
           top: 0; left: 0; right: 0; height: 100px;
           background: linear-gradient(to bottom, transparent, rgba(216, 243, 220, 0.1), transparent);
           animation: scan 8s linear infinite;
+        }
+        
+        .xp-widget-details {
+          width: 0px;
+          opacity: 0;
+          padding-left: 0px;
+        }
+        
+        .xp-hover-pill {
+          transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        .xp-hover-pill:hover .xp-widget-details {
+          width: 110px;
+          opacity: 1;
+          padding-left: 12px;
+          padding-right: 8px;
         }
       `}</style>
     </div>

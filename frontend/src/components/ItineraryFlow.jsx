@@ -62,7 +62,7 @@ function FlowContent({ place }) {
   const handleLike = async () => {
     const currentUser = JSON.parse(localStorage.getItem('travel_user') || '{}');
     if (isLiking || !currentUser.name) {
-      if(!currentUser.name) alert('Traveler identity missing. Please enter your name on the home page first!');
+      if(!currentUser.name) alert('Profile missing. Please enter your name on the home page first!');
       return;
     }
     
@@ -227,7 +227,7 @@ function FlowContent({ place }) {
           ))}
           {comments.length === 0 && (
             <div style={{ textAlign: 'center', padding: '40px', color: '#999', fontWeight: 600 }}>
-              No travel logs yet. Be the first to brief others on this mission!
+              No travel logs yet. Be the first to tell others about this trip!
             </div>
           )}
         </div>

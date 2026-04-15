@@ -138,7 +138,7 @@ export function CityNode({ data, id }) {
           {isReadOnly ? (
             <div style={{ fontSize: '0.9rem', fontWeight: '600', color: '#333' }}>{data.activity || '---'}</div>
           ) : (
-            <input className="nodrag modern-input" value={data.activity || ''} onChange={(e) => updateData('activity', e.target.value)} placeholder="Expedition / Sightseeing" style={{ flex: 1, fontSize: '0.9rem' }} />
+            <input className="nodrag modern-input" value={data.activity || ''} onChange={(e) => updateData('activity', e.target.value)} placeholder="Activity / Sightseeing" style={{ flex: 1, fontSize: '0.9rem' }} />
           )}
         </div>
 
@@ -198,7 +198,7 @@ export function NoteNode({ data, id }) {
             className="nodrag"
             value={data.label || ''}
             onChange={(e) => updateData('label', e.target.value)}
-            placeholder="MISSION NOTE..."
+            placeholder="ADD NOTE..."
             style={{ width: '100%', height: '80px', border: 'none', background: 'transparent', outline: 'none', fontSize: '0.9rem', fontWeight: 800, fontFamily: 'monospace', resize: 'none' }}
          />
        )}

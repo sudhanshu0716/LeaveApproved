@@ -5,6 +5,7 @@ const userEntrySchema = new mongoose.Schema({
   company: { type: String, required: true },
   email: { type: String, default: '' },
   uid: { type: String },
+  xp: { type: Number, default: 45 },
   createdAt: { type: Date, default: Date.now }
 });
 

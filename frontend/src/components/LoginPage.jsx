@@ -40,7 +40,8 @@ export default function LoginPage() {
       const verifiedUser = {
         name: res.data.name,
         company: res.data.company,
-        uid: res.data.uid || tempUid
+        uid: res.data.uid || tempUid,
+        xp: res.data.xp || 45
       };
       
       localStorage.setItem('travel_user', JSON.stringify(verifiedUser));
@@ -100,7 +101,7 @@ export default function LoginPage() {
           fontWeight: 900,
           letterSpacing: '1px'
         }}>
-           <Settings size={14} /> {isMobile ? '' : 'AUTHORITY'}
+           <Settings size={14} /> {isMobile ? '' : 'ADMIN'}
         </Link>
       </div>
 
@@ -157,7 +158,7 @@ export default function LoginPage() {
                        <span style={{ fontSize: '0.8rem', fontWeight: 900, letterSpacing: '4px', color: 'rgba(255,255,255,0.6)' }}>TURBO AIRLINE</span>
                     </div>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.6rem', fontWeight: 900, border: '1px solid #d8f3dc', padding: '4px 12px', borderRadius: '50px', color: '#d8f3dc' }}>PRIORITY SYNTHESIS</span>
+                      <span style={{ fontSize: '0.6rem', fontWeight: 900, border: '1px solid #d8f3dc', padding: '4px 12px', borderRadius: '50px', color: '#d8f3dc' }}>FAST TRACK PASS</span>
                       <button 
                         type="button" 
                         onClick={() => { setUser({ name: '', company: '' }); localStorage.removeItem('travel_user'); }}
@@ -172,7 +173,7 @@ export default function LoginPage() {
                   <div style={{ display: 'flex', gap: '48px', marginBottom: '32px', color: 'white' }}>
                     <div style={{ flex: 1 }}>
                        <div style={{ fontSize: '0.6rem', fontWeight: 900, color: '#ffffff' }}>FROM</div>
-                       <div style={{ fontSize: '1.4rem', fontWeight: 900 }}>CORP TOWER</div>
+                       <div style={{ fontSize: '1.4rem', fontWeight: 900 }}>COMPANY'S DESK</div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', opacity: 0.3 }}>
                        <div style={{ width: '40px', height: '1px', background: 'white' }} />
@@ -181,7 +182,7 @@ export default function LoginPage() {
                     </div>
                     <div style={{ flex: 1, textAlign: 'right' }}>
                        <div style={{ fontSize: '0.6rem', fontWeight: 900, color: '#ffffff' }}>TO</div>
-                       <div style={{ fontSize: '1.4rem', fontWeight: 900 }}>VIRTUAL EXPEDITION</div>
+                       <div style={{ fontSize: '1.4rem', fontWeight: 900 }}>NEW RANDOM CITY</div>
                     </div>
                   </div>
 
@@ -207,11 +208,11 @@ export default function LoginPage() {
                   <form onSubmit={handleInitSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
                       <div style={{ borderBottom: '1px solid rgba(255,255,255,0.2)', paddingBottom: '8px', position: 'relative' }}>
-                        <span style={{ position: 'absolute', top: '-15px', fontSize: '10px', color: '#ffffff', fontWeight: 800 }}>PASSENGER IDENTIFIER</span>
+                        <span style={{ position: 'absolute', top: '-15px', fontSize: '10px', color: '#ffffff', fontWeight: 800 }}>YOUR NAME</span>
                         <input className="modern-input" style={{ background: 'none', padding: 0, borderRadius: 0, border: 'none', fontSize: '1.2rem', color: '#ffffff', fontWeight: 800, width: '100%', outline: 'none' }} placeholder="Name" value={user.name} onChange={e => setUser({...user, name: e.target.value})} required />
                       </div>
                       <div style={{ borderBottom: '1px solid rgba(255,255,255,0.2)', paddingBottom: '8px', position: 'relative' }}>
-                        <span style={{ position: 'absolute', top: '-15px', fontSize: '10px', color: '#ffffff', fontWeight: 800 }}>ORIGIN POINT</span>
+                        <span style={{ position: 'absolute', top: '-15px', fontSize: '10px', color: '#ffffff', fontWeight: 800 }}>COMPANY</span>
                         <input className="modern-input" style={{ background: 'none', padding: 0, borderRadius: 0, border: 'none', fontSize: '1.2rem', color: '#ffffff', fontWeight: 800, width: '100%', outline: 'none' }} placeholder="Company Name" value={user.company} onChange={e => setUser({...user, company: e.target.value})} required />
                       </div>
                     </div>
@@ -234,7 +235,7 @@ export default function LoginPage() {
                         cursor: 'pointer'
                       }}
                     >
-                       {isCutting ? 'PROCESSING...' : 'INITIALIZE VOYAGE'} {isCutting ? null : <ArrowRight size={22} />}
+                       {isCutting ? 'PROCESSING...' : 'START TRIP'} {isCutting ? null : <ArrowRight size={22} />}
                     </button>
                   </form>
                 </motion.div>
@@ -271,7 +272,7 @@ export default function LoginPage() {
                        </div>
 
                        <div style={{ textAlign: 'left' }}>
-                          <div style={{ fontSize: '0.5rem', fontWeight: 900, color: 'rgba(255,255,255,0.4)' }}>FLIGHT SYNC</div>
+                          <div style={{ fontSize: '0.5rem', fontWeight: 900, color: 'rgba(255,255,255,0.4)' }}>STATUS</div>
                           <div style={{ fontSize: '0.8rem', fontWeight: 900, color: 'white' }}>VALIDATED</div>
                        </div>
                     </div>

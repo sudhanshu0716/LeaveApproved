@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowRight, MapPin, Compass, Calendar, Briefcase, 
   ChevronRight, Award, Heart, Settings, LogOut,
-  Plane, PlaneTakeoff, Scan, Scissors, User
+  Plane, PlaneTakeoff, Scan, Scissors, User,
+  Users, ArrowRightLeft, Info
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import confetti from 'canvas-confetti';
@@ -42,6 +43,7 @@ const getQuotes = (name, company) => {
 };
 
 export default function Landing() {
+  const [activeTab, setActiveTab] = useState('itineraries');
   const [step, setStep] = useState(0); 
   const [isCutting, setIsCutting] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -70,7 +72,7 @@ export default function Landing() {
   }, []);
 
   useEffect(() => {
-    if (step === 1 && horizontalRef.current) {
+    if (activeTab === 'itineraries' && step === 1 && horizontalRef.current) {
       setTimeout(() => {
         const panels = gsap.utils.toArray('.horizontal-panel');
         let ctx = gsap.context(() => {
@@ -83,14 +85,14 @@ export default function Landing() {
               scrub: 1,
               snap: 1 / (panels.length - 1),
               start: "top top",
-              end: () => "+=" + horizontalRef.current.offsetWidth
+              end: () => "+=" + (horizontalRef.current.offsetWidth / 2)
             }
           });
         }, horizontalRef);
         return () => ctx.revert();
       }, 500);
     }
-  }, [step]);
+  }, [step, activeTab]);
 
   const levels = [
     { name: 'Novice Nomad', xp: 0, icon: '🌱' },
@@ -129,7 +131,11 @@ export default function Landing() {
     if (!user.name || !user.company || isCutting) return;
     
     setIsCutting(true);
-    try { await axios.post('/api/visitors', user); } catch (err) {}
+    try { 
+      const res = await axios.post('/api/visitors', user); 
+      user.uid = res.data.uid;
+      user.xp = res.data.xp || 45;
+    } catch (err) {}
     localStorage.setItem('travel_user', JSON.stringify(user));
 
     setTimeout(() => {
@@ -153,8 +159,15 @@ export default function Landing() {
     setStep(0);
   };
 
+  const tabs = [
+    { id: 'itineraries', label: 'ITINERARIES', icon: <Compass size={16} /> },
+    { id: 'buddy', label: 'TRAVEL BUDDY', icon: <Users size={16} /> },
+    { id: 'comparison', label: 'TRIP COMPARISON', icon: <ArrowRightLeft size={16} /> },
+    { id: 'about', label: 'ABOUT', icon: <Info size={16} /> }
+  ];
+
   return (
-    <div className="safari-portal-theme" style={{ width: '100%', minHeight: '100vh', position: 'relative', overflowX: 'hidden', overflowY: step === 0 ? 'hidden' : 'auto' }}>
+    <div className="safari-portal-theme" style={{ width: '100%', minHeight: '100vh', position: 'relative', overflowX: 'hidden', overflowY: activeTab === 'itineraries' && step === 0 ? 'hidden' : 'auto' }}>
       
       {/* Immersive Video Background Only */}
       <div className="video-bg">
@@ -194,12 +207,54 @@ export default function Landing() {
           fontWeight: 900,
           letterSpacing: '1px'
         }}>
-           <Settings size={14} /> {isMobile ? '' : 'AUTHORITY'}
+           <Settings size={14} /> {isMobile ? '' : 'ADMIN'}
         </Link>
       </div>
 
+      {/* Floating Navigation Matrix */}
+      {step > 0 && user.name && (
+        <div style={{ position: 'fixed', top: '32px', left: '50%', transform: 'translateX(-50%)', zIndex: 1200 }}>
+          <div className="glass-panel" style={{ 
+            padding: '6px', 
+            borderRadius: '50px', 
+            display: 'flex', 
+            gap: '4px', 
+            background: 'rgba(255,255,255,0.05)', 
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255,255,255,0.1)'
+          }}>
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '40px',
+                  border: 'none',
+                  background: activeTab === tab.id ? 'rgba(255,255,255,0.15)' : 'transparent',
+                  color: activeTab === tab.id ? 'white' : 'rgba(255,255,255,0.5)',
+                  fontSize: '0.7rem',
+                  fontWeight: 900,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'all 0.3s ease',
+                  boxShadow: activeTab === tab.id ? '0 4px 15px rgba(0,0,0,0.2)' : 'none'
+                }}
+              >
+                {tab.icon} {!isMobile && tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="container" style={{ position: 'relative', zIndex: 10, height: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}>
-        {step > 0 && step < 3 && (
+        {activeTab === 'itineraries' ? (
+          <>
+            {step > 0 && step < 3 && (
           <div style={{ position: 'absolute', top: '12%', left: '50%', transform: 'translateX(-50%)', width: '90%', textAlign: 'center', pointerEvents: 'none', zIndex: 100 }}>
             <div style={{ position: 'absolute', inset: '-100px 0', background: 'linear-gradient(to bottom, rgba(0,0,0,0.5), transparent)', pointerEvents: 'none', zIndex: -1 }} />
             <AnimatePresence mode="wait">
@@ -295,7 +350,7 @@ export default function Landing() {
                        <span style={{ fontSize: '0.8rem', fontWeight: 900, letterSpacing: '4px', color: 'rgba(255,255,255,0.6)' }}>TURBO AIRLINE</span>
                     </div>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.6rem', fontWeight: 900, border: '1px solid #d8f3dc', padding: '4px 12px', borderRadius: '50px', color: '#d8f3dc' }}>PRIORITY SYNTHESIS</span>
+                      <span style={{ fontSize: '0.6rem', fontWeight: 900, border: '1px solid #d8f3dc', padding: '4px 12px', borderRadius: '50px', color: '#d8f3dc' }}>FAST TRACK PASS</span>
                       <button 
                         type="button" 
                         onClick={() => { setUser({ name: '', company: '' }); localStorage.removeItem('travel_user'); }}
@@ -319,7 +374,7 @@ export default function Landing() {
                     </div>
                     <div style={{ flex: 1, textAlign: 'right' }}>
                        <div style={{ fontSize: '0.6rem', fontWeight: 900, color: '#ffffff' }}>TO</div>
-                       <div style={{ fontSize: '1.4rem', fontWeight: 900 }}>VIRTUAL EXPEDITION</div>
+                       <div style={{ fontSize: '1.4rem', fontWeight: 900 }}>NEW TRIP</div>
                     </div>
                   </div>
 
@@ -345,11 +400,11 @@ export default function Landing() {
                   <form onSubmit={handleInitSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
                       <div style={{ borderBottom: '1px solid rgba(255,255,255,0.2)', paddingBottom: '8px', position: 'relative' }}>
-                        <span style={{ position: 'absolute', top: '-15px', fontSize: '10px', color: '#ffffff', fontWeight: 800 }}>PASSENGER IDENTIFIER</span>
+                        <span style={{ position: 'absolute', top: '-15px', fontSize: '10px', color: '#ffffff', fontWeight: 800 }}>YOUR NAME</span>
                         <input className="modern-input" style={{ background: 'none', padding: 0, borderRadius: 0, border: 'none', fontSize: '1.2rem', color: '#ffffff', fontWeight: 800, width: '100%', outline: 'none' }} placeholder="Name" value={user.name} onChange={e => setUser({...user, name: e.target.value})} required />
                       </div>
                       <div style={{ borderBottom: '1px solid rgba(255,255,255,0.2)', paddingBottom: '8px', position: 'relative' }}>
-                        <span style={{ position: 'absolute', top: '-15px', fontSize: '10px', color: '#ffffff', fontWeight: 800 }}>ORIGIN POINT</span>
+                        <span style={{ position: 'absolute', top: '-15px', fontSize: '10px', color: '#ffffff', fontWeight: 800 }}>COMPANY</span>
                         <input className="modern-input" style={{ background: 'none', padding: 0, borderRadius: 0, border: 'none', fontSize: '1.2rem', color: '#ffffff', fontWeight: 800, width: '100%', outline: 'none' }} placeholder="Company Name" value={user.company} onChange={e => setUser({...user, company: e.target.value})} required />
                       </div>
                     </div>
@@ -369,7 +424,7 @@ export default function Landing() {
                         transition: 'all 0.4s ease'
                       }}
                     >
-                       {isCutting ? 'PROCESSING...' : 'INITIALIZE VOYAGE'} {isCutting ? <Scissors size={20} className="spin" /> : <ArrowRight size={22} />}
+                       {isCutting ? 'PROCESSING...' : 'START TRIP'} {isCutting ? <Scissors size={20} className="spin" /> : <ArrowRight size={22} />}
                     </button>
                   </form>
                 </motion.div>
@@ -415,7 +470,7 @@ export default function Landing() {
                        </div>
 
                        <div style={{ textAlign: 'left' }}>
-                          <div style={{ fontSize: '0.5rem', fontWeight: 900, color: 'var(--text-muted)' }}>FLIGHT SYNC</div>
+                          <div style={{ fontSize: '0.5rem', fontWeight: 900, color: 'var(--text-muted)' }}>STATUS</div>
                           <div style={{ fontSize: '0.8rem', fontWeight: 900 }}>VALIDATED</div>
                        </div>
                     </div>
@@ -500,7 +555,7 @@ export default function Landing() {
               </div>
 
               {/* Horizontal Scroll Interface */}
-              <div ref={scrollContainerRef} className="horizontal-scroll-section" style={{ height: '300vh', position: 'relative' }}>
+              <div ref={scrollContainerRef} className="horizontal-scroll-section" style={{ height: '150vh', position: 'relative' }}>
                 <div ref={horizontalRef} className="horizontal-content" style={{ display: 'flex', width: '300%', height: '100vh', position: 'sticky', top: 0, alignItems: 'center', willChange: 'transform' }}>
                   {[
                     { title: 'BUDGET ALLOCATION', icon: <Briefcase size={32} />, options: ['under 1000', 'under 2000', 'under 5000', 'over 5000'], type: 'budget' },
@@ -591,9 +646,38 @@ export default function Landing() {
             </motion.div>
           )}
         </AnimatePresence>
+          </>
+        ) : (
+          <AnimatePresence mode="wait">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -30 }}
+              className="glass-panel"
+              style={{
+                padding: '60px',
+                textAlign: 'center',
+                background: 'rgba(20, 35, 30, 0.4)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                backdropFilter: 'blur(30px)',
+                borderRadius: '40px',
+                maxWidth: '600px',
+                zIndex: 100
+              }}
+            >
+              <h2 className="title" style={{ fontSize: '2.5rem', color: 'white', marginBottom: '20px' }}>
+                {tabs.find(t => t.id === activeTab)?.label}
+              </h2>
+              <p style={{ color: 'rgba(216, 243, 220, 0.6)', lineHeight: '1.6' }}>
+                This section is coming soon.
+                Full telemetric arrays and interactive topologies will be deployed shortly.
+              </p>
+            </motion.div>
+          </AnimatePresence>
+        )}
       </div>
 
-      {step > 0 && user.name && (
+      {activeTab === 'itineraries' && step > 0 && user.name && (
         <motion.div 
           initial={{ y: 100 }} animate={{ y: 0 }}
           className="glass-panel"

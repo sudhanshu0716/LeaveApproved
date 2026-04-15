@@ -4,25 +4,51 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowRight, MapPin, Compass, Calendar, Briefcase, 
   ChevronRight, Award, Settings as SettingsIcon, LogOut, User,
-  Globe, Zap, Target, Wind, Activity, CheckCircle, PlaneTakeoff, Tag, Heart
+  Globe, Zap, Target, Wind, Activity, CheckCircle, PlaneTakeoff, Tag, Heart,
+  Users, ArrowRightLeft, Info
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import ItineraryFlow from './ItineraryFlow';
+import TravelBuddy from './TravelBuddy';
 
 gsap.registerPlugin(ScrollTrigger);
 
 export default function Dashboard() {
+  const [activeTab, setActiveTab] = useState('itineraries');
   const [places, setPlaces] = useState([]);
   const [selectedPlace, setSelectedPlace] = useState(null);
   const [step, setStep] = useState(1);
+  
+  const tabs = [
+    { id: 'itineraries', label: 'ITINERARIES', icon: <Compass size={16} /> },
+    { id: 'buddy', label: 'TRAVEL BUDDY', icon: <Users size={16} /> },
+    { id: 'comparison', label: 'TRIP COMPARISON', icon: <ArrowRightLeft size={16} /> },
+    { id: 'about', label: 'ABOUT', icon: <Info size={16} /> }
+  ];
   const [user, setUser] = useState({ name: '', company: '' });
   const [xp, setXp] = useState(45);
-  const [level, setLevel] = useState(3);
+  const levels = [
+    { name: 'Novice Nomad', xp: 0 },
+    { name: 'Occasional Backpacker', xp: 100 },
+    { name: 'Seasoned Traveler', xp: 200 },
+    { name: 'Global Voyager', xp: 300 },
+    { name: 'Elite Explorer', xp: 400 }
+  ];
+
+  const currentLevelIndex = Math.floor(xp / 100);
+  const currentLevel = currentLevelIndex + 1;
+  const progressXp = xp % 100;
+  const levelData = levels[Math.min(currentLevelIndex, levels.length - 1)];
+
   const [showProfile, setShowProfile] = useState(false);
   const [isUpdatingEmail, setIsUpdatingEmail] = useState(false);
   const navigate = useNavigate();
+
+  const handleXpGain = (amount) => {
+    setXp(prev => prev + amount);
+  };
 
   const scrollContainerRef = useRef(null);
   const horizontalRef = useRef(null);
@@ -32,7 +58,11 @@ export default function Dashboard() {
     if (!savedUser) {
       navigate('/');
     } else {
-      setUser(JSON.parse(savedUser));
+      const parsedUser = JSON.parse(savedUser);
+      setUser(parsedUser);
+      if (parsedUser.xp !== undefined) {
+        setXp(parsedUser.xp);
+      }
     }
   }, [navigate]);
 
@@ -44,7 +74,7 @@ export default function Dashboard() {
   }, [step]);
 
   useEffect(() => {
-    if (step === 1 && horizontalRef.current && scrollContainerRef.current) {
+    if (activeTab === 'itineraries' && step === 1 && horizontalRef.current && scrollContainerRef.current) {
         let ctx = gsap.context(() => {
             const panels = gsap.utils.toArray('.horizontal-panel');
             
@@ -56,7 +86,7 @@ export default function Dashboard() {
                 pin: true,
                 scrub: 1, // Smooth tactical glide
                 start: "top top",
-                end: () => `+=${horizontalRef.current.scrollWidth}`, // Anchor to physical content width
+                end: () => `+=${horizontalRef.current.scrollWidth / 2}`, // Anchor to physical content width (2x speed)
                 invalidateOnRefresh: true,
                 anticipatePin: 1
               }
@@ -70,10 +100,10 @@ export default function Dashboard() {
 
         return () => ctx.revert();
     }
-  }, [step]);
+  }, [step, activeTab]);
 
   const handleSelection = async (type, value) => {
-    setXp(prev => (prev + 15) % 100);
+    handleXpGain(15);
     try {
       // Suffix-Agnostic Normalization: Ensure API receives clean tactical values (no " rupees" or "km")
       const cleanValue = value.replace(' rupees', '').replace('km', '');
@@ -96,9 +126,9 @@ export default function Dashboard() {
       const updatedUser = { ...user, email: res.data.email };
       setUser(updatedUser);
       localStorage.setItem('travel_user', JSON.stringify(updatedUser));
-      alert("IDENTITY LOCKED: Global Email Anchor successfully synchronized.");
+      alert("Email updated successfully.");
     } catch (err) {
-      alert("SYNC ERROR: Critical failure in Identity Handshake.");
+      alert("Error saving email.");
     } finally {
       setIsUpdatingEmail(false);
     }
@@ -117,8 +147,46 @@ export default function Dashboard() {
          <div className="hud-grid" style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(216, 243, 220, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(216, 243, 220, 0.05) 1px, transparent 1px)', backgroundSize: '60px 60px', pointerEvents: 'none', opacity: 0.4 }} />
       </div>
 
+      {/* Floating Navigation Matrix */}
+      <div style={{ position: 'fixed', top: '32px', left: '50%', transform: 'translateX(-50%)', zIndex: 1200 }}>
+        <div className="glass-panel" style={{ 
+          padding: '6px', 
+          borderRadius: '50px', 
+          display: 'flex', 
+          gap: '4px', 
+          background: 'rgba(255,255,255,0.05)', 
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255,255,255,0.1)'
+        }}>
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              style={{
+                padding: '10px 20px',
+                borderRadius: '40px',
+                border: 'none',
+                background: activeTab === tab.id ? 'rgba(255,255,255,0.15)' : 'transparent',
+                color: activeTab === tab.id ? 'white' : 'rgba(255,255,255,0.5)',
+                fontSize: '0.7rem',
+                fontWeight: 900,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'all 0.3s ease',
+                boxShadow: activeTab === tab.id ? '0 4px 15px rgba(0,0,0,0.2)' : 'none'
+              }}
+            >
+              {tab.icon} {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* MISSION CONTROL HEADER - Restricted to Dashboard Selection */}
-      {step === 1 && (
+      {activeTab === 'itineraries' && step === 1 && (
         <div style={{ position: 'fixed', top: '0', left: '0', width: '100vw', zIndex: 1100, padding: '30px 60px 30px 40px', background: 'linear-gradient(to bottom, rgba(8,28,21,0.9), transparent)', boxSizing: 'border-box' }}>
             {/* GLOBAL LOGO INTEGRATION */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '30px' }}>
@@ -131,8 +199,8 @@ export default function Dashboard() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', width: '100%' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                   <span style={{ fontSize: '0.6rem', fontWeight: 900, color: '#d8f3dc', opacity: 0.6, letterSpacing: '4px' }}>MISSION CONTROL</span>
-                   <span className="title" style={{ fontSize: '1.4rem', color: 'white', letterSpacing: '1px' }}>VOYAGE DASHBOARD</span>
+                   <span style={{ fontSize: '0.6rem', fontWeight: 900, color: '#d8f3dc', opacity: 0.6, letterSpacing: '4px' }}>DASHBOARD</span>
+                   <span className="title" style={{ fontSize: '1.4rem', color: 'white', letterSpacing: '1px' }}>MY PLANNER</span>
                    <div style={{ color: '#ffb703', fontSize: '0.65rem', fontWeight: 900, marginTop: '4px', letterSpacing: '1px', opacity: 0.8 }}>
                       SCAN_MODE: TRIP_PARAMETERS // 10.0889° N, 77.0595° E
                    </div>
@@ -141,7 +209,7 @@ export default function Dashboard() {
 
               <div className="glass-panel" style={{ padding: '8px 8px 8px 18px', borderRadius: '50px', display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(15px)', border: '1px solid rgba(255,255,255,0.15)' }}>
                  <div style={{ textAlign: 'right' }}>
-                    <span style={{ fontSize: '0.5rem', fontWeight: 900, color: '#d8f3dc', opacity: 0.5 }}>ACTIVE_IDENT</span>
+                    <span style={{ fontSize: '0.5rem', fontWeight: 900, color: '#d8f3dc', opacity: 0.5 }}>LOGGED IN</span>
                     <div style={{ fontSize: '0.8rem', fontWeight: 900, color: 'white', letterSpacing: '1px' }}>{user.name?.split(' ')[0].toUpperCase() || 'VOID'}</div>
                  </div>
                  <button onClick={logout} style={{ padding: '12px 24px', borderRadius: '50px', background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', fontSize: '0.65rem', fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -153,15 +221,16 @@ export default function Dashboard() {
       )}
 
       <div style={{ position: 'relative', zIndex: 10 }}>
+        {activeTab === 'itineraries' ? (
         <AnimatePresence mode="wait">
           {step === 1 && (
             <motion.div key="step1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               
-              <div ref={scrollContainerRef} style={{ height: '300vh', position: 'relative' }}>
+              <div ref={scrollContainerRef} style={{ height: '150vh', position: 'relative' }}>
                 <div ref={horizontalRef} style={{ display: 'flex', width: 'fit-content', height: '100vh', alignItems: 'center', willChange: 'transform' }}>
                   {[
                     { title: 'BUDGET ALLOCATION', code: 'BGT-04', icon: <Briefcase size={32} />, options: ['under 1000 rupees', 'under 2000 rupees', 'under 5000 rupees', 'over 5000 rupees'], type: 'budget', desc: 'Financial resource mapping for the expedition.' },
-                    { title: 'MISSION DURATION', code: 'DUR-01', icon: <Calendar size={32} />, options: ['1 day', '2 day', '3 day', '3+ days'], type: 'days', desc: 'Temporal window for target destination operations.' },
+                    { title: 'TRIP DURATION', code: 'DUR-01', icon: <Calendar size={32} />, options: ['1 day', '2 day', '3 day', '3+ days'], type: 'days', desc: 'Temporal window for target destination operations.' },
                     { title: 'PROXIMITY RADIUS', code: 'RDU-09', icon: <MapPin size={32} />, options: ['under 100km', 'under 250km', 'under 500km', 'over 500km'], type: 'distance', desc: 'Geospatial search diameter from origin point.' }
                   ].map((cat, i) => (
                     <section key={i} className="horizontal-panel" style={{ width: '100vw', flexShrink: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', padding: '160px 0 100px 0' }}>
@@ -219,7 +288,7 @@ export default function Dashboard() {
 
                               <div style={{ marginTop: '30px', paddingTop: '25px', borderTop: '2px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                    <div style={{ fontSize: '0.5rem', color: '#d8f3dc', opacity: 0.2, fontWeight: 900, letterSpacing: '1px' }}>TERMS // NON-TRANSFERABLE VOYAGE ACCESS</div>
+                                    <div style={{ fontSize: '0.5rem', color: '#d8f3dc', opacity: 0.2, fontWeight: 900, letterSpacing: '1px' }}>TERMS // NON-TRANSFERABLE TRIP ACCESS</div>
                                     <div style={{ fontSize: '0.5rem', color: '#d8f3dc', opacity: 0.2, fontWeight: 900, letterSpacing: '1px' }}>AUTHENTICATION // SAFARI_PORTAL_ROOT_01</div>
                                  </div>
                                  <div className="barcode" style={{ height: '30px', width: '130px', background: 'repeating-linear-gradient(90deg, rgba(255,255,255,0.15), rgba(255,255,255,0.15) 2px, transparent 2px, transparent 6px)', opacity: 0.3 }} />
@@ -289,7 +358,7 @@ export default function Dashboard() {
                     
                     <div style={{ marginTop: '48px', paddingTop: '28px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#ffb703', fontSize: '0.85rem', fontWeight: 900, letterSpacing: '1px' }}>
-                          DEPLOY MISSION <ArrowRight size={18} />
+                          CREATE TRIP <ArrowRight size={18} />
                        </div>
                     </div>
                   </motion.div>
@@ -304,7 +373,7 @@ export default function Dashboard() {
                  <button onClick={() => setStep(2)} className="glass-btn" style={{ padding: '12px 28px', borderRadius: '50px', color: 'white', background: 'rgba(255,255,255,0.1)' }}>
                     ⇠ BACK TO BLUEPRINTS
                  </button>
-                 <div style={{ fontSize: '0.9rem', fontWeight: 900, color: '#ffb703', letterSpacing: '2px' }}>MISSION: {selectedPlace.name.toUpperCase()}</div>
+                 <div style={{ fontSize: '0.9rem', fontWeight: 900, color: '#ffb703', letterSpacing: '2px' }}>TRIP: {selectedPlace.name.toUpperCase()}</div>
               </div>
               <div className="glass-panel" style={{ background: 'white', borderRadius: '48px', padding: '24px', overflow: 'hidden', boxShadow: '0 50px 150px rgba(0,0,0,0.7)' }}>
                  <ItineraryFlow place={selectedPlace} />
@@ -312,6 +381,42 @@ export default function Dashboard() {
             </motion.div>
           )}
         </AnimatePresence>
+        ) : (
+          <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <AnimatePresence mode="wait">
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -30 }} 
+                className={activeTab === 'buddy' ? '' : 'glass-panel'}
+                style={ activeTab === 'buddy' ? { width: '100%', display: 'flex', justifyContent: 'center' } : {
+                  padding: '60px',
+                  textAlign: 'center',
+                  background: 'rgba(20, 35, 30, 0.4)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  backdropFilter: 'blur(30px)',
+                  borderRadius: '40px',
+                  maxWidth: '600px',
+                  zIndex: 100
+                }}
+              >
+                {activeTab === 'buddy' ? (
+                  <TravelBuddy user={user} onXpGain={handleXpGain} />
+                ) : (
+                  <>
+                    <h2 className="title" style={{ fontSize: '2.5rem', color: 'white', marginBottom: '20px' }}>
+                      {tabs.find(t => t.id === activeTab)?.label}
+                    </h2>
+                    <p style={{ color: 'rgba(216, 243, 220, 0.6)', lineHeight: '1.6' }}>
+                      This section is coming soon.
+                      Full telemetric arrays and interactive topologies will be deployed shortly.
+                    </p>
+                  </>
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        )}
       </div>
 
       {step !== 3 && (
@@ -347,28 +452,28 @@ export default function Dashboard() {
                     color: '#081c15',
                     boxShadow: '0 0 20px rgba(255, 183, 3, 0.4)'
                   }}>
-                    <Award size={24} />
+                    <span style={{ fontSize: '1.2rem' }}>{levelData.icon}</span>
                   </div>
                   <div style={{ position: 'absolute', inset: '-4px', border: '1px solid #ffb703', borderRadius: '14px', opacity: 0.3, animation: 'pulse 2s infinite' }} />
               </div>
 
               <div style={{ textAlign: 'left' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '0.6rem', fontWeight: 900, color: '#ffb703', letterSpacing: '2px' }}>RANK 0{level}</span>
+                    <span style={{ fontSize: '0.6rem', fontWeight: 900, color: '#ffb703', letterSpacing: '2px' }}>LEVEL 0{currentLevel}</span>
                     <span style={{ width: '4px', height: '4px', background: 'rgba(216, 243, 220, 0.3)', borderRadius: '50%' }} />
-                    <span style={{ fontSize: '0.6rem', fontWeight: 900, color: '#d8f3dc', opacity: 0.6, letterSpacing: '1px' }}>VOYAGER_PROTOCOL</span>
+                    <span style={{ fontSize: '0.6rem', fontWeight: 900, color: '#d8f3dc', opacity: 0.6, letterSpacing: '1px' }}>TRAVELER</span>
                   </div>
-                  <div className="title" style={{ fontSize: '1.1rem', color: 'white', letterSpacing: '1px', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>NOVICE NOMAD</div>
+                  <div className="title" style={{ fontSize: '1.1rem', color: 'white', letterSpacing: '1px', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>{levelData.name.toUpperCase()}</div>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.55rem', fontWeight: 900, color: '#d8f3dc', opacity: 0.5 }}>XP_PROGRESS</span>
-                    <span style={{ fontSize: '0.55rem', fontWeight: 900, color: '#ffb703' }}>{xp} / 100</span>
+                    <span style={{ fontSize: '0.55rem', fontWeight: 900, color: '#d8f3dc', opacity: 0.5 }}>XP PROGRESS</span>
+                    <span style={{ fontSize: '0.55rem', fontWeight: 900, color: '#ffb703' }}>{progressXp} / 100</span>
                   </div>
                   <div style={{ width: '120px', height: '6px', background: 'rgba(0,0,0,0.5)', borderRadius: '10px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)' }}>
                     <motion.div 
-                      animate={{ width: `${xp}%` }} 
+                      animate={{ width: `${progressXp}%` }} 
                       style={{ 
                         height: '100%', 
                         background: 'linear-gradient(90deg, #ffb703, #fb8500)', 
@@ -406,22 +511,22 @@ export default function Dashboard() {
                      <User size={50} color="#ffb703" />
                   </div>
                   <div>
-                     <span style={{ fontSize: '0.7rem', fontWeight: 900, color: '#ffb703', letterSpacing: '4px' }}>IDENTIFIED_TRAVELER</span>
+                     <span style={{ fontSize: '0.7rem', fontWeight: 900, color: '#ffb703', letterSpacing: '4px' }}>USER PROFILE</span>
                      <h2 className="title" style={{ fontSize: '2.5rem', color: 'white', margin: 0 }}>{user.name}</h2>
                      <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginTop: '10px' }}>
-                        <div style={{ padding: '6px 12px', background: 'rgba(255,183,3,0.1)', border: '1px solid #ffb703', borderRadius: '8px', color: '#ffb703', fontSize: '0.6rem', fontWeight: 900 }}>RANK 03 // VOYAGER</div>
-                        <div style={{ color: '#d8f3dc', opacity: 0.5, fontSize: '0.7rem', fontWeight: 600 }}>SECTOR_ID: {user.uid || 'SCR-AUTH-001'}</div>
+                        <div style={{ padding: '6px 12px', background: 'rgba(255,183,3,0.1)', border: '1px solid #ffb703', borderRadius: '8px', color: '#ffb703', fontSize: '0.6rem', fontWeight: 900 }}>LEVEL 03 // TRAVELER</div>
+                        <div style={{ color: '#d8f3dc', opacity: 0.5, fontSize: '0.7rem', fontWeight: 600 }}>USER_ID: {user.uid || 'NEW-USER-001'}</div>
                      </div>
                   </div>
                </div>
 
                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', marginBottom: '40px' }}>
                   <div style={{ padding: '24px', background: 'rgba(255,255,255,0.03)', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                     <div style={{ fontSize: '0.6rem', color: '#ffb703', fontWeight: 900, letterSpacing: '1px', marginBottom: '15px' }}>STATISTICAL_PULSE</div>
+                     <div style={{ fontSize: '0.6rem', color: '#ffb703', fontWeight: 900, letterSpacing: '1px', marginBottom: '15px' }}>STATISTICS</div>
                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         {[
-                          { label: 'Expeditions Logged', val: '12' },
-                          { label: 'Countries Mapped', val: '04' },
+                          { label: 'Trips Logged', val: '12' },
+                          { label: 'Countries Visited', val: '04' },
                           { label: 'Office Escapes', val: '08' }
                         ].map(s => (
                           <div key={s.label} style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -432,24 +537,24 @@ export default function Dashboard() {
                      </div>
                   </div>
                   <div style={{ padding: '24px', background: 'rgba(255,255,255,0.03)', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                     <div style={{ fontSize: '0.6rem', color: '#ffb703', fontWeight: 900, letterSpacing: '1px', marginBottom: '15px' }}>RANK_TRAJECTORY</div>
+                     <div style={{ fontSize: '0.6rem', color: '#ffb703', fontWeight: 900, letterSpacing: '1px', marginBottom: '15px' }}>APP ACTIVITY</div>
                      <div style={{ height: '60px', width: '100%', display: 'flex', alignItems: 'flex-end', gap: '4px' }}>
                         {[40, 60, 45, 80, 55, 90, 70].map((h, i) => (
                           <div key={i} style={{ flex: 1, height: `${h}%`, background: i === 5 ? '#ffb703' : 'rgba(216, 243, 220, 0.2)', borderRadius: '2px' }} />
                         ))}
                      </div>
-                     <div style={{ fontSize: '0.55rem', color: '#d8f3dc', opacity: 0.4, marginTop: '8px', textAlign: 'center' }}>ACTIVITY_PEAK: DETECTED</div>
+                     <div style={{ fontSize: '0.55rem', color: '#d8f3dc', opacity: 0.4, marginTop: '8px', textAlign: 'center' }}>ACTIVE THIS WEEK</div>
                   </div>
                </div>
 
                <div>
-                 <div style={{ fontSize: '0.6rem', color: '#ffb703', fontWeight: 900, letterSpacing: '1px', marginBottom: '20px' }}>ACHIEVEMENT_STAMPS</div>
+                 <div style={{ fontSize: '0.6rem', color: '#ffb703', fontWeight: 900, letterSpacing: '1px', marginBottom: '20px' }}>ACHIEVEMENTS</div>
                  <div style={{ display: 'flex', gap: '20px' }}>
                     {[
                       { icon: <Target size={18}/>, color: '#ffb703', label: 'BUDGET_MASTER' },
                       { icon: <Globe size={18}/>, color: '#4cc9f0', label: 'GLOBAL_SCOUT' },
-                      { icon: <Zap size={18}/>, color: '#f72585', label: 'NIMBLE_NOMAD' },
-                      { icon: <Briefcase size={18}/>, color: '#d8f3dc', label: 'OFFICE_ESCAPE_ELITE' }
+                      { icon: <Zap size={18}/>, color: '#f72585', label: 'FAST_PLANNER' },
+                      { icon: <Briefcase size={18}/>, color: '#d8f3dc', label: 'OFFICE_ESCAPE' }
                     ].map(a => (
                       <div key={a.label} style={{ width: '50px', height: '50px', borderRadius: '15px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: a.color }}>
                          {a.icon}
@@ -458,13 +563,13 @@ export default function Dashboard() {
                  </div>
                </div>
 
-               {/* GLOBAL IDENTITY ANCHOR TERMINAL */}
+               {/* ACCOUNT SETTINGS TERMINAL */}
                <div style={{ marginTop: '40px', padding: '30px', background: 'rgba(255,183,3,0.05)', borderRadius: '30px', border: '1px solid rgba(255,183,3,0.2)' }}>
-                  <div style={{ fontSize: '0.65rem', color: '#ffb703', fontWeight: 900, letterSpacing: '2px', marginBottom: '20px' }}>GLOBAL_IDENTITY_ANCHOR</div>
+                  <div style={{ fontSize: '0.65rem', color: '#ffb703', fontWeight: 900, letterSpacing: '2px', marginBottom: '20px' }}>ACCOUNT SETTINGS</div>
                   <div style={{ display: 'flex', gap: '15px' }}>
                      <input 
                         type="email" 
-                        placeholder="connect@voyager.link"
+                        placeholder="your.email@example.com"
                         value={user.email || ''}
                         onChange={(e) => setUser({...user, email: e.target.value})}
                         style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', padding: '15px 20px', color: 'white', fontSize: '0.9rem', outline: 'none' }}
@@ -474,11 +579,11 @@ export default function Dashboard() {
                         disabled={isUpdatingEmail}
                         style={{ padding: '0 25px', borderRadius: '14px', background: '#ffb703', color: '#081c15', fontWeight: 900, fontSize: '0.75rem', cursor: 'pointer', border: 'none', display: 'flex', alignItems: 'center', gap: '10px', transition: 'all 0.3s ease' }}
                      >
-                        {isUpdatingEmail ? 'SYNCING...' : 'LOCK IDENTITY'}
+                        {isUpdatingEmail ? 'SAVING...' : 'SAVE EMAIL'}
                         {!isUpdatingEmail && <CheckCircle size={16} />}
                      </button>
                   </div>
-                  <p style={{ margin: '15px 0 0 0', fontSize: '0.65rem', color: '#d8f3dc', opacity: 0.4, fontWeight: 600 }}>Linking your email secures your missions across all planetary sectors.</p>
+                  <p style={{ margin: '15px 0 0 0', fontSize: '0.65rem', color: '#d8f3dc', opacity: 0.4, fontWeight: 600 }}>Linking your email saves your trips across devices.</p>
                </div>
             </motion.div>
           </motion.div>

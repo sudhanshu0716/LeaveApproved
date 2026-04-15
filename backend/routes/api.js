@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const UserEntry = require('../models/UserEntry');
 const Place = require('../models/Place');
+const TripListing = require('../models/TripListing');
 
 // Admin: Secure Login
 router.post('/admin/login', (req, res) => {
@@ -313,6 +314,134 @@ router.get('/admin/social-stats', async (req, res) => {
       .slice(0, 10);
 
     res.json({ bestPlaces, latestReviews });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// TRAVEL BUDDY API
+
+// 1. List a New Trip
+router.post('/buddy/trips', async (req, res) => {
+  try {
+    const { creatorUid, creatorName, creatorCompany, origin, destination, budget, days, date } = req.body;
+    const newTrip = new TripListing({
+      creatorUid, creatorName, creatorCompany, origin, destination, budget, days, date
+    });
+    
+    // Add XP for creating a trip (e.g. 5 XP)
+    await UserEntry.findOneAndUpdate({ uid: creatorUid }, { $inc: { xp: 5 } });
+    
+    await newTrip.save();
+    res.status(201).json(newTrip);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 2. Fetch Trips for Feed (Excluding self)
+router.get('/buddy/trips', async (req, res) => {
+  try {
+    const { origin, uid } = req.query;
+    let query = { status: 'listed' };
+    
+    if (origin) {
+      query.origin = new RegExp(origin, 'i');
+    }
+    if (uid) {
+      query.creatorUid = { $ne: uid };
+    }
+    
+    const trips = await TripListing.find(query).sort({ date: 1 });
+    res.json(trips);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 3. Request a Match
+router.post('/buddy/trips/:id/match', async (req, res) => {
+  try {
+    const { requesterUid, requesterName, requesterCompany } = req.body;
+    const trip = await TripListing.findById(req.params.id);
+    if (!trip) return res.status(404).json({ error: "Trip not found" });
+    
+    // Check if duplicate request
+    if (trip.matches.some(m => m.requesterUid === requesterUid)) {
+      return res.status(400).json({ error: "Match sequence already initiated" });
+    }
+    
+    trip.matches.push({ requesterUid, requesterName, requesterCompany, status: 'pending' });
+    await trip.save();
+    res.json(trip);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 4. Accept a Match & Delete Entry (Start Trip)
+router.post('/buddy/trips/:id/accept-match', async (req, res) => {
+  try {
+    const { acceptedUid } = req.body;
+    const trip = await TripListing.findById(req.params.id);
+    if (!trip) return res.status(404).json({ error: "Trip not found" });
+    
+    // "Delete the entry of this trip when the trip got started" -> we can remove it entirely, 
+    // or just mark the match as accepted and send response, then frontend handles chat.
+    // Assuming UI keeps it temporarily for chat logic, we'll mark it 'started'.
+    trip.status = 'started';
+    const matchDetails = trip.matches.find(m => m.requesterUid === acceptedUid);
+    if (matchDetails) {
+      matchDetails.status = 'accepted';
+      matchDetails.chatActive = true;
+    }
+    
+    // "Also add points in the points system" -> 15 XP for both matching parties
+    await UserEntry.findOneAndUpdate({ uid: trip.creatorUid }, { $inc: { xp: 15 } });
+    await UserEntry.findOneAndUpdate({ uid: acceptedUid }, { $inc: { xp: 15 } });
+    
+    await trip.save();
+    res.json({ success: true, message: "Tripped started! Points distributed.", trip });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 5. Get My Trips (Created and Matches Requested)
+router.get('/buddy/my-trips', async (req, res) => {
+  try {
+    const { uid } = req.query;
+    // Created by me
+    const created = await TripListing.find({ creatorUid: uid });
+    // Requested by me
+    const requested = await TripListing.find({ "matches.requesterUid": uid });
+    
+    res.json({ created, requested });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Chat Endpoints
+router.post('/buddy/trips/:id/chat', async (req, res) => {
+  try {
+    const { senderUid, senderName, text } = req.body;
+    const trip = await TripListing.findById(req.params.id);
+    if (!trip) return res.status(404).json({ error: "Trip not found" });
+    
+    trip.messages.push({ senderUid, senderName, text });
+    await trip.save();
+    res.json({ success: true, message: trip.messages[trip.messages.length - 1] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/buddy/trips/:id/chat', async (req, res) => {
+  try {
+    const trip = await TripListing.findById(req.params.id);
+    if (!trip) return res.status(404).json({ error: "Trip not found" });
+    res.json(trip.messages || []);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

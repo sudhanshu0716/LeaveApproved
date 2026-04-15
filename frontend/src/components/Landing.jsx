@@ -170,6 +170,16 @@ export default function Landing() {
         />
       </div>
 
+      {/* Global Brand Header - Top Left Corner */}
+      <div style={{ position: 'fixed', top: '32px', left: '32px', zIndex: 1000, display: 'flex', alignItems: 'center', gap: '15px' }}>
+         <div style={{ background: 'rgba(216, 243, 220, 0.1)', padding: '10px', borderRadius: '14px', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <Compass size={28} color="#ffb703" style={{ filter: 'drop-shadow(0 0 10px rgba(255,183,3,0.4))' }} />
+         </div>
+         <h1 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 950, letterSpacing: '3px', color: 'white', textShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
+            LEAVE<span style={{ color: '#d8f3dc' }}>APPROVED</span>
+         </h1>
+      </div>
+
       <div style={{ position: 'fixed', top: '24px', right: isMobile ? '60px' : '24px', zIndex: 1000 }}>
         <Link to="/admin" className="glass-btn" style={{ 
           padding: '10px 16px', 
@@ -266,7 +276,7 @@ export default function Landing() {
                 
                 {/* Main Pass Section (Left Half) */}
                 <motion.div 
-                  className="glass-panel"
+                  className="glass-panel gold-shimmer-panel"
                   animate={isCutting ? { x: -10, filter: 'brightness(1.1)' } : {}}
                   style={{ 
                     flex: '2', 
@@ -280,9 +290,9 @@ export default function Landing() {
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                       <Settings size={22} color="#ffb703" />
-                       <span style={{ fontSize: '1rem', fontWeight: 950, letterSpacing: '2px', color: 'white' }}>LEAVE<span style={{ color: '#d8f3dc' }}>APPROVED</span></span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                       <Plane size={20} color="rgba(216, 243, 220, 0.4)" />
+                       <span style={{ fontSize: '0.8rem', fontWeight: 900, letterSpacing: '4px', color: 'rgba(255,255,255,0.6)' }}>TURBO AIRLINE</span>
                     </div>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                       <span style={{ fontSize: '0.6rem', fontWeight: 900, border: '1px solid #d8f3dc', padding: '4px 12px', borderRadius: '50px', color: '#d8f3dc' }}>PRIORITY SYNTHESIS</span>
@@ -299,7 +309,7 @@ export default function Landing() {
 
                   <div style={{ display: 'flex', gap: '48px', marginBottom: '32px', color: 'white' }}>
                     <div style={{ flex: 1 }}>
-                       <div style={{ fontSize: '0.6rem', fontWeight: 900, color: 'var(--text-muted)' }}>FROM</div>
+                       <div style={{ fontSize: '0.6rem', fontWeight: 900, color: '#ffffff' }}>FROM</div>
                        <div style={{ fontSize: '1.4rem', fontWeight: 900 }}>CORP TOWER</div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', opacity: 0.3 }}>
@@ -308,26 +318,26 @@ export default function Landing() {
                        <div style={{ width: '40px', height: '1px', background: 'white' }} />
                     </div>
                     <div style={{ flex: 1, textAlign: 'right' }}>
-                       <div style={{ fontSize: '0.6rem', fontWeight: 900, color: 'var(--text-muted)' }}>TO</div>
+                       <div style={{ fontSize: '0.6rem', fontWeight: 900, color: '#ffffff' }}>TO</div>
                        <div style={{ fontSize: '1.4rem', fontWeight: 900 }}>VIRTUAL EXPEDITION</div>
                     </div>
                   </div>
 
                   <div style={{ display: 'flex', gap: '40px', marginBottom: '40px', padding: '16px', borderRadius: '16px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
                     <div>
-                       <div style={{ fontSize: '0.5rem', fontWeight: 900, color: 'var(--text-muted)' }}>FLIGHT</div>
+                       <div style={{ fontSize: '0.5rem', fontWeight: 900, color: '#ffffff' }}>FLIGHT</div>
                        <div style={{ fontSize: '0.9rem', fontWeight: 900 }}>TR-2024</div>
                     </div>
                     <div>
-                       <div style={{ fontSize: '0.5rem', fontWeight: 900, color: 'var(--text-muted)' }}>BOARDING</div>
+                       <div style={{ fontSize: '0.5rem', fontWeight: 900, color: '#ffffff' }}>BOARDING</div>
                        <div style={{ fontSize: '0.9rem', fontWeight: 900, color: 'var(--accent-gold)' }}>NOW</div>
                     </div>
                     <div>
-                       <div style={{ fontSize: '0.5rem', fontWeight: 900, color: 'var(--text-muted)' }}>CLASS</div>
+                       <div style={{ fontSize: '0.5rem', fontWeight: 900, color: '#ffffff' }}>CLASS</div>
                        <div style={{ fontSize: '0.8rem', fontWeight: 900 }}>EXECUTIVE</div>
                     </div>
                     <div style={{ marginLeft: 'auto' }}>
-                       <div style={{ fontSize: '0.5rem', fontWeight: 900, color: 'var(--text-muted)' }}>GATE</div>
+                       <div style={{ fontSize: '0.5rem', fontWeight: 900, color: '#ffffff' }}>GATE</div>
                        <div style={{ fontSize: '0.9rem', fontWeight: 900 }}>B-12</div>
                     </div>
                   </div>
@@ -335,12 +345,12 @@ export default function Landing() {
                   <form onSubmit={handleInitSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
                       <div style={{ borderBottom: '1px solid rgba(255,255,255,0.2)', paddingBottom: '8px', position: 'relative' }}>
-                        <span style={{ position: 'absolute', top: '-15px', fontSize: '10px', color: 'rgba(255,255,255,0.85)', fontWeight: 800 }}>PASSENGER IDENTIFIER</span>
-                        <input className="modern-input" style={{ background: 'none', padding: 0, borderRadius: 0, border: 'none', fontSize: '1.2rem', color: 'white' }} placeholder="Your Name" value={user.name} onChange={e => setUser({...user, name: e.target.value})} required />
+                        <span style={{ position: 'absolute', top: '-15px', fontSize: '10px', color: '#ffffff', fontWeight: 800 }}>PASSENGER IDENTIFIER</span>
+                        <input className="modern-input" style={{ background: 'none', padding: 0, borderRadius: 0, border: 'none', fontSize: '1.2rem', color: '#ffffff', fontWeight: 800, width: '100%', outline: 'none' }} placeholder="Name" value={user.name} onChange={e => setUser({...user, name: e.target.value})} required />
                       </div>
                       <div style={{ borderBottom: '1px solid rgba(255,255,255,0.2)', paddingBottom: '8px', position: 'relative' }}>
-                        <span style={{ position: 'absolute', top: '-15px', fontSize: '10px', color: 'rgba(255,255,255,0.85)', fontWeight: 800 }}>ORIGIN POINT</span>
-                        <input className="modern-input" style={{ background: 'none', padding: 0, borderRadius: 0, border: 'none', fontSize: '1.2rem', color: 'white' }} placeholder="Tech Corp" value={user.company} onChange={e => setUser({...user, company: e.target.value})} required />
+                        <span style={{ position: 'absolute', top: '-15px', fontSize: '10px', color: '#ffffff', fontWeight: 800 }}>ORIGIN POINT</span>
+                        <input className="modern-input" style={{ background: 'none', padding: 0, borderRadius: 0, border: 'none', fontSize: '1.2rem', color: '#ffffff', fontWeight: 800, width: '100%', outline: 'none' }} placeholder="Company Name" value={user.company} onChange={e => setUser({...user, company: e.target.value})} required />
                       </div>
                     </div>
                     <button 

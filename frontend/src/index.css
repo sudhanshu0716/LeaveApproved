@@ -161,9 +161,14 @@ body, html {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: saturate(1.2) contrast(1.1) brightness(0.8);
+  filter: saturate(1.2) contrast(1.1) brightness(0.6);
   animation: videoScale 60s linear infinite;
   image-rendering: high-quality;
+}
+
+/* GLOBAL CLARITY OVERRIDE */
+.safari-portal-theme, body {
+  text-shadow: 0 2px 10px rgba(0,0,0,0.5);
 }
 
 @keyframes videoScale {
@@ -308,4 +313,42 @@ body, html {
 
 .react-flow__handle {
   cursor: crosshair !important;
+}
+
+/* GOLDEN SHIMMER PROTOCOL */
+@keyframes goldShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.gold-shimmer-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.gold-shimmer-panel::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg, 
+    transparent, 
+    rgba(255, 183, 3, 0.03), 
+    rgba(255, 183, 3, 0.08), 
+    rgba(255, 183, 3, 0.03), 
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: goldShimmer 6s infinite linear;
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* PLACEHOLDER LUMINANCE OVERRIDE */
+.modern-input::placeholder {
+  color: rgba(255, 255, 255, 0.8) !important;
+  opacity: 1 !important;
 }

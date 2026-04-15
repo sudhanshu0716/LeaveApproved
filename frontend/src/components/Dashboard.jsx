@@ -13,6 +13,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import ItineraryFlow from './ItineraryFlow';
 import TravelBuddy from './TravelBuddy';
 import TripComparison from './TripComparison';
+import About from './About';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -386,9 +387,9 @@ export default function Dashboard() {
           <div style={{ 
             minHeight: '100vh', 
             display: 'flex', 
-            alignItems: (activeTab === 'buddy' || activeTab === 'comparison') ? 'flex-start' : 'center', 
+            alignItems: (activeTab === 'buddy' || activeTab === 'comparison' || activeTab === 'about') ? 'flex-start' : 'center', 
             justifyContent: 'center',
-            paddingTop: (activeTab === 'buddy' || activeTab === 'comparison') ? '120px' : '0',
+            paddingTop: (activeTab === 'buddy' || activeTab === 'comparison' || activeTab === 'about') ? '120px' : '0',
             paddingBottom: '100px'
           }}>
             <AnimatePresence mode="wait">
@@ -396,8 +397,8 @@ export default function Dashboard() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -30 }} 
-                className={(activeTab === 'buddy' || activeTab === 'comparison') ? '' : 'glass-panel'}
-                style={ (activeTab === 'buddy' || activeTab === 'comparison') ? { width: '100%', display: 'flex', justifyContent: 'center', zIndex: 100 } : {
+                className={(activeTab === 'buddy' || activeTab === 'comparison' || activeTab === 'about') ? '' : 'glass-panel'}
+                style={ (activeTab === 'buddy' || activeTab === 'comparison' || activeTab === 'about') ? { width: '100%', display: 'flex', justifyContent: 'center', zIndex: 100 } : {
                   padding: '60px',
                   textAlign: 'center',
                   background: 'rgba(20, 35, 30, 0.4)',
@@ -412,6 +413,8 @@ export default function Dashboard() {
                   <TravelBuddy user={user} onXpGain={handleXpGain} />
                 ) : activeTab === 'comparison' ? (
                   <TripComparison />
+                ) : activeTab === 'about' ? (
+                  <About />
                 ) : (
                   <>
                     <h2 className="title" style={{ fontSize: '2.5rem', color: 'white', marginBottom: '20px' }}>

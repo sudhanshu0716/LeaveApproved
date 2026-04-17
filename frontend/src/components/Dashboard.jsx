@@ -5,7 +5,7 @@ import {
   ArrowRight, Compass, Briefcase, ChevronRight,
   Settings as SettingsIcon, LogOut, User,
   Globe, Zap, Target, CheckCircle, PlaneTakeoff, Heart,
-  Users, ArrowRightLeft, Info
+  Users, ArrowRightLeft, Info, FileText
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ItineraryFlow from './ItineraryFlow';
@@ -30,6 +30,7 @@ export default function Dashboard() {
     { id: 'itineraries', label: 'ITINERARIES', icon: <Compass size={16} /> },
     { id: 'buddy',       label: 'BUDDY',       icon: <Users size={16} /> },
     { id: 'comparison',  label: 'COMPARE',     icon: <ArrowRightLeft size={16} /> },
+    { id: 'contribute',  label: 'CONTRIBUTE',  icon: <FileText size={16} /> },
     { id: 'about',       label: 'ABOUT',       icon: <Info size={16} /> },
   ];
 
@@ -674,9 +675,10 @@ export default function Dashboard() {
               <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -30 }}
                 style={{ width: '100%', display: 'flex', justifyContent: 'center', zIndex: 100 }}>
-                {activeTab === 'buddy'      ? <TravelBuddy user={user} onXpGain={handleXpGain} />
-                  : activeTab === 'comparison' ? <TripComparison />
-                  : activeTab === 'about'      ? <About />
+                {activeTab === 'buddy'        ? <TravelBuddy user={user} onXpGain={handleXpGain} />
+                  : activeTab === 'contribute'  ? <TravelBuddy user={user} onXpGain={handleXpGain} initialView="contribute" />
+                  : activeTab === 'comparison'  ? <TripComparison />
+                  : activeTab === 'about'        ? <About />
                   : null}
               </motion.div>
             </AnimatePresence>

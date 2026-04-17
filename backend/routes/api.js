@@ -1,8 +1,81 @@
 const express = require('express');
 const router = express.Router();
+const bcrypt = require('bcryptjs');
 const UserEntry = require('../models/UserEntry');
 const Place = require('../models/Place');
 const TripListing = require('../models/TripListing');
+
+// ── Password strength validator ──────────────────────────────────
+function validatePassword(password) {
+  const checks = [
+    { ok: password.length >= 8,               msg: 'At least 8 characters' },
+    { ok: /[A-Z]/.test(password),             msg: 'At least one uppercase letter (A-Z)' },
+    { ok: /[a-z]/.test(password),             msg: 'At least one lowercase letter (a-z)' },
+    { ok: /[0-9]/.test(password),             msg: 'At least one number (0-9)' },
+    { ok: /[^A-Za-z0-9]/.test(password),      msg: 'At least one special character (!@#$%...)' },
+  ];
+  const failed = checks.filter(c => !c.ok).map(c => c.msg);
+  return failed; // empty array = all passed
+}
+
+// ── AUTH: Register ──────────────────────────────────────────────
+router.post('/auth/register', async (req, res) => {
+  try {
+    const { username, email, password, company } = req.body;
+
+    if (!username || !email || !password || !company) {
+      return res.status(400).json({ error: 'All fields are required.' });
+    }
+
+    const pwdErrors = validatePassword(password);
+    if (pwdErrors.length > 0) {
+      return res.status(400).json({ error: 'Password too weak: ' + pwdErrors[0] });
+    }
+
+    if (username.length < 3) {
+      return res.status(400).json({ error: 'Username must be at least 3 characters.' });
+    }
+
+    const exists = await UserEntry.findOne({ $or: [{ email: email.toLowerCase() }, { username }] });
+    if (exists) {
+      const field = exists.email === email.toLowerCase() ? 'Email' : 'Username';
+      return res.status(409).json({ error: `${field} is already taken.` });
+    }
+
+    const hashed = await bcrypt.hash(password, 12);
+    const uid = `VOY-${Math.random().toString(36).substr(2, 4).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const user = new UserEntry({ username, email: email.toLowerCase(), password: hashed, company, uid });
+    await user.save();
+
+    res.status(201).json({ uid: user.uid, username: user.username, company: user.company, xp: user.xp });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── AUTH: Login ─────────────────────────────────────────────────
+router.post('/auth/login', async (req, res) => {
+  try {
+    const { login, password } = req.body; // login = username or email
+
+    if (!login || !password) {
+      return res.status(400).json({ error: 'Username/email and password are required.' });
+    }
+
+    const user = await UserEntry.findOne({
+      $or: [{ username: login }, { email: login.toLowerCase() }]
+    });
+
+    if (!user) return res.status(401).json({ error: 'No account found with that username or email.' });
+
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) return res.status(401).json({ error: 'Incorrect password.' });
+
+    res.json({ uid: user.uid, username: user.username, name: user.username, company: user.company, xp: user.xp });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // Admin: Secure Login
 router.post('/admin/login', (req, res) => {
@@ -17,42 +90,28 @@ router.post('/admin/login', (req, res) => {
   }
 });
 
-// Save/Retrieve a visitor's entry (Identity Persistence Layer)
-router.post('/visitors', async (req, res) => {
+// Get user profile by uid
+router.get('/visitors/:uid', async (req, res) => {
   try {
-    const { name, company, uid } = req.body;
-    
-    // Check if traveler already exists in the mission logs
-    const existingEntry = await UserEntry.findOne({ name, company });
-    
-    if (existingEntry) {
-      // Re-Authenticate legacy user and restore their previous UID
-      return res.json(existingEntry);
-    }
-    
-    // Initialize new identity for first-time explorer
-    const newEntry = new UserEntry({ name, company, uid });
-    await newEntry.save();
-    res.status(201).json(newEntry);
+    const user = await UserEntry.findOne({ uid: req.params.uid }, '-password');
+    if (!user) return res.status(404).json({ error: 'User not found.' });
+    res.json(user);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Update visitor identity metadata (Email/Contact Linkage)
+// Update user profile email by uid
 router.put('/visitors/:uid', async (req, res) => {
   try {
     const { email } = req.body;
-    const { uid } = req.params;
-    
-    const updatedEntry = await UserEntry.findOneAndUpdate(
-      { uid },
-      { $set: { email } },
-      { new: true }
+    const updated = await UserEntry.findOneAndUpdate(
+      { uid: req.params.uid },
+      { $set: { email: email?.toLowerCase() } },
+      { new: true, select: '-password' }
     );
-    
-    if (!updatedEntry) return res.status(404).json({ error: "Mission signature not found" });
-    res.json(updatedEntry);
+    if (!updated) return res.status(404).json({ error: 'User not found.' });
+    res.json(updated);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

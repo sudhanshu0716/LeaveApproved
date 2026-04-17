@@ -92,28 +92,28 @@ Return ONLY a valid JSON object with no markdown formatting. The JSON must exact
       
       {!result && !loading && (
         <form onSubmit={handleCompare} className="glass-panel" style={{ padding: '40px', borderRadius: '30px', background: 'rgba(20, 35, 30, 0.6)', border: '1px solid rgba(255,255,255,0.1)' }}>
-          <h2 style={{ color: 'white', marginBottom: '30px', textAlign: 'center', fontSize: '2rem', fontWeight: 900 }}>AI TRIP COMPARISON</h2>
+          <h2 style={{ color: 'white', marginBottom: '30px', textAlign: 'center', fontSize: '2rem', fontWeight: 900, fontFamily: "'Bebas Neue', cursive" }}>AI TRIP COMPARISON</h2>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div>
-              <label style={{ color: '#ffb703', fontSize: '0.8rem', fontWeight: 900, letterSpacing: '1px' }}>ORIGIN CITY</label>
-              <input value={origin} onChange={e => setOrigin(e.target.value)} required placeholder="Where are you starting from?" style={{ boxSizing: 'border-box', width: '100%', padding: '15px', borderRadius: '10px', border: 'none', background: 'rgba(0,0,0,0.5)', color: 'white', marginTop: '10px', outline: 'none' }} />
+              <label style={{ color: '#ffb703', fontSize: '0.8rem', fontWeight: 900, letterSpacing: '1px', fontFamily: "'DM Sans', sans-serif" }}>ORIGIN CITY</label>
+              <input value={origin} onChange={e => setOrigin(e.target.value)} required placeholder="Where are you starting from?" style={{ boxSizing: 'border-box', width: '100%', padding: '15px', borderRadius: '10px', border: 'none', background: 'rgba(0,0,0,0.5)', color: 'white', marginTop: '10px', outline: 'none', fontFamily: "'DM Sans', sans-serif" }} />
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '20px', alignItems: 'center', marginTop: '10px' }}>
               <div>
-                <label style={{ color: '#d8f3dc', fontSize: '0.8rem', fontWeight: 900, letterSpacing: '1px' }}>OPTION A</label>
-                <input value={dest1} onChange={e => setDest1(e.target.value)} required placeholder="First Destination" style={{ boxSizing: 'border-box', width: '100%', padding: '15px', borderRadius: '10px', border: 'none', background: 'rgba(0,0,0,0.5)', color: 'white', marginTop: '10px', outline: 'none' }} />
+                <label style={{ color: '#d8f3dc', fontSize: '0.8rem', fontWeight: 900, letterSpacing: '1px', fontFamily: "'DM Sans', sans-serif" }}>OPTION A</label>
+                <input value={dest1} onChange={e => setDest1(e.target.value)} required placeholder="First Destination" style={{ boxSizing: 'border-box', width: '100%', padding: '15px', borderRadius: '10px', border: 'none', background: 'rgba(0,0,0,0.5)', color: 'white', marginTop: '10px', outline: 'none', fontFamily: "'DM Sans', sans-serif" }} />
               </div>
               <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(255,183,3,0.1)', border: '1px solid rgba(255,183,3,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffb703', fontWeight: 900, fontSize: '0.7rem', marginTop: '25px', boxShadow: '0 0 15px rgba(255,183,3,0.1)' }}>VS</div>
               <div>
-                <label style={{ color: '#d8f3dc', fontSize: '0.8rem', fontWeight: 900, letterSpacing: '1px' }}>OPTION B</label>
-                <input value={dest2} onChange={e => setDest2(e.target.value)} required placeholder="Second Destination" style={{ boxSizing: 'border-box', width: '100%', padding: '15px', borderRadius: '10px', border: 'none', background: 'rgba(0,0,0,0.5)', color: 'white', marginTop: '10px', outline: 'none' }} />
+                <label style={{ color: '#d8f3dc', fontSize: '0.8rem', fontWeight: 900, letterSpacing: '1px', fontFamily: "'DM Sans', sans-serif" }}>OPTION B</label>
+                <input value={dest2} onChange={e => setDest2(e.target.value)} required placeholder="Second Destination" style={{ boxSizing: 'border-box', width: '100%', padding: '15px', borderRadius: '10px', border: 'none', background: 'rgba(0,0,0,0.5)', color: 'white', marginTop: '10px', outline: 'none', fontFamily: "'DM Sans', sans-serif" }} />
               </div>
             </div>
           </div>
 
-          <button type="submit" style={{ width: '100%', padding: '20px', borderRadius: '15px', background: '#ffb703', border: 'none', marginTop: '40px', fontWeight: 900, color: '#081c15', cursor: 'pointer', fontSize: '1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
+          <button type="submit" style={{ width: '100%', padding: '20px', borderRadius: '15px', background: '#ffb703', border: 'none', marginTop: '40px', fontWeight: 900, color: '#081c15', cursor: 'pointer', fontSize: '1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', fontFamily: "'DM Sans', sans-serif" }}>
             <Plane size={20} /> ANALYZE NOW
           </button>
         </form>
@@ -122,19 +122,19 @@ Return ONLY a valid JSON object with no markdown formatting. The JSON must exact
       {loading && (
         <div style={{ textAlign: 'center', padding: '100px 0', color: '#ffb703' }}>
           <Loader size={50} className="spin" style={{ margin: '0 auto 20px', display: 'block', animation: 'spin 2s linear infinite' }} />
-          <h3 style={{ fontWeight: 900, letterSpacing: '2px' }}>AI IS ANALYZING ROUTES...</h3>
-          <p style={{ color: 'rgba(255,255,255,0.5)' }}>Comparing distance, safety, and experiences.</p>
+          <h3 style={{ fontWeight: 900, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif" }}>Comparing your destinations...</h3>
+          <p style={{ color: 'rgba(255,255,255,0.5)', fontFamily: "'DM Sans', sans-serif" }}>This usually takes a few seconds.</p>
         </div>
       )}
 
       {result && !loading && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-panel" style={{ padding: '40px', borderRadius: '30px', background: 'rgba(20, 35, 30, 0.6)', border: '1px solid rgba(255,255,255,0.1)' }}>
-          <button onClick={() => setResult(null)} style={{ background: 'transparent', border: 'none', color: '#ffb703', cursor: 'pointer', marginBottom: '20px', fontWeight: 900 }}>← NEW COMPARISON</button>
+          <button onClick={() => setResult(null)} style={{ background: 'transparent', border: 'none', color: '#ffb703', cursor: 'pointer', marginBottom: '20px', fontWeight: 900, fontFamily: "'DM Sans', sans-serif" }}>← Compare Again</button>
           
           <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '20px', textAlign: 'center', marginBottom: '40px' }}>
-            <h3 style={{ fontSize: '1.8rem', color: '#ffb703', margin: 0 }}>{result.dest1Name.toUpperCase()}</h3>
+            <h3 style={{ fontSize: '1.8rem', color: '#ffb703', margin: 0, fontFamily: "'Bebas Neue', cursive" }}>{result.dest1Name.toUpperCase()}</h3>
             <span style={{ opacity: 0.5, alignSelf: 'center', fontWeight: 900 }}>VS</span>
-            <h3 style={{ fontSize: '1.8rem', color: '#d8f3dc', margin: 0 }}>{result.dest2Name.toUpperCase()}</h3>
+            <h3 style={{ fontSize: '1.8rem', color: '#d8f3dc', margin: 0, fontFamily: "'Bebas Neue', cursive" }}>{result.dest2Name.toUpperCase()}</h3>
           </div>
 
           {/* Metrics Graph */}
@@ -142,7 +142,7 @@ Return ONLY a valid JSON object with no markdown formatting. The JSON must exact
             {result.metrics.map((m, i) => (
               <div key={i}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '15px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', color: 'white', fontSize: '0.8rem', fontWeight: 900, letterSpacing: '1px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', color: 'white', fontSize: '0.8rem', fontWeight: 900, letterSpacing: '1px', fontFamily: "'DM Sans', sans-serif" }}>
                     {getIcon(m.category)} {m.category.toUpperCase()}
                   </div>
                   <div style={{ fontSize: '0.55rem', color: '#ffb703', opacity: 0.7, marginTop: '4px', letterSpacing: '1px', textTransform: 'uppercase' }}>
@@ -192,8 +192,8 @@ Return ONLY a valid JSON object with no markdown formatting. The JSON must exact
           </div>
 
           <div style={{ background: 'rgba(255,183,3,0.1)', padding: '25px', borderRadius: '20px', borderLeft: '4px solid #ffb703' }}>
-            <h4 style={{ color: '#ffb703', margin: '0 0 10px 0', display: 'flex', alignItems: 'center', gap: '10px' }}><CheckCircle size={20}/> FINAL RESOLUTION</h4>
-            <p style={{ color: 'white', lineHeight: '1.6', margin: 0 }}>{result.resolution}</p>
+            <h4 style={{ color: '#ffb703', margin: '0 0 10px 0', display: 'flex', alignItems: 'center', gap: '10px', fontFamily: "'DM Sans', sans-serif" }}><CheckCircle size={20}/> OUR RECOMMENDATION</h4>
+            <p style={{ color: 'white', lineHeight: '1.6', margin: 0, fontFamily: "'DM Sans', sans-serif" }}>{result.resolution}</p>
           </div>
         </motion.div>
       )}

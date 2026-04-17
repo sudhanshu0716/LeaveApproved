@@ -282,17 +282,24 @@ export default function Dashboard() {
 
       {/* ── DESKTOP NAV ── */}
       {!isMobile && (
-        <div style={{ position: 'fixed', top: '32px', left: '50%', transform: 'translateX(-50%)', zIndex: 1200 }}>
-          <div style={{ padding: '6px', borderRadius: '50px', display: 'flex', gap: '4px',
-            background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255,255,255,0.1)' }}>
+        <div style={{ position: 'fixed', top: '28px', left: '50%', transform: 'translateX(-50%)', zIndex: 1200 }}>
+          <div style={{ padding: '5px', borderRadius: '50px', display: 'flex', gap: '2px',
+            background: 'rgba(8,28,21,0.85)', backdropFilter: 'blur(24px)',
+            WebkitBackdropFilter: 'blur(24px)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,183,3,0.06) inset' }}>
             {tabs.map(tab => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                style={{ padding: '10px 20px', borderRadius: '40px', border: 'none',
-                  background: activeTab === tab.id ? 'rgba(255,255,255,0.15)' : 'transparent',
-                  color: activeTab === tab.id ? 'white' : 'rgba(255,255,255,0.5)',
-                  fontSize: '0.7rem', fontWeight: 900, cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.3s ease' }}>
+                style={{ padding: '9px 18px', borderRadius: '40px', border: 'none',
+                  background: activeTab === tab.id
+                    ? 'rgba(255,183,3,0.15)'
+                    : 'transparent',
+                  color: activeTab === tab.id ? '#ffb703' : 'rgba(255,255,255,0.45)',
+                  fontSize: '0.68rem', fontWeight: 800, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: '7px',
+                  transition: 'all 0.25s ease',
+                  boxShadow: activeTab === tab.id ? '0 0 0 1px rgba(255,183,3,0.25) inset' : 'none',
+                  letterSpacing: '0.5px', fontFamily: "'DM Sans', sans-serif" }}>
                 {tab.icon} {tab.label}
               </button>
             ))}
@@ -303,38 +310,44 @@ export default function Dashboard() {
       {/* ── MOBILE BOTTOM NAV ── */}
       {isMobile && (
         <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1200,
-          background: 'rgba(5,14,9,0.97)', backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          borderTop: '1px solid rgba(255,255,255,0.07)',
+          background: 'rgba(4,12,8,0.97)', backdropFilter: 'blur(24px)',
+          WebkitBackdropFilter: 'blur(24px)',
+          borderTop: '1px solid rgba(255,255,255,0.06)',
           display: 'flex', justifyContent: 'space-around', alignItems: 'center',
-          padding: '10px 0 max(14px,env(safe-area-inset-bottom))' }}>
-          {tabs.map(tab => (
-            <button key={tab.id} onClick={() => { setActiveTab(tab.id); if (tab.id === 'itineraries') setStep(1); }}
-              style={{ background: 'none', border: 'none', cursor: 'pointer',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
-                padding: '4px 10px',
-                color: activeTab === tab.id ? '#ffb703' : 'rgba(255,255,255,0.38)',
-                transition: 'color 0.2s', fontFamily: "'DM Sans', sans-serif" }}>
-              {tab.icon}
-              <span style={{ fontSize: '0.5rem', fontWeight: 700, letterSpacing: '0.5px' }}>{tab.label}</span>
-            </button>
-          ))}
-          {/* Profile / XP button — always in nav */}
+          padding: '8px 4px max(16px,env(safe-area-inset-bottom))',
+          boxShadow: '0 -4px 24px rgba(0,0,0,0.5)' }}>
+          {tabs.map(tab => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button key={tab.id} onClick={() => { setActiveTab(tab.id); if (tab.id === 'itineraries') setStep(1); }}
+                style={{ background: isActive ? 'rgba(255,183,3,0.1)' : 'none',
+                  border: isActive ? '1px solid rgba(255,183,3,0.2)' : '1px solid transparent',
+                  borderRadius: '14px', cursor: 'pointer',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
+                  padding: '7px 12px', minWidth: '48px',
+                  color: isActive ? '#ffb703' : 'rgba(255,255,255,0.35)',
+                  transition: 'all 0.2s ease', fontFamily: "'DM Sans', sans-serif" }}>
+                {tab.icon}
+                <span style={{ fontSize: '0.48rem', fontWeight: 700, letterSpacing: '0.5px' }}>{tab.label}</span>
+              </button>
+            );
+          })}
+          {/* Profile / XP button */}
           <button onClick={() => setShowProfile(true)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
-              padding: '4px 10px', fontFamily: "'DM Sans', sans-serif" }}>
+            style={{ background: 'none', border: '1px solid transparent', borderRadius: '14px', cursor: 'pointer',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
+              padding: '7px 12px', minWidth: '48px', fontFamily: "'DM Sans', sans-serif" }}>
             <div style={{ position: 'relative', width: '22px', height: '22px',
               display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg width="22" height="22" viewBox="0 0 46 46" style={{ position: 'absolute', transform: 'rotate(-90deg)' }}>
-                <circle cx="23" cy="23" r="20" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="4" />
+                <circle cx="23" cy="23" r="20" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="4" />
                 <circle cx="23" cy="23" r="20" fill="none" stroke="#ffb703" strokeWidth="4"
                   strokeDasharray="125" strokeDashoffset={125 - (125 * progressXp) / 100}
-                  strokeLinecap="round" />
+                  strokeLinecap="round" style={{ transition: 'stroke-dashoffset 1s ease-out' }} />
               </svg>
               <span style={{ color: '#ffb703', fontWeight: 900, fontSize: '0.55rem', zIndex: 2 }}>{currentLevel}</span>
             </div>
-            <span style={{ fontSize: '0.5rem', fontWeight: 700, letterSpacing: '0.5px', color: 'rgba(255,255,255,0.38)' }}>PROFILE</span>
+            <span style={{ fontSize: '0.48rem', fontWeight: 700, letterSpacing: '0.5px', color: 'rgba(255,255,255,0.35)' }}>PROFILE</span>
           </button>
         </div>
       )}
@@ -463,17 +476,18 @@ export default function Dashboard() {
                               <p style={{ color: 'rgba(216,243,220,0.6)', fontSize: '0.85rem',
                                 fontWeight: 600, marginTop: '12px', maxWidth: '450px' }}>{cat.desc}</p>
                             </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '15px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '12px' }}>
                               {cat.options.map(opt => (
                                 <button key={opt} onClick={() => handleSelection(cat.type, opt)}
                                   className="premium-choice"
-                                  style={{ padding: '20px 24px', borderRadius: '14px',
+                                  style={{ padding: '18px 20px', borderRadius: '14px',
                                     background: 'rgba(255,255,255,0.03)',
-                                    border: '1px solid rgba(255,255,255,0.1)', color: 'white',
-                                    fontWeight: 900, fontSize: '0.85rem', cursor: 'pointer',
-                                    transition: 'all 0.3s', textAlign: 'left',
-                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  {opt.toUpperCase()} <ChevronRight size={18} opacity={0.4} />
+                                    border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.85)',
+                                    fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer',
+                                    transition: 'all 0.25s ease', textAlign: 'left',
+                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                    fontFamily: "'DM Sans', sans-serif", letterSpacing: '0.5px' }}>
+                                  {opt.toUpperCase()} <ChevronRight size={15} style={{ opacity: 0.35, flexShrink: 0 }} />
                                 </button>
                               ))}
                             </div>
@@ -524,9 +538,12 @@ export default function Dashboard() {
                 </div>
 
                 {places.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '80px 20px', color: 'rgba(255,255,255,0.35)' }}>
-                    <div style={{ fontSize: isMobile ? '3rem' : '4rem', fontFamily: "'Bebas Neue', cursive", marginBottom: '12px', letterSpacing: '2px' }}>NO TRIPS FOUND</div>
-                    <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '0.9rem' }}>Try different filters to discover more destinations.</p>
+                  <div style={{ textAlign: 'center', padding: '80px 20px' }}>
+                    <div style={{ fontSize: isMobile ? '3rem' : '4.5rem', fontFamily: "'Bebas Neue', cursive", marginBottom: '16px', letterSpacing: '3px', color: 'rgba(255,255,255,0.15)' }}>NO TRIPS FOUND</div>
+                    <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '0.9rem', color: 'rgba(255,255,255,0.35)', lineHeight: 1.6 }}>No destinations match those filters.<br/>Try a different budget or distance range.</p>
+                    <button onClick={() => setStep(1)} className="btn-gold" style={{ margin: '24px auto 0', width: 'fit-content', padding: '14px 28px', fontSize: '0.8rem' }}>
+                      CHANGE FILTERS
+                    </button>
                   </div>
                 ) : (
                   <div style={{ display: 'grid',
@@ -596,12 +613,12 @@ export default function Dashboard() {
                           </div>
 
                           {/* Card bottom — description + CTA */}
-                          <div style={{ padding: isMobile ? '18px 22px 20px' : '22px 28px 24px' }}>
+                          <div style={{ padding: isMobile ? '16px 20px 18px' : '20px 26px 22px' }}>
                             <p style={{
-                              color: 'rgba(216,243,220,0.55)', lineHeight: 1.6,
-                              fontSize: isMobile ? '0.78rem' : '0.85rem',
+                              color: 'rgba(216,243,220,0.5)', lineHeight: 1.65,
+                              fontSize: isMobile ? '0.77rem' : '0.83rem',
                               fontFamily: "'DM Sans', sans-serif",
-                              margin: '0 0 18px',
+                              margin: '0 0 16px',
                               display: '-webkit-box',
                               WebkitLineClamp: 2,
                               WebkitBoxOrient: 'vertical',
@@ -611,18 +628,22 @@ export default function Dashboard() {
                             </p>
 
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-                                <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#4ade80', boxShadow: '0 0 6px #4ade80' }} />
-                                <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.35)', fontFamily: "'DM Sans', sans-serif", fontWeight: 600, letterSpacing: '1px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#4ade80', boxShadow: '0 0 8px rgba(74,222,128,0.8)', animation: 'breathe 2s ease-in-out infinite' }} />
+                                <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.3)', fontFamily: "'DM Sans', sans-serif", fontWeight: 600, letterSpacing: '1px' }}>
                                   ITINERARY READY
                                 </span>
                               </div>
                               <div style={{
                                 display: 'flex', alignItems: 'center', gap: '6px',
-                                color: '#ffb703', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '1px',
+                                color: '#ffb703', fontSize: '0.7rem', fontWeight: 800, letterSpacing: '1px',
                                 fontFamily: "'DM Sans', sans-serif",
+                                padding: '6px 12px', borderRadius: '50px',
+                                background: 'rgba(255,183,3,0.1)',
+                                border: '1px solid rgba(255,183,3,0.2)',
+                                transition: 'all 0.2s ease',
                               }}>
-                                VIEW PLAN <ArrowRight size={13} />
+                                VIEW PLAN <ArrowRight size={12} />
                               </div>
                             </div>
                           </div>
@@ -729,84 +750,94 @@ export default function Dashboard() {
                 alignItems: 'center', justifyContent: 'center',
                 background: 'rgba(8,28,21,0.85)', backdropFilter: 'blur(15px)' }}
               onClick={() => setShowProfile(false)}>
-              <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }}
-                exit={{ scale: 0.9, y: 20 }} className="glass-panel"
+              <motion.div initial={{ scale: 0.92, y: 24, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }}
+                exit={{ scale: 0.92, y: 24, opacity: 0 }} transition={{ type: 'spring', damping: 22, stiffness: 300 }}
                 onClick={e => e.stopPropagation()}
-                style={{ width: '90%', maxWidth: '600px', background: 'rgba(20,35,30,0.95)',
-                  border: '1px solid rgba(216,243,220,0.2)', padding: '40px',
-                  borderRadius: '40px', position: 'relative' }}>
+                style={{ width: '92%', maxWidth: '580px', background: 'rgba(10,22,18,0.97)',
+                  border: '1px solid rgba(255,183,3,0.15)', padding: isMobile ? '28px 22px' : '40px',
+                  borderRadius: isMobile ? '28px' : '40px', position: 'relative',
+                  boxShadow: '0 40px 100px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,183,3,0.08) inset' }}>
                 <button onClick={() => setShowProfile(false)}
-                  style={{ position: 'absolute', top: '30px', right: '30px',
-                    background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                    color: 'white', width: '40px', height: '40px', borderRadius: '50%', cursor: 'pointer' }}>✕</button>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '30px', marginBottom: '40px' }}>
-                  <div style={{ width: '100px', height: '100px', borderRadius: '30px',
+                  style={{ position: 'absolute', top: isMobile ? '20px' : '28px', right: isMobile ? '20px' : '28px',
+                    background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+                    color: 'rgba(255,255,255,0.7)', width: '38px', height: '38px', borderRadius: '50%',
+                    cursor: 'pointer', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 0.2s ease' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = 'white'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}>
+                  ✕
+                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '18px' : '28px', marginBottom: '32px' }}>
+                  <div style={{ width: isMobile ? '72px' : '90px', height: isMobile ? '72px' : '90px', borderRadius: '24px', flexShrink: 0,
                     background: 'linear-gradient(145deg,#1b4332,#081c15)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    border: '2px solid #ffb703', boxShadow: '0 0 30px rgba(255,183,3,0.3)' }}>
-                    <User size={50} color="#ffb703" />
+                    border: '2px solid rgba(255,183,3,0.5)', boxShadow: '0 0 30px rgba(255,183,3,0.2)' }}>
+                    <User size={isMobile ? 36 : 44} color="#ffb703" />
                   </div>
                   <div>
-                    <span style={{ fontSize: '0.7rem', fontWeight: 900, color: '#ffb703', letterSpacing: '4px', fontFamily: "'DM Sans', sans-serif" }}>USER PROFILE</span>
-                    <h2 className="title" style={{ fontSize: '3rem', color: 'white', margin: 0, fontFamily: "'Bebas Neue', cursive" }}>{user.name}</h2>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginTop: '10px' }}>
-                      <div style={{ padding: '6px 12px', background: 'rgba(255,183,3,0.1)',
-                        border: '1px solid #ffb703', borderRadius: '8px',
-                        color: '#ffb703', fontSize: '0.6rem', fontWeight: 900, fontFamily: "'DM Sans', sans-serif" }}>
-                        LEVEL {currentLevel} // {levelData.name.toUpperCase()}
-                      </div>
+                    <span style={{ fontSize: '0.6rem', fontWeight: 900, color: '#ffb703', letterSpacing: '4px', fontFamily: "'DM Sans', sans-serif", opacity: 0.8 }}>USER PROFILE</span>
+                    <h2 style={{ fontSize: isMobile ? '2rem' : '2.8rem', color: 'white', margin: '4px 0 0', fontFamily: "'Bebas Neue', cursive", lineHeight: 1, letterSpacing: '1px' }}>{user.name}</h2>
+                    <div style={{ marginTop: '10px' }}>
+                      <span className="badge-gold">LEVEL {currentLevel} &nbsp;·&nbsp; {levelData.name.toUpperCase()}</span>
                     </div>
                   </div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', marginBottom: '40px' }}>
-                  <div style={{ padding: '24px', background: 'rgba(255,255,255,0.03)',
-                    borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                    <div style={{ fontSize: '0.6rem', color: '#ffb703', fontWeight: 900,
-                      letterSpacing: '1px', marginBottom: '15px', fontFamily: "'DM Sans', sans-serif" }}>STATISTICS</div>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+                  <div style={{ padding: '20px', background: 'rgba(255,255,255,0.03)',
+                    borderRadius: '20px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div style={{ fontSize: '0.58rem', color: '#ffb703', fontWeight: 900,
+                      letterSpacing: '2px', marginBottom: '14px', fontFamily: "'DM Sans', sans-serif" }}>STATISTICS</div>
                     {[{ label: 'Trips Logged', val: '12' }, { label: 'Countries Visited', val: '04' }, { label: 'Office Escapes', val: '08' }].map(s => (
-                      <div key={s.label} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                        <span style={{ color: '#d8f3dc', opacity: 0.5, fontSize: '0.75rem', fontFamily: "'DM Sans', sans-serif" }}>{s.label}</span>
-                        <span style={{ color: 'white', fontWeight: 900, fontSize: '0.75rem', fontFamily: "'DM Sans', sans-serif" }}>{s.val}</span>
+                      <div key={s.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', paddingBottom: '10px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                        <span style={{ color: 'rgba(216,243,220,0.45)', fontSize: '0.73rem', fontFamily: "'DM Sans', sans-serif" }}>{s.label}</span>
+                        <span style={{ color: 'white', fontWeight: 800, fontSize: '0.85rem', fontFamily: "'DM Sans', sans-serif" }}>{s.val}</span>
                       </div>
                     ))}
                   </div>
-                  <div style={{ padding: '24px', background: 'rgba(255,255,255,0.03)',
-                    borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                    <div style={{ fontSize: '0.6rem', color: '#ffb703', fontWeight: 900,
-                      letterSpacing: '1px', marginBottom: '15px', fontFamily: "'DM Sans', sans-serif" }}>APP ACTIVITY</div>
-                    <div style={{ height: '60px', width: '100%', display: 'flex', alignItems: 'flex-end', gap: '4px' }}>
+                  <div style={{ padding: '20px', background: 'rgba(255,255,255,0.03)',
+                    borderRadius: '20px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div style={{ fontSize: '0.58rem', color: '#ffb703', fontWeight: 900,
+                      letterSpacing: '2px', marginBottom: '14px', fontFamily: "'DM Sans', sans-serif" }}>WEEKLY ACTIVITY</div>
+                    <div style={{ height: '56px', width: '100%', display: 'flex', alignItems: 'flex-end', gap: '5px' }}>
                       {[40, 60, 45, 80, 55, 90, 70].map((h, i) => (
-                        <div key={i} style={{ flex: 1, height: `${h}%`,
-                          background: i === 5 ? '#ffb703' : 'rgba(216,243,220,0.2)', borderRadius: '2px' }} />
+                        <div key={i} style={{ flex: 1, height: `${h}%`, borderRadius: '4px',
+                          background: i === 5
+                            ? 'linear-gradient(to top, #ffb703, #ffd166)'
+                            : 'rgba(216,243,220,0.12)',
+                          transition: 'height 0.3s ease' }} />
                       ))}
                     </div>
-                    <div style={{ fontSize: '0.55rem', color: '#d8f3dc', opacity: 0.4, marginTop: '8px', textAlign: 'center' }}>ACTIVE THIS WEEK</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
+                      {['M','T','W','T','F','S','S'].map((d,i) => (
+                        <span key={i} style={{ flex:1, textAlign:'center', fontSize: '0.48rem', color: i===5 ? '#ffb703' : 'rgba(255,255,255,0.2)', fontFamily: "'DM Sans', sans-serif", fontWeight: 700 }}>{d}</span>
+                      ))}
+                    </div>
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: '20px', marginBottom: '40px' }}>
-                  {[{ icon: <Target size={18}/>, color: '#ffb703' }, { icon: <Globe size={18}/>, color: '#4cc9f0' }, { icon: <Zap size={18}/>, color: '#f72585' }, { icon: <Briefcase size={18}/>, color: '#d8f3dc' }].map((a, i) => (
-                    <div key={i} style={{ width: '50px', height: '50px', borderRadius: '15px',
-                      background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', color: a.color }}>
+                <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
+                  {[{ icon: <Target size={16}/>, color: '#ffb703', label: 'Goals' }, { icon: <Globe size={16}/>, color: '#4cc9f0', label: 'Explore' }, { icon: <Zap size={16}/>, color: '#f72585', label: 'Energy' }, { icon: <Briefcase size={16}/>, color: '#d8f3dc', label: 'Work' }].map((a, i) => (
+                    <div key={i} style={{ flex: 1, padding: '12px 8px', borderRadius: '16px',
+                      background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', color: a.color }}>
                       {a.icon}
+                      <span style={{ fontSize: '0.45rem', color: 'rgba(255,255,255,0.3)', fontFamily: "'DM Sans', sans-serif", fontWeight: 700, letterSpacing: '0.5px' }}>{a.label.toUpperCase()}</span>
                     </div>
                   ))}
                 </div>
-                <div style={{ padding: '30px', background: 'rgba(255,183,3,0.05)',
-                  borderRadius: '30px', border: '1px solid rgba(255,183,3,0.2)' }}>
-                  <div style={{ fontSize: '0.65rem', color: '#ffb703', fontWeight: 900,
-                    letterSpacing: '2px', marginBottom: '20px', fontFamily: "'DM Sans', sans-serif" }}>ACCOUNT SETTINGS</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ padding: isMobile ? '20px' : '24px', background: 'rgba(255,183,3,0.04)',
+                  borderRadius: '24px', border: '1px solid rgba(255,183,3,0.15)' }}>
+                  <div style={{ fontSize: '0.58rem', color: '#ffb703', fontWeight: 900,
+                    letterSpacing: '2px', marginBottom: '16px', fontFamily: "'DM Sans', sans-serif" }}>ACCOUNT SETTINGS</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <input type="email" placeholder="your.email@example.com"
                       value={user.email || ''} onChange={e => setUser({...user, email: e.target.value})}
-                      style={{ width: '100%', boxSizing: 'border-box', background: 'rgba(0,0,0,0.3)',
-                        border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px',
-                        padding: '15px 20px', color: 'white', fontSize: '0.9rem', outline: 'none', fontFamily: "'DM Sans', sans-serif" }} />
+                      className="input-dark"
+                      style={{ width: '100%', boxSizing: 'border-box', padding: '13px 18px' }} />
                     <button onClick={handleEmailUpdate} disabled={isUpdatingEmail}
-                      style={{ width: '100%', padding: '14px 20px', borderRadius: '14px', background: '#ffb703',
-                        color: '#081c15', fontWeight: 900, fontSize: '0.8rem', cursor: 'pointer',
-                        border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontFamily: "'DM Sans', sans-serif" }}>
-                      {isUpdatingEmail ? 'SAVING...' : 'SAVE'} {!isUpdatingEmail && <CheckCircle size={16} />}
+                      className="btn-gold"
+                      style={{ width: '100%', padding: '13px 20px', fontSize: '0.8rem', borderRadius: '14px',
+                        opacity: isUpdatingEmail ? 0.6 : 1 }}>
+                      {isUpdatingEmail ? 'SAVING...' : <><CheckCircle size={15} /> SAVE EMAIL</>}
                     </button>
                   </div>
                 </div>
@@ -818,25 +849,34 @@ export default function Dashboard() {
 
       <style>{`
         .premium-choice:hover {
-          background: rgba(255,255,255,0.08) !important;
-          border-color: #ffb703 !important;
-          transform: scale(1.02);
+          background: rgba(255,183,3,0.08) !important;
+          border-color: rgba(255,183,3,0.4) !important;
           color: #ffb703 !important;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 16px rgba(0,0,0,0.3);
         }
         @keyframes scan {
           0%   { transform: translateY(-100%); }
           100% { transform: translateY(100%); }
         }
+        @keyframes breathe {
+          0%, 100% { opacity: 0.6; }
+          50%       { opacity: 1; }
+        }
         .hud-grid::after {
           content: '';
           position: absolute;
-          top: 0; left: 0; right: 0; height: 100px;
-          background: linear-gradient(to bottom, transparent, rgba(216,243,220,0.1), transparent);
-          animation: scan 8s linear infinite;
+          top: 0; left: 0; right: 0; height: 120px;
+          background: linear-gradient(to bottom, transparent, rgba(216,243,220,0.08), transparent);
+          animation: scan 10s linear infinite;
         }
         .xp-widget-details { width: 0; opacity: 0; padding-left: 0; }
         .xp-hover-pill { transition: all 0.4s cubic-bezier(0.175,0.885,0.32,1.275); }
-        .xp-hover-pill:hover .xp-widget-details { width: 110px; opacity: 1; padding-left: 12px; padding-right: 8px; }
+        .xp-hover-pill:hover .xp-widget-details { width: 120px; opacity: 1; padding-left: 14px; padding-right: 10px; }
+        .place-card-cta:hover {
+          background: rgba(255,183,3,0.2) !important;
+          border-color: rgba(255,183,3,0.4) !important;
+        }
       `}</style>
     </div>
   );

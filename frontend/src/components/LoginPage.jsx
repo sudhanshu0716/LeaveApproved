@@ -190,12 +190,12 @@ export default function LoginPage() {
       </div>
 
       {/* ── BRAND LOGO ── */}
-      <div style={{ position: 'fixed', top: isMobile ? '48px' : '32px', left: '24px', zIndex: 1000, display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <div style={{ background: 'rgba(216,243,220,0.1)', padding: isMobile ? '8px' : '10px', borderRadius: '14px', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)' }}>
-          <Compass size={isMobile ? 22 : 28} color="#ffb703" />
+      <div style={{ position: 'fixed', top: isMobile ? '44px' : '28px', left: '22px', zIndex: 1000, display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ background: 'rgba(255,183,3,0.12)', padding: isMobile ? '8px' : '10px', borderRadius: '14px', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,183,3,0.2)', boxShadow: '0 0 20px rgba(255,183,3,0.1)' }}>
+          <Compass size={isMobile ? 20 : 24} color="#ffb703" />
         </div>
-        <h1 style={{ margin: 0, fontSize: isMobile ? '1.1rem' : '1.4rem', fontWeight: 950, letterSpacing: '3px', color: 'white', fontFamily: "'DM Sans', sans-serif" }}>
-          LEAVE<span style={{ color: '#d8f3dc' }}>APPROVED</span>
+        <h1 style={{ margin: 0, fontSize: isMobile ? '1rem' : '1.25rem', fontWeight: 900, letterSpacing: '2px', color: 'white', fontFamily: "'DM Sans', sans-serif" }}>
+          LEAVE<span style={{ color: '#ffb703' }}>APPROVED</span>
         </h1>
       </div>
 
@@ -211,17 +211,22 @@ export default function LoginPage() {
           MOBILE LAYOUT
       ════════════════════════════════ */}
       {isMobile && (
-        <div style={{ position: 'relative', zIndex: 10, minHeight: '100svh', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '0 22px max(56px, env(safe-area-inset-bottom))', overflowY: 'auto' }}>
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }}>
+        <div style={{ position: 'relative', zIndex: 10, minHeight: '100svh', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', overflowY: 'auto' }}>
+          {/* Gradient overlay at bottom for form readability */}
+          <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: '75%', zIndex: 0, pointerEvents: 'none',
+            background: 'linear-gradient(to top, rgba(4,12,8,0.98) 40%, rgba(4,12,8,0.85) 65%, transparent 100%)' }} />
+
+          <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.23,1,0.32,1] }}
+            style={{ position: 'relative', zIndex: 10, padding: '0 22px max(56px, env(safe-area-inset-bottom))' }}>
 
             {/* Headline */}
-            <p style={{ fontSize: '0.62rem', fontWeight: 700, color: 'rgba(255,183,3,0.8)', letterSpacing: '3px', marginBottom: '6px', fontFamily: "'DM Sans', sans-serif" }}>
+            <p style={{ fontSize: '0.6rem', fontWeight: 700, color: '#ffb703', letterSpacing: '3px', marginBottom: '8px', fontFamily: "'DM Sans', sans-serif", opacity: 0.9 }}>
               ESCAPE THE 9-TO-5
             </p>
-            <h2 style={{ fontSize: '3.4rem', fontWeight: 400, color: 'white', margin: '0 0 4px', lineHeight: 0.92, fontFamily: "'Bebas Neue', cursive", letterSpacing: '2px' }}>
+            <h2 style={{ fontSize: '3.6rem', fontWeight: 400, color: 'white', margin: '0 0 6px', lineHeight: 0.9, fontFamily: "'Bebas Neue', cursive", letterSpacing: '2px', textShadow: '0 4px 20px rgba(0,0,0,0.5)' }}>
               LEAVE<br />APPROVED.
             </h2>
-            <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.45)', marginBottom: '20px', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.4 }}>
+            <p style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)', marginBottom: '22px', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>
               {mode === 'signup' ? 'Create your account to start planning.' : 'Welcome back, traveller.'}
             </p>
 
@@ -317,6 +322,7 @@ export default function LoginPage() {
       {/* ════════════════════════════════
           DESKTOP LAYOUT
       ════════════════════════════════ */}
+
       {!isMobile && (
         <div style={{ position: 'relative', zIndex: 10, height: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}>
           <motion.div initial={{ opacity: 0, scale: 0.9, y: 30 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.7 }}
@@ -414,8 +420,10 @@ export default function LoginPage() {
                           </div>
                         </div>
                       </div>
-                      <button type="submit" style={{ marginTop: '8px', background: loading ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.12)', color: 'white', fontSize: '1rem', padding: '20px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', cursor: 'pointer', fontWeight: 900, letterSpacing: '1px', fontFamily: "'DM Sans', sans-serif' " }}>
-                        {loading ? 'SIGNING IN...' : <>BOARD THE FLIGHT <ArrowRight size={20} /></>}
+                      <button type="submit" style={{ marginTop: '8px', background: loading ? 'rgba(255,183,3,0.4)' : '#ffb703', color: '#050e09', fontSize: '0.95rem', padding: '18px', borderRadius: '14px', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', cursor: 'pointer', fontWeight: 900, letterSpacing: '1.5px', fontFamily: "'DM Sans', sans-serif", boxShadow: loading ? 'none' : '0 6px 24px rgba(255,183,3,0.4)', transition: 'all 0.25s ease' }}
+                        onMouseEnter={e => { if (!loading) { e.currentTarget.style.boxShadow = '0 10px 36px rgba(255,183,3,0.55)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}}
+                        onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 6px 24px rgba(255,183,3,0.4)'; e.currentTarget.style.transform = 'translateY(0)'; }}>
+                        {loading ? 'SIGNING IN...' : <>BOARD THE FLIGHT <ArrowRight size={18} /></>}
                       </button>
                     </motion.form>
                   )}
@@ -461,8 +469,10 @@ export default function LoginPage() {
                           </div>
                         </div>
                       </div>
-                      <button type="submit" style={{ marginTop: '4px', background: loading ? 'rgba(255,183,3,0.2)' : 'rgba(255,183,3,0.15)', color: '#ffb703', fontSize: '1rem', padding: '20px', borderRadius: '14px', border: '1px solid rgba(255,183,3,0.4)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', cursor: 'pointer', fontWeight: 900, letterSpacing: '1px', fontFamily: "'DM Sans', sans-serif" }}>
-                        {loading ? 'CREATING ACCOUNT...' : <>CREATE ACCOUNT <ArrowRight size={20} /></>}
+                      <button type="submit" style={{ marginTop: '4px', background: loading ? 'rgba(255,183,3,0.4)' : '#ffb703', color: '#050e09', fontSize: '0.95rem', padding: '18px', borderRadius: '14px', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', cursor: 'pointer', fontWeight: 900, letterSpacing: '1.5px', fontFamily: "'DM Sans', sans-serif", boxShadow: loading ? 'none' : '0 6px 24px rgba(255,183,3,0.4)', transition: 'all 0.25s ease' }}
+                        onMouseEnter={e => { if (!loading) { e.currentTarget.style.boxShadow = '0 10px 36px rgba(255,183,3,0.55)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}}
+                        onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 6px 24px rgba(255,183,3,0.4)'; e.currentTarget.style.transform = 'translateY(0)'; }}>
+                        {loading ? 'CREATING ACCOUNT...' : <>CREATE ACCOUNT <ArrowRight size={18} /></>}
                       </button>
                     </motion.form>
                   )}

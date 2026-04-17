@@ -280,6 +280,45 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* ── LEFT SIDE STRIP (desktop only, first 3 tabs) ── */}
+      {!isMobile && (activeTab === 'itineraries' || activeTab === 'buddy' || activeTab === 'comparison') && (
+        <div style={{
+          position: 'fixed', left: 0, top: 0, bottom: 0, width: '52px', zIndex: 900,
+          background: 'rgba(8,28,21,0.55)', backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          borderRight: '1px dashed rgba(255,255,255,0.12)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        }}>
+          {/* Rotated page code — unique per tab */}
+          <div style={{
+            transform: 'rotate(-90deg)', whiteSpace: 'nowrap',
+            color: '#ffb703', fontWeight: 900, fontSize: '0.7rem',
+            letterSpacing: '5px', opacity: 0.9, fontFamily: "'DM Sans', sans-serif",
+          }}>
+            {activeTab === 'itineraries'
+              ? cards[currentCard].code
+              : activeTab === 'buddy'
+              ? 'BDY-02'
+              : 'CMP-03'}
+          </div>
+
+          {/* Bottom label — unique per tab */}
+          <div style={{ position: 'absolute', bottom: '32px', display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'center' }}>
+            <div style={{ fontSize: '0.38rem', color: '#d8f3dc', opacity: 0.3, fontWeight: 900, letterSpacing: '1px', fontFamily: "'DM Sans', sans-serif", transform: 'rotate(-90deg)', whiteSpace: 'nowrap' }}>
+              {activeTab === 'itineraries' ? 'DEPARTURE GATE' : activeTab === 'buddy' ? 'MATCH FINDER' : 'ROUTE ANALYSIS'}
+            </div>
+            <div style={{ fontSize: '0.38rem', color: '#ffb703', fontWeight: 900, letterSpacing: '1px', fontFamily: "'DM Sans', sans-serif", transform: 'rotate(-90deg)', whiteSpace: 'nowrap', opacity: 0.6 }}>
+              {activeTab === 'itineraries' ? 'CLASS // ELITE' : activeTab === 'buddy' ? 'SEAT // OPEN' : 'GATE // DELTA'}
+            </div>
+          </div>
+
+          {/* Top dot accent */}
+          <div style={{ position: 'absolute', top: '28px', width: '6px', height: '6px', borderRadius: '50%', background: '#ffb703', opacity: 0.5 }} />
+          {/* Bottom dot accent */}
+          <div style={{ position: 'absolute', bottom: '18px', width: '6px', height: '6px', borderRadius: '50%', background: 'rgba(216,243,220,0.3)' }} />
+        </div>
+      )}
+
       {/* ── DESKTOP NAV ── */}
       {!isMobile && (
         <div style={{ position: 'fixed', top: '32px', left: '50%', transform: 'translateX(-50%)', zIndex: 1200 }}>

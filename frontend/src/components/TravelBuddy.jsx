@@ -3,9 +3,9 @@ import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PlaneTakeoff, MapPin, Calendar, Briefcase, PlusCircle, Search, Users, CheckCircle, XCircle, Send, MessageSquare, Compass, ArrowRight, Ticket, Plane, Globe, Trash2, Mic, MicOff, FileText } from 'lucide-react';
 
-export default function TravelBuddy({ user, onXpGain }) {
+export default function TravelBuddy({ user, onXpGain, initialView }) {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const [view, setView] = useState('feed'); // 'feed', 'list', 'my_trips', 'contribute'
+  const [view, setView] = useState(initialView || 'feed'); // 'feed', 'list', 'my_trips', 'contribute'
   const [trips, setTrips] = useState([]);
   const [myTrips, setMyTrips] = useState({ created: [], requested: [] });
 

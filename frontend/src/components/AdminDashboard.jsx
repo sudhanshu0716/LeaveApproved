@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Settings, Users, Map, Plus, Trash2, Edit2, 
-  ShieldAlert, Lock, Zap, Star, MessageSquare
+import {
+  Settings, Users, Map, Plus, Trash2, Edit2,
+  ShieldAlert, Lock, Zap, Star, MessageSquare, FileText, CheckCircle
 } from 'lucide-react';
 import FlowBuilder from './FlowBuilder';
 
@@ -29,6 +29,7 @@ export default function AdminDashboard() {
   const [aiInput, setAiInput] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [liveAudience, setLiveAudience] = useState(142);
+  const [contributions, setContributions] = useState([]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -43,6 +44,7 @@ export default function AdminDashboard() {
       fetchPlaces();
       fetchSocialStats();
       fetchModerationReviews();
+      fetchContributions();
     }
   }, [isAuthenticated]);
 
@@ -72,6 +74,26 @@ export default function AdminDashboard() {
       const res = await axios.get('/api/admin/all-reviews');
       setModerationReviews(res.data);
     } catch (err) { console.error(err); }
+  };
+
+  const fetchContributions = async () => {
+    try {
+      const res = await axios.get('/api/admin/contributions');
+      setContributions(res.data);
+    } catch (err) { console.error(err); }
+  };
+
+  const synthesizeContribution = async (contribution) => {
+    // Mark as processed
+    try {
+      await axios.put(`/api/admin/contributions/${contribution._id}`);
+      fetchContributions();
+    } catch (err) { console.error(err); }
+    // Pre-fill AI input and switch to addPlace tab
+    setAiInput(contribution.text);
+    setActiveTab('addPlace');
+    // Trigger AI synthesis immediately with the contribution text
+    generateTripAI(contribution.text);
   };
 
   const handleLogin = async (e) => {
@@ -138,13 +160,14 @@ export default function AdminDashboard() {
     }
   };
 
-  const generateTripAI = async () => {
-    if (!aiInput) return alert('INTEL REQUIRED: Provide raw mission context.');
+  const generateTripAI = async (overrideText) => {
+    const inputText = overrideText || aiInput;
+    if (!inputText) return alert('INTEL REQUIRED: Provide raw mission context.');
     setIsAiLoading(true);
     try {
       const prompt = `You are a Master Travel Architect. Parse the following unstructured message into a high-fidelity Mission Blueprint (JSON).
       
-      Input text: "${aiInput}"
+      Input text: "${inputText}"
       
       REQUIRED JSON STRUCTURE:
       {
@@ -328,7 +351,8 @@ export default function AdminDashboard() {
             { id: 'analytics', icon: <Users size={18} />, label: 'Intelligence' },
             { id: 'places', icon: <Map size={18} />, label: 'Directory' },
             { id: 'addPlace', icon: <Plus size={18} />, label: editingId ? 'Refine' : 'Synthesize' },
-            { id: 'moderation', icon: <ShieldAlert size={18} />, label: 'Sanitizer' }
+            { id: 'moderation', icon: <ShieldAlert size={18} />, label: 'Sanitizer' },
+            { id: 'contributions', icon: <FileText size={18} />, label: `Queue${contributions.filter(c => c.status === 'pending').length > 0 ? ` (${contributions.filter(c => c.status === 'pending').length})` : ''}` }
           ].map(tab => (
             <button 
               key={tab.id}
@@ -703,6 +727,93 @@ export default function AdminDashboard() {
                    <p style={{ fontSize: '0.7rem', color: '#ccc', fontWeight: 900, letterSpacing: '2px' }}>SHOWING 10 LATEST SIGNALS INMODERATION QUEUE</p>
                 </div>
              </motion.div>
+          )}
+
+          {activeTab === 'contributions' && (
+            <motion.div key="5" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="glass-panel" style={{ padding: '50px', background: 'white', borderRadius: '40px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
+                <div>
+                  <h3 className="title" style={{ fontSize: '2.5rem', margin: 0 }}>Contribution Queue</h3>
+                  <p style={{ color: '#666', fontSize: '0.9rem', marginTop: '5px' }}>Community-submitted itineraries awaiting AI synthesis.</p>
+                </div>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                  <div style={{ padding: '8px 20px', background: '#d8f3dc', borderRadius: '50px', fontSize: '0.7rem', fontWeight: 900, color: '#1b4332', letterSpacing: '2px' }}>
+                    {contributions.filter(c => c.status === 'pending').length} PENDING
+                  </div>
+                  <button onClick={fetchContributions} className="glass-btn" style={{ padding: '10px 20px', background: '#f0f4f8', color: '#1b4332', border: 'none', borderRadius: '12px', fontWeight: 900, fontSize: '0.75rem' }}>
+                    REFRESH
+                  </button>
+                </div>
+              </div>
+
+              {contributions.length === 0 ? (
+                <div style={{ padding: '80px', textAlign: 'center', background: '#fcfdfd', borderRadius: '30px', border: '2px dashed #eee' }}>
+                  <FileText size={60} color="#ccc" style={{ marginBottom: '20px' }} />
+                  <h4 style={{ margin: 0, color: '#999', letterSpacing: '2px' }}>NO CONTRIBUTIONS YET</h4>
+                  <p style={{ color: '#bbb', fontSize: '0.8rem', marginTop: '10px' }}>Community blueprints will appear here once travelers submit their itineraries.</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {contributions.map((contrib, idx) => (
+                    <motion.div
+                      key={contrib._id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: idx * 0.05 }}
+                      style={{
+                        padding: '30px', borderRadius: '20px',
+                        background: contrib.status === 'processed' ? '#f8fdfa' : 'white',
+                        border: '1px solid',
+                        borderColor: contrib.status === 'processed' ? '#d8f3dc' : 'rgba(0,0,0,0.08)',
+                        borderLeft: `6px solid ${contrib.status === 'processed' ? '#2d6a4f' : '#ffb703'}`,
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.04)'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '20px' }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                            <span style={{ fontWeight: 900, color: '#081c15', fontSize: '1.1rem', textTransform: 'uppercase' }}>{contrib.userName}</span>
+                            <span style={{
+                              fontSize: '0.6rem', fontWeight: 900, letterSpacing: '1px',
+                              padding: '4px 10px', borderRadius: '50px',
+                              background: contrib.status === 'processed' ? '#d8f3dc' : 'rgba(255,183,3,0.15)',
+                              color: contrib.status === 'processed' ? '#1b4332' : '#ff8c00'
+                            }}>
+                              {contrib.status.toUpperCase()}
+                            </span>
+                            <span style={{ fontSize: '0.65rem', color: '#aaa' }}>{new Date(contrib.createdAt).toLocaleString()}</span>
+                          </div>
+                          <p style={{ margin: 0, color: '#555', fontSize: '0.95rem', lineHeight: 1.6, fontWeight: 500 }}>
+                            "{contrib.text}"
+                          </p>
+                        </div>
+                        {contrib.status === 'pending' && (
+                          <button
+                            onClick={() => synthesizeContribution(contrib)}
+                            style={{
+                              flexShrink: 0, padding: '14px 24px',
+                              background: '#081c15', color: '#ffb703',
+                              border: 'none', borderRadius: '14px',
+                              fontWeight: 900, fontSize: '0.75rem', letterSpacing: '1px',
+                              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
+                              boxShadow: '0 6px 20px rgba(8,28,21,0.2)',
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
+                            <Zap size={16} /> SEND TO AI FORGE
+                          </button>
+                        )}
+                        {contrib.status === 'processed' && (
+                          <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '8px', color: '#2d6a4f', fontSize: '0.75rem', fontWeight: 900 }}>
+                            <CheckCircle size={18} /> SYNTHESIZED
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
           )}
 
         </AnimatePresence>

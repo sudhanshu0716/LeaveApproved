@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PlaneTakeoff, MapPin, Calendar, Briefcase, PlusCircle, Search, Users, CheckCircle, XCircle, Send, MessageSquare, Compass, ArrowRight, Ticket, Plane, Globe, Trash2 } from 'lucide-react';
+import { PlaneTakeoff, MapPin, Calendar, Briefcase, PlusCircle, Search, Users, CheckCircle, XCircle, Send, MessageSquare, Compass, ArrowRight, Ticket, Plane, Globe, Trash2, Mic, MicOff, FileText } from 'lucide-react';
 
 export default function TravelBuddy({ user, onXpGain }) {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const [view, setView] = useState('feed'); // 'feed', 'list', 'my_trips'
+  const [view, setView] = useState('feed'); // 'feed', 'list', 'my_trips', 'contribute'
   const [trips, setTrips] = useState([]);
   const [myTrips, setMyTrips] = useState({ created: [], requested: [] });
+
+  // Contribution state
+  const [itineraryText, setItineraryText] = useState('');
+  const [isListening, setIsListening] = useState(false);
+  const [isSubmittingContrib, setIsSubmittingContrib] = useState(false);
   
   // List Form State
   const [origin, setOrigin] = useState('');
@@ -135,6 +140,40 @@ export default function TravelBuddy({ user, onXpGain }) {
     }
   };
 
+  const startListening = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Voice input is not supported in your browser. Please type your itinerary.');
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-IN';
+    setIsListening(true);
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setItineraryText(prev => prev ? prev + ' ' + transcript : transcript);
+      setIsListening(false);
+    };
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => setIsListening(false);
+    recognition.start();
+  };
+
+  const handleContributionSubmit = async () => {
+    if (!itineraryText.trim()) { alert('Please describe your trip first.'); return; }
+    setIsSubmittingContrib(true);
+    try {
+      await axios.post('/api/buddy/contribute', { userName: user.name, text: itineraryText });
+      setItineraryText('');
+      alert('CONTRIBUTION RECEIVED! Our team will review and synthesize your blueprint.');
+    } catch (err) {
+      alert('Failed to submit: ' + (err.response?.data?.error || err.message));
+    }
+    setIsSubmittingContrib(false);
+  };
+
   const handleDeleteTrip = async (id) => {
     if (!window.confirm("Are you sure you want to delete this trip request?")) return;
     try {
@@ -209,7 +248,8 @@ export default function TravelBuddy({ user, onXpGain }) {
         {[
           { id: 'feed', label: 'EXPLORE TRIPS', icon: <Globe size={18} /> },
           { id: 'list', label: 'LIST A TRIP', icon: <Ticket size={18} /> },
-          { id: 'my_trips', label: 'MY TRIPS', icon: <Compass size={18} /> }
+          { id: 'my_trips', label: 'MY TRIPS', icon: <Compass size={18} /> },
+          { id: 'contribute', label: 'CONTRIBUTE TRIP', icon: <FileText size={18} /> }
         ].map(tab => (
           <button key={tab.id} onClick={() => setView(tab.id)}
             style={{
@@ -442,6 +482,92 @@ export default function TravelBuddy({ user, onXpGain }) {
                </div>
             </div>
           )}
+          {view === 'contribute' && (
+            <div style={{ maxWidth: '700px', margin: '0 auto' }}>
+              {/* Header */}
+              <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', background: 'rgba(255,183,3,0.1)', border: '1px solid rgba(255,183,3,0.3)', padding: '8px 20px', borderRadius: '50px', marginBottom: '20px' }}>
+                  <FileText size={14} color="#ffb703" />
+                  <span style={{ color: '#ffb703', fontSize: '0.65rem', fontWeight: 900, letterSpacing: '3px' }}>COMMUNITY BLUEPRINT</span>
+                </div>
+                <h2 style={{ color: 'white', fontFamily: "'Bebas Neue', cursive", fontSize: '3rem', margin: 0, letterSpacing: '3px' }}>CONTRIBUTE A TRIP</h2>
+                <p style={{ color: 'rgba(216,243,220,0.5)', fontSize: '0.85rem', marginTop: '10px', fontFamily: "'DM Sans', sans-serif" }}>Share your travel experience. Our AI will transform it into an interactive itinerary.</p>
+              </div>
+
+              {/* Text area + mic */}
+              <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', padding: '30px', marginBottom: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                  <span style={{ color: 'rgba(216,243,220,0.6)', fontSize: '0.65rem', fontWeight: 900, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif" }}>YOUR RAW ITINERARY</span>
+                  <button
+                    onClick={startListening}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '8px',
+                      padding: '10px 20px', borderRadius: '50px', border: 'none', cursor: 'pointer',
+                      background: isListening ? 'rgba(255,59,59,0.2)' : 'rgba(255,183,3,0.15)',
+                      color: isListening ? '#ff3b3b' : '#ffb703',
+                      fontWeight: 900, fontSize: '0.7rem', letterSpacing: '1px',
+                      transition: 'all 0.3s',
+                      boxShadow: isListening ? '0 0 20px rgba(255,59,59,0.4)' : 'none',
+                      fontFamily: "'DM Sans', sans-serif"
+                    }}
+                  >
+                    {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+                    {isListening ? 'LISTENING...' : 'NEURAL MIC'}
+                  </button>
+                </div>
+                <textarea
+                  value={itineraryText}
+                  onChange={e => setItineraryText(e.target.value)}
+                  placeholder={`Describe your trip in your own words...\n\nExample: "Went to Manali for 3 days, stayed at Old Manali. Day 1 arrived and explored the mall road. Day 2 visited Jogini Falls and Solang Valley. Budget was around 8000 rupees total..."`}
+                  style={{
+                    width: '100%', minHeight: '200px', background: 'transparent',
+                    border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px',
+                    padding: '20px', color: 'white', fontSize: '0.9rem', lineHeight: 1.7,
+                    outline: 'none', resize: 'vertical', fontFamily: "'DM Sans', sans-serif",
+                    boxSizing: 'border-box'
+                  }}
+                />
+                {isListening && (
+                  <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    {[...Array(5)].map((_, i) => (
+                      <motion.div key={i}
+                        animate={{ scaleY: [0.3, 1, 0.3] }}
+                        transition={{ repeat: Infinity, duration: 0.8, delay: i * 0.12 }}
+                        style={{ width: '4px', height: '20px', background: '#ff3b3b', borderRadius: '2px' }}
+                      />
+                    ))}
+                    <span style={{ color: '#ff3b3b', fontSize: '0.7rem', fontWeight: 900, letterSpacing: '2px' }}>RECORDING VOICE...</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Submit */}
+              <button
+                onClick={handleContributionSubmit}
+                disabled={isSubmittingContrib || !itineraryText.trim()}
+                style={{
+                  width: '100%', padding: '20px',
+                  background: isSubmittingContrib || !itineraryText.trim()
+                    ? 'rgba(255,183,3,0.3)'
+                    : 'linear-gradient(135deg, #ffb703, #ff8c00)',
+                  color: '#081c15', border: 'none', borderRadius: '16px',
+                  fontWeight: 900, fontSize: '1rem', letterSpacing: '2px',
+                  cursor: isSubmittingContrib || !itineraryText.trim() ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
+                  boxShadow: itineraryText.trim() ? '0 10px 30px rgba(255,183,3,0.35)' : 'none',
+                  transition: 'all 0.3s', fontFamily: "'DM Sans', sans-serif"
+                }}
+              >
+                <Send size={20} />
+                {isSubmittingContrib ? 'TRANSMITTING...' : 'SUBMIT CONTRIBUTION'}
+              </button>
+
+              <p style={{ textAlign: 'center', color: 'rgba(216,243,220,0.3)', fontSize: '0.65rem', fontWeight: 900, letterSpacing: '1px', marginTop: '20px', fontFamily: "'DM Sans', sans-serif" }}>
+                YOUR BLUEPRINT WILL BE REVIEWED BY ADMIN AND DEPLOYED TO THE PLATFORM
+              </p>
+            </div>
+          )}
+
         </motion.div>
       </AnimatePresence>
     </div>

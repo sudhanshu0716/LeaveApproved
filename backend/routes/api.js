@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const UserEntry = require('../models/UserEntry');
 const Place = require('../models/Place');
 const TripListing = require('../models/TripListing');
+const Contribution = require('../models/Contribution');
 
 // ── Password strength validator ──────────────────────────────────
 function validatePassword(password) {
@@ -522,6 +523,45 @@ router.delete('/buddy/trips/:id', async (req, res) => {
     
     await TripListing.findByIdAndDelete(req.params.id);
     res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Contribution Routes
+
+// User: Submit a trip contribution
+router.post('/buddy/contribute', async (req, res) => {
+  try {
+    const { userName, text } = req.body;
+    if (!userName || !text) return res.status(400).json({ error: 'Name and itinerary text are required.' });
+    const contribution = new Contribution({ userName, text });
+    await contribution.save();
+    res.status(201).json(contribution);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin: Get all contributions
+router.get('/admin/contributions', async (req, res) => {
+  try {
+    const contributions = await Contribution.find().sort({ createdAt: -1 });
+    res.json(contributions);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin: Mark a contribution as processed
+router.put('/admin/contributions/:id', async (req, res) => {
+  try {
+    const updated = await Contribution.findByIdAndUpdate(
+      req.params.id,
+      { status: 'processed' },
+      { new: true }
+    );
+    res.json(updated);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

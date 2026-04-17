@@ -289,14 +289,14 @@ export default function TravelBuddy({ user, onXpGain, initialView }) {
                 {!isMobile && <div style={{ position: 'absolute', left: '-10px', top: '0', bottom: '0', width: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '10px 0' }}>
                    {[...Array(15)].map((_, i) => <div key={i} style={{ width: '6px', height: '12px', background: 'rgba(0,0,0,0.1)', borderRadius: '10px' }}/>)}
                 </div>}
-                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '25px', marginBottom: '40px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? '20px' : '25px', marginBottom: '40px' }}>
                   <div>
                     <label style={{ display: 'block', color: '#081c15', fontSize: '0.7rem', fontWeight: 900, marginBottom: '8px', letterSpacing: '1px', fontFamily: "'DM Sans', sans-serif" }}>STARTING CITY</label>
-                    <input required value={origin} onChange={e => setOrigin(e.target.value)} placeholder="e.g. Mumbai" style={{ width: '100%', padding: '12px 0', border: 'none', borderBottom: '2px solid rgba(8,28,21,0.1)', background: 'transparent', color: '#081c15', fontSize: '1.1rem', fontWeight: 900, outline: 'none', fontFamily: "'DM Sans', sans-serif" }} />
+                    <input required value={origin} onChange={e => setOrigin(e.target.value)} placeholder="e.g. Mumbai" style={{ width: '100%', padding: '12px 0', border: 'none', borderBottom: '2px solid rgba(8,28,21,0.1)', background: 'transparent', color: '#081c15', fontSize: '1.1rem', fontWeight: 900, outline: 'none', fontFamily: "'DM Sans', sans-serif", boxSizing: 'border-box' }} />
                   </div>
                   <div>
                     <label style={{ display: 'block', color: '#081c15', fontSize: '0.7rem', fontWeight: 900, marginBottom: '8px', letterSpacing: '1px', fontFamily: "'DM Sans', sans-serif" }}>DESTINATION CITY</label>
-                    <input required value={destination} onChange={e => setDestination(e.target.value)} placeholder="e.g. Goa" style={{ width: '100%', padding: '12px 0', border: 'none', borderBottom: '2px solid rgba(8,28,21,0.1)', background: 'transparent', color: '#081c15', fontSize: '1.1rem', fontWeight: 900, outline: 'none', fontFamily: "'DM Sans', sans-serif" }} />
+                    <input required value={destination} onChange={e => setDestination(e.target.value)} placeholder="e.g. Goa" style={{ width: '100%', padding: '12px 0', border: 'none', borderBottom: '2px solid rgba(8,28,21,0.1)', background: 'transparent', color: '#081c15', fontSize: '1.1rem', fontWeight: 900, outline: 'none', fontFamily: "'DM Sans', sans-serif", boxSizing: 'border-box' }} />
                   </div>
                   <div>
                     <label style={{ display: 'block', color: '#081c15', fontSize: '0.7rem', fontWeight: 900, marginBottom: '8px', letterSpacing: '1px', fontFamily: "'DM Sans', sans-serif" }}>YOUR BUDGET</label>
@@ -310,7 +310,8 @@ export default function TravelBuddy({ user, onXpGain, initialView }) {
                       <option>1 day</option><option>2 day</option><option>3 day</option><option>3+ days</option>
                     </select>
                   </div>
-                  <div style={{ gridColumn: 'span 2' }}>
+                  {/* gridColumn span 2 only on desktop — on mobile it would force an implicit 2nd column */}
+                  <div style={{ gridColumn: isMobile ? 'auto' : 'span 2' }}>
                     <label style={{ display: 'block', color: '#081c15', fontSize: '0.7rem', fontWeight: 900, marginBottom: '8px', letterSpacing: '1px', fontFamily: "'DM Sans', sans-serif" }}>TRIP DATE</label>
                     <input type="date" required value={date} onChange={e => setDate(e.target.value)} style={{ width: '100%', padding: '12px 0', border: 'none', borderBottom: '2px solid rgba(8,28,21,0.1)', background: 'transparent', color: '#081c15', fontSize: '1rem', fontWeight: 900, outline: 'none', fontFamily: "'DM Sans', sans-serif" }} />
                   </div>
@@ -340,14 +341,14 @@ export default function TravelBuddy({ user, onXpGain, initialView }) {
                  </button>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '30px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(400px, 1fr))', gap: isMobile ? '16px' : '30px' }}>
                 {trips.length === 0 && <div style={{ color: 'white', opacity: 0.5, textAlign: 'center', width: '100%', padding: '40px', fontFamily: "'DM Sans', sans-serif" }}>No trips found. Try a different city or post your own!</div>}
               {trips.map(trip => {
                 const requested = trip.matches?.some(m => m.requesterUid === user.uid);
                 const shortOrig = trip.origin.substring(0,3).toUpperCase();
                 const shortDest = trip.destination.substring(0,3).toUpperCase();
                 return (
-                <div key={trip._id} className="ticket-card" style={{ display: 'flex', background: 'rgba(255,255,255,0.95)', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.3)', transition: 'transform 0.2s', position: 'relative' }}>
+                <div key={trip._id} className="ticket-card" style={{ display: 'flex', background: 'rgba(255,255,255,0.95)', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.3)', transition: 'transform 0.2s', position: 'relative', width: '100%', boxSizing: 'border-box' }}>
                   {/* Left Main Ticket Panel */}
                   <div style={{ flex: 1, padding: '25px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                      <div>
@@ -373,14 +374,14 @@ export default function TravelBuddy({ user, onXpGain, initialView }) {
                        </div>
                      </div>
                      
-                     <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '2px solid rgba(8,28,21,0.1)', paddingTop: '15px' }}>
-                        <div>
+                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', borderTop: '2px solid rgba(8,28,21,0.1)', paddingTop: '15px' }}>
+                        <div style={{ minWidth: 0 }}>
                            <div style={{ fontSize: '0.6rem', color: 'rgba(8,28,21,0.5)', fontWeight: 900, fontFamily: "'DM Sans', sans-serif" }}>DATE</div>
-                           <div style={{ fontSize: '0.9rem', color: '#081c15', fontWeight: 900, fontFamily: "'DM Sans', sans-serif" }}>{new Date(trip.date).toLocaleDateString()}</div>
+                           <div style={{ fontSize: isMobile ? '0.8rem' : '0.9rem', color: '#081c15', fontWeight: 900, fontFamily: "'DM Sans', sans-serif", wordBreak: 'break-all' }}>{new Date(trip.date).toLocaleDateString()}</div>
                         </div>
-                        <div>
+                        <div style={{ minWidth: 0, textAlign: 'right' }}>
                            <div style={{ fontSize: '0.6rem', color: 'rgba(8,28,21,0.5)', fontWeight: 900, fontFamily: "'DM Sans', sans-serif" }}>CLASS</div>
-                           <div style={{ fontSize: '0.9rem', color: '#081c15', fontWeight: 900, fontFamily: "'DM Sans', sans-serif" }}>{trip.budget}</div>
+                           <div style={{ fontSize: isMobile ? '0.8rem' : '0.9rem', color: '#081c15', fontWeight: 900, fontFamily: "'DM Sans', sans-serif" }}>{trip.budget}</div>
                         </div>
                      </div>
                   </div>
@@ -393,7 +394,7 @@ export default function TravelBuddy({ user, onXpGain, initialView }) {
                   </div>
                   
                   {/* Right Stub Buttons */}
-                  <div style={{ width: '120px', background: '#ffb703', padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '15px', alignItems: 'center' }}>
+                  <div style={{ width: isMobile ? '80px' : '120px', background: '#ffb703', padding: isMobile ? '14px' : '20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '15px', alignItems: 'center' }}>
                      <div style={{ transform: 'rotate(-90deg)', whiteSpace: 'nowrap', fontSize: '0.7rem', fontWeight: 900, letterSpacing: '4px', color: 'rgba(8,28,21,0.5)', marginBottom: '40px' }}>TRIP</div>
                      <button 
                         onClick={() => handleRequestMatch(trip._id)}
@@ -411,7 +412,7 @@ export default function TravelBuddy({ user, onXpGain, initialView }) {
           )}
 
           {view === 'my_trips' && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '40px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(400px, 1fr))', gap: isMobile ? '24px' : '40px' }}>
                {/* Created Trips */}
                <div>
                   <h3 className="title" style={{ color: 'white', fontSize: '1.8rem', borderBottom: '2px dashed rgba(255,255,255,0.2)', paddingBottom: '15px', display: 'flex', alignItems: 'center', gap: '12px', margin: '0 0 20px', fontFamily: "'Bebas Neue', cursive", letterSpacing: '2px' }}><Plane color="#ffb703" size={22}/> TRIPS I POSTED</h3>

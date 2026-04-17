@@ -191,7 +191,7 @@ export default function Dashboard() {
 
         {/* ── BOTTOM CONTENT AREA ── */}
         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 25,
-          padding: '0 22px calc(72px + max(16px, env(safe-area-inset-bottom)))' }}>
+          padding: '0 22px calc(80px + max(24px, env(safe-area-inset-bottom)))' }}>
 
           {/* Animated title block */}
           <AnimatePresence mode="wait">

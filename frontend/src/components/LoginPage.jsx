@@ -161,9 +161,9 @@ export default function LoginPage() {
   /* ── shared input style ─────────────────────── */
   const mobileInputStyle = {
     padding: '15px 18px 15px 46px', borderRadius: '14px',
-    background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(16px)',
-    WebkitBackdropFilter: 'blur(16px)',
-    border: '1px solid rgba(255,255,255,0.15)',
+    background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    border: '1px solid rgba(255,255,255,0.22)',
     color: 'white', fontSize: '0.95rem', fontWeight: 500,
     outline: 'none', fontFamily: "'DM Sans', sans-serif",
     width: '100%', boxSizing: 'border-box',
@@ -211,7 +211,7 @@ export default function LoginPage() {
           MOBILE LAYOUT
       ════════════════════════════════ */}
       {isMobile && (
-        <div style={{ position: 'relative', zIndex: 10, height: '100svh', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '0 22px max(28px, env(safe-area-inset-bottom))' }}>
+        <div style={{ position: 'relative', zIndex: 10, minHeight: '100svh', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '0 22px max(56px, env(safe-area-inset-bottom))', overflowY: 'auto' }}>
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }}>
 
             {/* Headline */}

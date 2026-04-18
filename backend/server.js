@@ -1,4 +1,6 @@
 const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
@@ -8,6 +10,14 @@ const rateLimit = require('express-rate-limit');
 dotenv.config({ path: path.join(__dirname, '.env') });
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: { origin: '*', methods: ['GET', 'POST'] }
+});
+
+// Make io accessible to routes
+app.set('io', io);
+
 app.use(cors());
 app.use(express.json());
 
@@ -77,6 +87,34 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-app.listen(PORT, () => {
+// ── Socket.io ────────────────────────────────────────────────────
+const TripListing = require('./models/TripListing');
+
+io.on('connection', (socket) => {
+  // Join a trip chat room
+  socket.on('join-room', (tripId) => {
+    socket.join(tripId);
+  });
+
+  // Send a message — save to DB then broadcast
+  socket.on('send-message', async ({ tripId, senderUid, senderName, text }) => {
+    try {
+      const trip = await TripListing.findById(tripId);
+      if (!trip) return;
+      trip.messages.push({ senderUid, senderName, text });
+      await trip.save();
+      const saved = trip.messages[trip.messages.length - 1];
+      io.to(tripId).emit('new-message', saved);
+    } catch (err) {
+      console.error('Socket send-message error:', err.message);
+    }
+  });
+
+  socket.on('leave-room', (tripId) => {
+    socket.leave(tripId);
+  });
+});
+
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

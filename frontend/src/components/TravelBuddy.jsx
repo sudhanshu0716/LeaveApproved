@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import axios from 'axios';
+import { io } from 'socket.io-client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PlaneTakeoff, MapPin, Calendar, Briefcase, PlusCircle, Search, Users, CheckCircle, XCircle, Send, MessageSquare, Compass, ArrowRight, Ticket, Plane, Globe, Trash2, Mic, MicOff, FileText } from 'lucide-react';
 import { getUserAuthHeader } from '../utils/auth';
@@ -72,6 +73,7 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
   const [messages, setMessages] = useState([]);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const chatContainerRef = React.useRef(null);
+  const socketRef = useRef(null);
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 768);
@@ -79,25 +81,42 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  // When a chat is opened, clear previous session messages and start polling
+  // When a chat is opened — connect socket, fetch history, listen for messages
   useEffect(() => {
-    let interval;
-    let isSubscribed = true;
-    const fetchMessages = async () => {
-      try {
-        const res = await axios.get(`/api/buddy/trips/${activeChat._id}/chat`);
-        if (isSubscribed) setMessages(res.data);
-      } catch (err) {}
-    };
+    if (!activeChat) return;
 
-    if (activeChat) {
-      window.scrollTo({ top: 0, behavior: 'instant' });
-      fetchMessages();
-      interval = setInterval(fetchMessages, 1000); // 1s aggressive polling
-    }
+    window.scrollTo({ top: 0, behavior: 'instant' });
+
+    // 1. Fetch message history from REST
+    axios.get(`/api/buddy/trips/${activeChat._id}/chat`).then(res => setMessages(res.data)).catch(() => {});
+
+    // 2. Connect socket and join room
+    const SOCKET_URL = import.meta.env.DEV ? 'http://localhost:5001' : window.location.origin;
+    const socket = io(SOCKET_URL, { transports: ['websocket', 'polling'] });
+    socketRef.current = socket;
+
+    socket.emit('join-room', activeChat._id);
+
+    socket.on('new-message', (msg) => {
+      setMessages(prev => {
+        // Avoid duplicates from optimistic update
+        const alreadyExists = prev.some(m => m._id && m._id === msg._id);
+        if (alreadyExists) return prev;
+        // Replace optimistic placeholder (no _id) from same sender with real message
+        const optimisticIdx = prev.findLastIndex(m => !m._id && m.senderUid === msg.senderUid && m.text === msg.text);
+        if (optimisticIdx !== -1) {
+          const next = [...prev];
+          next[optimisticIdx] = msg;
+          return next;
+        }
+        return [...prev, msg];
+      });
+    });
+
     return () => {
-      isSubscribed = false;
-      clearInterval(interval);
+      socket.emit('leave-room', activeChat._id);
+      socket.disconnect();
+      socketRef.current = null;
     };
   }, [activeChat]);
 
@@ -108,19 +127,19 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
     }
   }, [messages.length]);
 
-  const handleSendMessage = async () => {
-    if (!chatMessage.trim() || !activeChat) return;
-    const newMsg = { senderUid: user.uid, senderName: user.name, text: chatMessage };
-    
-    // Optimistic UI update
-    setMessages(prev => [...prev, { ...newMsg, timestamp: new Date() }]);
+  const handleSendMessage = () => {
+    if (!chatMessage.trim() || !activeChat || !socketRef.current) return;
+    const text = chatMessage.trim();
     setChatMessage('');
-    
-    try {
-      await axios.post(`/api/buddy/trips/${activeChat._id}/chat`, newMsg, { headers: getUserAuthHeader() });
-    } catch (err) {
-      showToast('Failed to send message', 'error');
-    }
+    // Optimistic update
+    setMessages(prev => [...prev, { senderUid: user.uid, senderName: user.name, text, timestamp: new Date() }]);
+    // Emit via socket — server saves + broadcasts back
+    socketRef.current.emit('send-message', {
+      tripId: activeChat._id,
+      senderUid: user.uid,
+      senderName: user.name,
+      text,
+    });
   };
 
   // Feed Search State

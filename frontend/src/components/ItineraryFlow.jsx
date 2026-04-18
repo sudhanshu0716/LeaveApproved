@@ -5,13 +5,17 @@ import 'reactflow/dist/style.css';
 import { motion } from 'framer-motion';
 import { CityNode, NoteNode, StickerNode, HubNode } from './CustomNodes';
 import CustomEdge from './CustomEdge';
-import { Heart, ZoomIn, ZoomOut, Maximize, Minimize, Send, Trash2, MapPin, Calendar, Wallet, Navigation } from 'lucide-react';
+import { Heart, ZoomIn, ZoomOut, Maximize, Minimize, Send, Trash2, MapPin, Calendar, Wallet, Navigation, Download } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { getUserAuthHeader } from '../utils/auth';
 
 function FlowContent({ place }) {
   const { zoomIn, zoomOut, fitView } = useReactFlow();
   const flowInstanceRef = useRef(null);
+  const containerRef = useRef(null);
+  const flowCanvasRef = useRef(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [pdfCapturing, setPdfCapturing] = useState(false);
   const savedUser = JSON.parse(localStorage.getItem('travel_user') || '{}');
   const [likedBy, setLikedBy] = useState(Array.isArray(place.likedBy) ? place.likedBy : []);
   const [comments, setComments] = useState(place.comments || []);
@@ -70,6 +74,18 @@ function FlowContent({ place }) {
       data: { ...e.data, readOnly: true }
     })), [place.edges]);
 
+  // Static non-animated edges used only during PDF capture
+  const captureEdges = useMemo(() =>
+    (place.edges || []).map(e => ({
+      ...e,
+      type: 'customEdge',
+      animated: false,
+      selectable: false,
+      markerEnd: { type: 'arrowclosed', color: '#555', width: 20, height: 20 },
+      style: { stroke: '#555', strokeWidth: 2 },
+      data: { ...e.data, readOnly: true }
+    })), [place.edges]);
+
   const handleLike = async () => {
     const currentUser = JSON.parse(localStorage.getItem('travel_user') || '{}');
     if (isLiking || !currentUser.name) return;
@@ -110,6 +126,67 @@ function FlowContent({ place }) {
     } catch (err) { console.error(err); }
   };
 
+  const handleDownloadPDF = async () => {
+    if (isDownloading || !flowCanvasRef.current) return;
+    setIsDownloading(true);
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
+
+      const target = flowCanvasRef.current;
+
+      // 1. Swap to static arrow edges + expand canvas height
+      setPdfCapturing(true);
+      const origHeight = target.style.height;
+      const origMinHeight = target.style.minHeight;
+      target.style.height = '900px';
+      target.style.minHeight = '900px';
+
+      // 2. Wait for React re-render with static edges, then fit view
+      await new Promise(r => setTimeout(r, 80));
+      if (flowInstanceRef.current) {
+        flowInstanceRef.current.fitView({ padding: 0.12, duration: 0 });
+        await new Promise(r => setTimeout(r, 350));
+      }
+
+      // 3. Hide UI overlays (zoom buttons, attribution, panels)
+      const uiOverlays = target.querySelectorAll(
+        '.react-flow__controls, .react-flow__attribution, .react-flow__panel'
+      );
+      uiOverlays.forEach(el => { el._prevDisplay = el.style.display; el.style.display = 'none'; });
+
+      // 4. Capture
+      const canvas = await html2canvas(target, {
+        scale: 2.5,
+        useCORS: true,
+        backgroundColor: '#f4f9f6',
+        logging: false,
+        width: target.offsetWidth,
+        height: target.offsetHeight,
+      });
+
+      // 5. Restore everything
+      uiOverlays.forEach(el => { el.style.display = el._prevDisplay || ''; });
+      target.style.height = origHeight;
+      target.style.minHeight = origMinHeight;
+      setPdfCapturing(false);
+      if (flowInstanceRef.current) {
+        setTimeout(() => flowInstanceRef.current?.fitView({ padding: 0.25, duration: 300 }), 50);
+      }
+
+      // 6. Build PDF sized exactly to the captured image
+      const imgW = canvas.width;
+      const imgH = canvas.height;
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [imgW, imgH] });
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, imgW, imgH);
+      pdf.save(`${place.name.replace(/\s+/g, '_')}_itinerary.pdf`);
+    } catch (err) {
+      console.error('PDF export failed:', err);
+      setPdfCapturing(false);
+    }
+    setIsDownloading(false);
+  };
+
   const flowHeight = isExpanded
     ? '100%'
     : isMobile ? '55vw' : '520px';
@@ -133,7 +210,7 @@ function FlowContent({ place }) {
   };
 
   return (
-    <div style={containerStyle}>
+    <div ref={containerRef} style={containerStyle}>
       {/* ── HEADER ── */}
       <div style={{
         background: 'linear-gradient(135deg, #081c15 0%, #1b4332 60%, #2d6a4f 100%)',
@@ -181,22 +258,47 @@ function FlowContent({ place }) {
             )}
           </div>
 
-          <button
-            onClick={() => setIsExpanded(e => !e)}
-            style={{
-              background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255,255,255,0.2)',
-              padding: isMobile ? '8px 14px' : '10px 20px',
-              borderRadius: '50px', color: 'white',
-              fontSize: isMobile ? '0.6rem' : '0.7rem',
-              fontWeight: 700, letterSpacing: '1px', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: '7px',
-              fontFamily: "'DM Sans', sans-serif", flexShrink: 0,
-            }}>
-            {isExpanded
-              ? <><Minimize size={12} /> EXIT</>
-              : <><Maximize size={12} /> EXPAND</>}
-          </button>
+          <div className="pdf-hide" style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+            {/* PDF Download */}
+            <button
+              onClick={handleDownloadPDF}
+              disabled={isDownloading}
+              style={{
+                background: isDownloading ? 'rgba(255,183,3,0.15)' : 'rgba(255,183,3,0.2)',
+                backdropFilter: 'blur(10px)',
+                border: '1px solid rgba(255,183,3,0.45)',
+                padding: isMobile ? '8px 14px' : '10px 20px',
+                borderRadius: '50px', color: '#ffb703',
+                fontSize: isMobile ? '0.6rem' : '0.7rem',
+                fontWeight: 700, letterSpacing: '1px',
+                cursor: isDownloading ? 'default' : 'pointer',
+                display: 'flex', alignItems: 'center', gap: '7px',
+                fontFamily: "'DM Sans', sans-serif",
+                transition: 'all 0.2s ease',
+                opacity: isDownloading ? 0.7 : 1,
+              }}>
+              {isDownloading
+                ? <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ animation: 'spin 1s linear infinite' }}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> SAVING…</>
+                : <><Download size={12} /> PDF</>}
+            </button>
+            {/* Expand */}
+            <button
+              onClick={() => setIsExpanded(e => !e)}
+              style={{
+                background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                padding: isMobile ? '8px 14px' : '10px 20px',
+                borderRadius: '50px', color: 'white',
+                fontSize: isMobile ? '0.6rem' : '0.7rem',
+                fontWeight: 700, letterSpacing: '1px', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '7px',
+                fontFamily: "'DM Sans', sans-serif",
+              }}>
+              {isExpanded
+                ? <><Minimize size={12} /> EXIT</>
+                : <><Maximize size={12} /> EXPAND</>}
+            </button>
+          </div>
         </div>
 
         {/* Trip meta badges */}
@@ -232,7 +334,7 @@ function FlowContent({ place }) {
       </div>
 
       {/* ── FLOW CANVAS ── */}
-      <div style={{
+      <div ref={flowCanvasRef} style={{
         height: flowHeight,
         minHeight: isExpanded ? 0 : (isMobile ? '240px' : '400px'),
         flex: isExpanded ? 1 : undefined,
@@ -242,7 +344,7 @@ function FlowContent({ place }) {
         {place.nodes?.length > 0 ? (
           <ReactFlow
             nodes={readOnlyNodes}
-            edges={readOnlyEdges}
+            edges={pdfCapturing ? captureEdges : readOnlyEdges}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             onInit={(instance) => {
@@ -370,8 +472,11 @@ function FlowContent({ place }) {
 export default function ItineraryFlow({ place }) {
   if (!place) return null;
   return (
-    <ReactFlowProvider>
-      <FlowContent place={place} />
-    </ReactFlowProvider>
+    <>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <ReactFlowProvider>
+        <FlowContent place={place} />
+      </ReactFlowProvider>
+    </>
   );
 }

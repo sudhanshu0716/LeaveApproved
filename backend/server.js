@@ -22,6 +22,7 @@ app.use('/api', require('./routes/places'));
 app.use('/api/buddy', require('./routes/buddy'));
 app.use('/api', require('./routes/admin'));
 app.use('/api/ai', require('./routes/ai'));
+app.use('/api', require('./routes/contact'));
 
 // Serve frontend in production
 if (process.env.NODE_ENV === 'production') {

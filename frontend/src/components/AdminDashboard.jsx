@@ -46,6 +46,7 @@ export default function AdminDashboard() {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiModel, setAiModel] = useState('groq');
   const [contributions, setContributions] = useState([]);
+  const [queries, setQueries] = useState([]);
   const [liveVisitors, setLiveVisitors] = useState(0);
   const [uptime, setUptime] = useState(null);
   const [uptimeLoading, setUptimeLoading] = useState(true);
@@ -86,6 +87,7 @@ export default function AdminDashboard() {
       fetchSocialStats();
       fetchModerationReviews();
       fetchContributions();
+      fetchQueries();
     }
   }, [isAuthenticated]);
 
@@ -107,6 +109,18 @@ export default function AdminDashboard() {
   };
   const fetchContributions = async () => {
     try { const res = await axios.get('/api/admin/contributions', { headers: adminAuthHeader() }); setContributions(res.data); }
+    catch (err) { console.error(err); }
+  };
+  const fetchQueries = async () => {
+    try { const res = await axios.get('/api/admin/queries', { headers: adminAuthHeader() }); setQueries(res.data); }
+    catch (err) { console.error(err); }
+  };
+  const deleteQuery = async (id) => {
+    try { await axios.delete(`/api/admin/queries/${id}`, { headers: adminAuthHeader() }); fetchQueries(); }
+    catch (err) { console.error(err); }
+  };
+  const markQueryRead = async (id) => {
+    try { await axios.patch(`/api/admin/queries/${id}/read`, {}, { headers: adminAuthHeader() }); fetchQueries(); }
     catch (err) { console.error(err); }
   };
 
@@ -352,12 +366,14 @@ CRITICAL RULES:
 
   // ─── TABS CONFIG ─────────────────────────────────────────────────────────────
   const pendingCount = contributions.filter(c => c.status === 'pending').length;
+  const unreadQueriesCount = queries.filter(q => !q.read).length;
   const tabs = [
-    { id: 'analytics',     icon: <BarChart2 size={17} />,   label: 'Analytics' },
-    { id: 'places',        icon: <Map size={17} />,          label: 'Trips' },
-    { id: 'addPlace',      icon: <Plus size={17} />,         label: editingId ? 'Edit Trip' : 'Add Trip' },
-    { id: 'moderation',    icon: <ShieldAlert size={17} />,  label: 'Reviews' },
-    { id: 'contributions', icon: <FileText size={17} />,     label: `Submissions${pendingCount > 0 ? ` (${pendingCount})` : ''}` },
+    { id: 'analytics',     icon: <BarChart2 size={17} />,      label: 'Analytics' },
+    { id: 'places',        icon: <Map size={17} />,             label: 'Trips' },
+    { id: 'addPlace',      icon: <Plus size={17} />,            label: editingId ? 'Edit Trip' : 'Add Trip' },
+    { id: 'moderation',    icon: <ShieldAlert size={17} />,     label: 'Reviews' },
+    { id: 'contributions', icon: <FileText size={17} />,        label: `Submissions${pendingCount > 0 ? ` (${pendingCount})` : ''}` },
+    { id: 'queries',       icon: <MessageSquare size={17} />,   label: `Queries${unreadQueriesCount > 0 ? ` (${unreadQueriesCount})` : ''}` },
   ];
 
   const goToTab = (id) => {
@@ -975,6 +991,69 @@ CRITICAL RULES:
                           </div>
                         )}
                         <button onClick={() => deleteContribution(contrib._id)} style={{ padding: '10px 14px', background: '#fff0f0', color: '#e63946', border: '1.5px solid #fcd0d3', borderRadius: '12px', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+                          <Trash2 size={14} /> Delete
+                        </button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {/* ── QUERIES ── */}
+          {activeTab === 'queries' && (
+            <motion.div key="queries" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                  <h2 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#081c15', margin: 0 }}>User Queries</h2>
+                  <p style={{ color: '#888', fontSize: '0.85rem', marginTop: '4px' }}>Messages sent from the About page.</p>
+                </div>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  {unreadQueriesCount > 0 && (
+                    <span style={{ padding: '6px 16px', background: 'rgba(255,183,3,0.12)', borderRadius: '50px', fontSize: '0.75rem', fontWeight: 900, color: '#b45309' }}>
+                      {unreadQueriesCount} unread
+                    </span>
+                  )}
+                  <button onClick={fetchQueries} style={{ padding: '10px 18px', background: 'white', color: '#1b4332', border: '1.5px solid #e0e0e0', borderRadius: '12px', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                    <RefreshCw size={14} /> Refresh
+                  </button>
+                </div>
+              </div>
+
+              {queries.length === 0 ? (
+                <div style={{ padding: '80px', textAlign: 'center', background: 'white', borderRadius: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
+                  <MessageSquare size={52} color="#d8f3dc" style={{ marginBottom: '16px' }} />
+                  <h4 style={{ margin: 0, color: '#999', fontWeight: 800 }}>No messages yet</h4>
+                  <p style={{ color: '#bbb', fontSize: '0.85rem', marginTop: '8px' }}>Messages from the About page will appear here.</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {queries.map((q, idx) => (
+                    <motion.div key={q._id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.04 }}
+                      style={{ padding: '24px', background: q.read ? '#f8fdf9' : 'white', borderRadius: '16px',
+                        border: '1px solid ' + (q.read ? '#d8f3dc' : '#f0f0f0'),
+                        borderLeft: `5px solid ${q.read ? '#2d6a4f' : '#ffb703'}`,
+                        boxShadow: '0 3px 15px rgba(0,0,0,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px', flexWrap: 'wrap' }}>
+                          <span style={{ fontWeight: 900, color: '#081c15', fontSize: '1rem' }}>{q.name}</span>
+                          <span style={{ fontSize: '0.65rem', fontWeight: 900, padding: '3px 10px', borderRadius: '50px',
+                            background: q.read ? '#d8f3dc' : 'rgba(255,183,3,0.12)',
+                            color: q.read ? '#1b4332' : '#b45309' }}>
+                            {q.read ? 'Read' : 'Unread'}
+                          </span>
+                          <span style={{ fontSize: '0.7rem', color: '#bbb' }}>{new Date(q.createdAt).toLocaleString()}</span>
+                        </div>
+                        <p style={{ margin: 0, color: '#555', fontSize: '0.92rem', lineHeight: 1.6 }}>"{q.message}"</p>
+                      </div>
+                      <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {!q.read && (
+                          <button onClick={() => markQueryRead(q._id)} style={{ padding: '10px 16px', background: '#f0fdf4', color: '#2d6a4f', border: '1.5px solid #d8f3dc', borderRadius: '12px', fontWeight: 800, fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+                            <CheckCircle size={14} /> Mark Read
+                          </button>
+                        )}
+                        <button onClick={() => deleteQuery(q._id)} style={{ padding: '10px 14px', background: '#fff0f0', color: '#e63946', border: '1.5px solid #fcd0d3', borderRadius: '12px', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
                           <Trash2 size={14} /> Delete
                         </button>
                       </div>

@@ -978,7 +978,7 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
                 )}
               </button>
               {showNotifPanel && (
-                <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 9999, width: 'min(300px, 90vw)',
+                <div style={{ position: 'fixed', top: '120px', left: isMobile ? '12px' : 'auto', right: isMobile ? '12px' : 0, zIndex: 9999, width: isMobile ? 'auto' : '300px',
                   background: 'rgba(8,20,14,0.97)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,183,3,0.2)',
                   borderRadius: '16px', padding: '16px', boxShadow: '0 16px 40px rgba(0,0,0,0.5)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
@@ -1229,8 +1229,10 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
                 ) : null;
               })()}
 
-              <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '12px', marginBottom: '16px', alignItems: isMobile ? 'stretch' : 'center' }}>
-                 <div style={{ flex: 1, position: 'relative' }}>
+              {/* Search row */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <div style={{ flex: 1, position: 'relative' }}>
                     <Search size={18} color="#ffb703" style={{ position: 'absolute', top: '16px', left: '20px' }} />
                     <input
                       value={searchOrigin}
@@ -1238,18 +1240,19 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
                       placeholder="Search by starting point... (e.g. Mumbai)"
                       style={{ width: '100%', padding: '16px 20px 16px 50px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,183,3,0.3)', borderRadius: '20px', color: 'white', outline: 'none', boxSizing: 'border-box' }}
                     />
-                 </div>
-                 <button onClick={() => { setDestFilter(''); fetchTrips(); }} className="glass-btn" style={{ padding: '16px 30px', background: '#ffb703', color: '#081c15', borderRadius: '20px', border: 'none', fontWeight: 900, whiteSpace: 'nowrap' }}>
+                  </div>
+                  <button onClick={() => { setDestFilter(''); fetchTrips(); }} className="glass-btn" style={{ padding: '16px 20px', background: '#ffb703', color: '#081c15', borderRadius: '20px', border: 'none', fontWeight: 900, whiteSpace: 'nowrap', flexShrink: 0 }}>
                     SEARCH
-                 </button>
-                 {/* Feature 14: Map View toggle */}
-                 <button onClick={() => setMapView(p => !p)}
-                   style={{ padding: '16px 20px', background: mapView ? 'rgba(255,183,3,0.2)' : 'rgba(255,255,255,0.05)',
-                     border: `1px solid ${mapView ? '#ffb703' : 'rgba(255,255,255,0.1)'}`, borderRadius: '20px',
-                     color: mapView ? '#ffb703' : 'rgba(255,255,255,0.6)', fontWeight: 900, cursor: 'pointer',
-                     fontSize: '0.72rem', fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap' }}>
-                   📍 MAP VIEW
-                 </button>
+                  </button>
+                </div>
+                {/* Feature 14: Map View toggle */}
+                <button onClick={() => setMapView(p => !p)}
+                  style={{ padding: '12px 20px', background: mapView ? 'rgba(255,183,3,0.2)' : 'rgba(255,255,255,0.05)',
+                    border: `1px solid ${mapView ? '#ffb703' : 'rgba(255,255,255,0.1)'}`, borderRadius: '20px',
+                    color: mapView ? '#ffb703' : 'rgba(255,255,255,0.6)', fontWeight: 900, cursor: 'pointer',
+                    fontSize: '0.72rem', fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap', width: '100%' }}>
+                  📍 MAP VIEW
+                </button>
               </div>
 
               {/* Scrollable cards area — desktop only */}

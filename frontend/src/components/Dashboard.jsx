@@ -25,6 +25,7 @@ export default function Dashboard() {
   const [xp, setXp]               = useState(45);
   const [showProfile, setShowProfile]   = useState(false);
   const [isUpdatingEmail, setIsUpdatingEmail] = useState(false);
+  const [profileStats, setProfileStats] = useState({ created: 0, requested: 0 });
   const navigate = useNavigate();
 
   const tabs = [
@@ -82,6 +83,27 @@ export default function Dashboard() {
     setUser(p);
     if (p.xp !== undefined) setXp(p.xp);
   }, [navigate]);
+
+  useEffect(() => {
+    if (!user.uid) return;
+    axios.get(`/api/visitors/${user.uid}`, { headers: getUserAuthHeader() })
+      .then(r => {
+        if (r.data?.xp !== undefined && r.data.xp !== xp) {
+          setXp(r.data.xp);
+          const updated = { ...user, xp: r.data.xp };
+          setUser(updated);
+          localStorage.setItem('travel_user', JSON.stringify(updated));
+        }
+      })
+      .catch(() => {});
+  }, [user.uid]);
+
+  useEffect(() => {
+    if (!showProfile || !user.uid) return;
+    axios.get(`/api/buddy/my-trips?uid=${user.uid}`, { headers: getUserAuthHeader() })
+      .then(r => setProfileStats({ created: r.data.created?.length || 0, requested: r.data.requested?.length || 0 }))
+      .catch(() => {});
+  }, [showProfile, user.uid]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'auto' });
@@ -304,6 +326,30 @@ export default function Dashboard() {
               </button>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* ── DESKTOP USER/EXIT for non-itinerary tabs ── */}
+      {!isMobile && !(activeTab === 'itineraries' && step === 1) && (
+        <div style={{ position: 'fixed', top: '20px', right: '24px', zIndex: 1200,
+          padding: '8px 8px 8px 18px', borderRadius: '50px', display: 'flex', alignItems: 'center', gap: '12px',
+          background: 'rgba(8,28,21,0.85)', backdropFilter: 'blur(15px)',
+          WebkitBackdropFilter: 'blur(15px)',
+          border: '1px solid rgba(255,255,255,0.12)',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: '0.45rem', fontWeight: 900, color: '#d8f3dc', opacity: 0.5, letterSpacing: '2px' }}>LOGGED IN</div>
+            <div style={{ fontSize: '0.78rem', fontWeight: 900, color: 'white', letterSpacing: '1px' }}>
+              {user.name?.split(' ')[0].toUpperCase() || 'USER'}
+            </div>
+          </div>
+          <button onClick={logout}
+            style={{ padding: '10px 20px', borderRadius: '50px', background: 'rgba(255,255,255,0.1)',
+              border: 'none', color: 'white', fontSize: '0.62rem', fontWeight: 900, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: '8px', letterSpacing: '1px',
+              fontFamily: "'DM Sans', sans-serif" }}>
+            EXIT <LogOut size={13} />
+          </button>
         </div>
       )}
 
@@ -787,7 +833,7 @@ export default function Dashboard() {
                     borderRadius: '20px', border: '1px solid rgba(255,255,255,0.06)' }}>
                     <div style={{ fontSize: '0.58rem', color: '#ffb703', fontWeight: 900,
                       letterSpacing: '2px', marginBottom: '14px', fontFamily: "'DM Sans', sans-serif" }}>STATISTICS</div>
-                    {[{ label: 'Trips Logged', val: '12' }, { label: 'Countries Visited', val: '04' }, { label: 'Office Escapes', val: '08' }].map(s => (
+                    {[{ label: 'Trips Listed', val: String(profileStats.created).padStart(2, '0') }, { label: 'Trips Joined', val: String(profileStats.requested).padStart(2, '0') }, { label: 'Total XP', val: String(xp) }].map(s => (
                       <div key={s.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', paddingBottom: '10px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                         <span style={{ color: 'rgba(216,243,220,0.45)', fontSize: '0.73rem', fontFamily: "'DM Sans', sans-serif" }}>{s.label}</span>
                         <span style={{ color: 'white', fontWeight: 800, fontSize: '0.85rem', fontFamily: "'DM Sans', sans-serif" }}>{s.val}</span>
@@ -799,18 +845,23 @@ export default function Dashboard() {
                     <div style={{ fontSize: '0.58rem', color: '#ffb703', fontWeight: 900,
                       letterSpacing: '2px', marginBottom: '14px', fontFamily: "'DM Sans', sans-serif" }}>WEEKLY ACTIVITY</div>
                     <div style={{ height: '56px', width: '100%', display: 'flex', alignItems: 'flex-end', gap: '5px' }}>
-                      {[40, 60, 45, 80, 55, 90, 70].map((h, i) => (
-                        <div key={i} style={{ flex: 1, height: `${h}%`, borderRadius: '4px',
-                          background: i === 5
-                            ? 'linear-gradient(to top, #ffb703, #ffd166)'
-                            : 'rgba(216,243,220,0.12)',
-                          transition: 'height 0.3s ease' }} />
-                      ))}
+                      {(() => {
+                        const d = new Date().getDay(); // 0=Sun,1=Mon,...6=Sat
+                        const todayIdx = [6,0,1,2,3,4,5][d]; // map to M=0..S=5,S=6
+                        return [40, 60, 45, 80, 55, 90, 70].map((h, i) => (
+                          <div key={i} style={{ flex: 1, height: `${i === todayIdx ? 90 : h}%`, borderRadius: '4px',
+                            background: i === todayIdx
+                              ? 'linear-gradient(to top, #ffb703, #ffd166)'
+                              : 'rgba(216,243,220,0.12)',
+                            transition: 'height 0.3s ease' }} />
+                        ));
+                      })()}
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
-                      {['M','T','W','T','F','S','S'].map((d,i) => (
-                        <span key={i} style={{ flex:1, textAlign:'center', fontSize: '0.48rem', color: i===5 ? '#ffb703' : 'rgba(255,255,255,0.2)', fontFamily: "'DM Sans', sans-serif", fontWeight: 700 }}>{d}</span>
-                      ))}
+                      {['M','T','W','T','F','S','S'].map((d,i) => {
+                        const todayI = [6,0,1,2,3,4,5][new Date().getDay()];
+                        return <span key={i} style={{ flex:1, textAlign:'center', fontSize: '0.48rem', color: i===todayI ? '#ffb703' : 'rgba(255,255,255,0.2)', fontFamily: "'DM Sans', sans-serif", fontWeight: 700 }}>{d}</span>;
+                      })}
                     </div>
                   </div>
                 </div>

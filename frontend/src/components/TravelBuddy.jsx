@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PlaneTakeoff, MapPin, Calendar, Briefcase, PlusCircle, Search, Users, CheckCircle, XCircle, Send, MessageSquare, Compass, ArrowRight, Ticket, Plane, Globe, Trash2, Mic, MicOff, FileText } from 'lucide-react';
@@ -199,7 +200,7 @@ export default function TravelBuddy({ user, onXpGain, initialView }) {
     }
   };
 
-  const ToastUI = () => toast ? (
+  const ToastUI = () => toast ? createPortal(
     <AnimatePresence>
       <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }}
         style={{ position: 'fixed', bottom: '32px', left: '50%', transform: 'translateX(-50%)', zIndex: 99999,
@@ -208,7 +209,8 @@ export default function TravelBuddy({ user, onXpGain, initialView }) {
           color: 'white', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', whiteSpace: 'nowrap' }}>
         {toast.type === 'error' ? '✕ ' : '✓ '}{toast.msg}
       </motion.div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   ) : null;
 
   if (activeChat) {

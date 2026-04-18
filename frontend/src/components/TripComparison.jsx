@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import axios from 'axios';
 import { ArrowRight, Plane, Loader, MapPin, ChefHat, AlertTriangle, Bus, Landmark, UserCheck, ShoppingBag, CheckCircle, Moon, Mountain, Wallet, CloudSun } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -107,7 +108,7 @@ Return ONLY a valid JSON object with no markdown formatting. The JSON must exact
     transition: 'all 0.25s ease',
   };
 
-  const ToastUI = () => toast ? (
+  const ToastUI = () => toast ? createPortal(
     <AnimatePresence>
       <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }}
         style={{ position: 'fixed', bottom: '32px', left: '50%', transform: 'translateX(-50%)', zIndex: 99999,
@@ -116,7 +117,8 @@ Return ONLY a valid JSON object with no markdown formatting. The JSON must exact
           color: 'white', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', whiteSpace: 'nowrap' }}>
         {toast.type === 'error' ? '✕ ' : '✓ '}{toast.msg}
       </motion.div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   ) : null;
 
   return (

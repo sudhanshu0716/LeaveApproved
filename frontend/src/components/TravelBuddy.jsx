@@ -254,54 +254,106 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
     return (
       <div style={{ position: 'relative' }}>
       <ToastUI />
-      <div className="glass-panel" style={{ width: '100%', maxWidth: '800px', padding: '30px', borderRadius: '30px', background: 'rgba(20, 35, 30, 0.6)', border: '1px solid rgba(255,255,255,0.1)' }}>
-        <button className="glass-btn" onClick={() => setActiveChat(null)} style={{ padding: '8px 16px', marginBottom: '20px', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }}>
-          ← CLOSE CHAT
-        </button>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '20px' }}>
-          <MessageSquare size={30} color="#ffb703" />
-          <div>
-            <div style={{ color: '#ffb703', fontSize: '0.7rem', fontWeight: 900, letterSpacing: '2px' }}>CHAT</div>
-            <h3 style={{ color: 'white', margin: 0, fontFamily: "'Bebas Neue', cursive" }}>CHATTING ABOUT: {activeChat.destination}</h3>
+      <div style={{ width: '100%', maxWidth: '900px', borderRadius: '28px', overflow: 'hidden',
+        background: 'rgba(8, 20, 14, 0.92)', backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)',
+        border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 24px 60px rgba(0,0,0,0.6)' }}>
+
+        {/* ── Header ── */}
+        <div style={{ padding: '20px 28px 18px', background: 'rgba(255,183,3,0.06)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          {/* Top row: label + actions */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'linear-gradient(135deg, #ffb703 0%, #fb8500 100%)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', flexShrink: 0 }}>✈️</div>
+              <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.6rem', fontWeight: 800, letterSpacing: '2.5px', fontFamily: "'DM Sans', sans-serif" }}>GROUP CHAT</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,183,3,0.12)',
+                border: '1px solid rgba(255,183,3,0.25)', borderRadius: '50px', padding: '5px 14px' }}>
+                <Users size={13} color="#ffb703" />
+                <span style={{ color: '#ffb703', fontSize: '0.7rem', fontWeight: 800, fontFamily: "'DM Sans', sans-serif" }}>
+                  {1 + (activeChat.matches?.filter(m => m.status === 'accepted').length || 0)} members
+                </span>
+              </div>
+              <button onClick={() => setActiveChat(null)} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: '50px', padding: '6px 16px', color: 'rgba(255,255,255,0.7)', cursor: 'pointer',
+                fontSize: '0.65rem', fontWeight: 800, fontFamily: "'DM Sans', sans-serif", letterSpacing: '1px',
+                display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.12)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.07)'}>
+                ← BACK
+              </button>
+            </div>
+          </div>
+          {/* Bottom row: big route title */}
+          <div style={{ color: 'white', fontSize: '2rem', fontWeight: 900, fontFamily: "'Bebas Neue', cursive", letterSpacing: '2px', lineHeight: 1 }}>
+            {activeChat.origin} <span style={{ color: '#ffb703' }}>→</span> {activeChat.destination}
           </div>
         </div>
-        
-        <div ref={chatContainerRef} style={{ height: '300px', background: 'rgba(0,0,0,0.3)', borderRadius: '20px', padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '15px', border: '1px solid rgba(216, 243, 220, 0.1)' }}>
-           <div style={{ alignSelf: 'center', background: 'rgba(255,183,3,0.1)', color: '#ffb703', padding: '8px 16px', borderRadius: '50px', fontSize: '0.65rem', fontWeight: 900, letterSpacing: '1px' }}>Chat started — say hi!</div>
-           
-           {messages.map((msg, idx) => {
-             const isMe = msg.senderUid === user.uid;
-             return (
-               <div key={idx} style={{ 
-                 alignSelf: isMe ? 'flex-end' : 'flex-start', 
-                 background: isMe ? '#ffb703' : 'rgba(255,255,255,0.05)', 
-                 color: isMe ? '#081c15' : 'white',
-                 padding: '10px 15px', 
-                 borderRadius: '15px', 
-                 borderTopRightRadius: isMe ? 0 : '15px',
-                 borderTopLeftRadius: isMe ? '15px' : 0,
-                 maxWidth: '80%'
-               }}>
-                 {!isMe && <div style={{ fontSize: '0.6rem', color: '#ffb703', marginBottom: '4px', fontWeight: 900 }}>{msg.senderName?.toUpperCase()}</div>}
-                 <div style={{ fontSize: '0.9rem' }}>{msg.text}</div>
-                 <div style={{ fontSize: '0.55rem', opacity: 0.6, marginTop: '5px', textAlign: 'right' }}>{msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : msg.time}</div>
-               </div>
-             );
-           })}
+
+        {/* ── Messages ── */}
+        <div ref={chatContainerRef} style={{ height: '480px', padding: '20px 28px', overflowY: 'auto',
+          display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ alignSelf: 'center', background: 'rgba(255,183,3,0.08)', color: 'rgba(255,183,3,0.7)',
+            padding: '6px 16px', borderRadius: '50px', fontSize: '0.6rem', fontWeight: 700,
+            letterSpacing: '1px', fontFamily: "'DM Sans', sans-serif", border: '1px solid rgba(255,183,3,0.15)' }}>
+            Group chat · {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          </div>
+
+          {messages.map((msg, idx) => {
+            const isMe = msg.senderUid === user.uid;
+            const prevMsg = messages[idx - 1];
+            const showName = !isMe && (!prevMsg || prevMsg.senderUid !== msg.senderUid);
+            return (
+              <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
+                {showName && (
+                  <div style={{ fontSize: '0.6rem', color: '#ffb703', fontWeight: 800, letterSpacing: '1px',
+                    fontFamily: "'DM Sans', sans-serif", marginBottom: '4px', marginLeft: '4px' }}>
+                    {msg.senderName?.toUpperCase()}
+                  </div>
+                )}
+                <div style={{
+                  background: isMe ? 'linear-gradient(135deg, #ffb703 0%, #fb8500 100%)' : 'rgba(255,255,255,0.07)',
+                  color: isMe ? '#081c15' : 'rgba(255,255,255,0.9)',
+                  padding: '10px 14px',
+                  borderRadius: '18px',
+                  borderBottomRightRadius: isMe ? '4px' : '18px',
+                  borderBottomLeftRadius: isMe ? '18px' : '4px',
+                  maxWidth: '72%',
+                  border: isMe ? 'none' : '1px solid rgba(255,255,255,0.08)',
+                  boxShadow: isMe ? '0 4px 16px rgba(255,183,3,0.25)' : 'none',
+                }}>
+                  <div style={{ fontSize: '0.88rem', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.45 }}>{msg.text}</div>
+                  <div style={{ fontSize: '0.55rem', opacity: 0.55, marginTop: '4px', textAlign: 'right', fontFamily: "'DM Sans', sans-serif" }}>
+                    {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : msg.time}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
-        
-        <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-          <input 
+
+        {/* ── Input ── */}
+        <div style={{ padding: '16px 28px', borderTop: '1px solid rgba(255,255,255,0.07)',
+          display: 'flex', gap: '10px', alignItems: 'center', background: 'rgba(0,0,0,0.2)' }}>
+          <input
             value={chatMessage}
             onChange={(e) => setChatMessage(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-            placeholder="Type a message..." 
-            style={{ flex: 1, padding: '15px 20px', borderRadius: '50px', border: '1px solid rgba(216, 243, 220, 0.2)', background: 'rgba(0,0,0,0.4)', color: 'white', outline: 'none', fontFamily: "'DM Sans', sans-serif" }}
+            placeholder="Type a message..."
+            style={{ flex: 1, padding: '12px 18px', borderRadius: '50px',
+              border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)',
+              color: 'white', outline: 'none', fontFamily: "'DM Sans', sans-serif", fontSize: '0.88rem' }}
           />
-          <button 
-            onClick={handleSendMessage}
-            className="glass-btn" style={{ padding: '0 25px', borderRadius: '50px', background: '#ffb703', color: '#081c15', border: 'none', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 900, fontFamily: "'DM Sans', sans-serif" }}>
-             SEND <Send size={16} />
+          <button onClick={handleSendMessage}
+            style={{ padding: '12px 22px', borderRadius: '50px', background: 'linear-gradient(135deg, #ffb703 0%, #fb8500 100%)',
+              color: '#081c15', border: 'none', display: 'flex', alignItems: 'center', gap: '8px',
+              fontWeight: 900, fontFamily: "'DM Sans', sans-serif", fontSize: '0.78rem', letterSpacing: '0.5px',
+              cursor: 'pointer', boxShadow: '0 4px 16px rgba(255,183,3,0.35)', flexShrink: 0,
+              transition: 'all 0.2s' }}
+            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.03)'}
+            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
+            SEND <Send size={14} />
           </button>
         </div>
       </div>

@@ -5,7 +5,7 @@
 </h1>
 
 <p align="center">
-  <strong>AI-powered travel itinerary builder with visual flow maps, community submissions, and a real-time admin dashboard.</strong>
+  <strong>AI-powered travel itinerary builder with visual flow maps, multi-transport routing, community submissions, and a real-time admin dashboard.</strong>
 </p>
 
 <p align="center">
@@ -28,17 +28,20 @@ LeaveApproved is a travel planning platform where users can explore curated trip
 ## Features
 
 ### For Travelers
-- **Trip Explorer** — Browse curated itineraries with route maps, budget ranges, duration, and distance
-- **Visual Flow Builder** — Drag-and-drop canvas to build trip flows with city nodes, day banners, attraction pins, budget cards, and transport edges
+- **Trip Explorer** — Browse curated itineraries with route maps, budget ranges, duration, and stop count
+- **Visual Flow Maps** — Each itinerary renders as an interactive node-edge canvas. City cards show arrival/departure times, hotel, food and activities. Transport edges show mode, price and duration between every stop
+- **Multi-Transport Routing** — Multiple transport edges can exist between the same two cities (e.g. flight vs. overnight train vs. bus), each fanning out with distinct labels and colours so travellers can see all options at a glance
 - **AI Travel Buddy** — Chat interface powered by Groq (LLaMA) for real-time travel recommendations
-- **AI Itinerary Generator** — Describe a trip in plain text; Gemini AI generates a full structured itinerary
-- **Trip Comparison** — Compare two trips side by side
-- **Community Submissions** — Submit your own trip ideas for admin review
+- **AI Itinerary Generator** — Describe a trip in plain text; Gemini AI generates a full structured itinerary and renders it as a flow map
+- **Trip Comparison** — Compare two trips side by side across budget, duration, and stops
+- **Community Submissions** — Submit your own trip ideas for admin review and AI conversion
+- **Like & Review** — Like itineraries with confetti animation, leave comments, delete your own
 
 ### For Admins
 - **Analytics Dashboard** — Live visitor count, user registrations by company, daily activity chart
 - **Website Status** — Real-time UptimeRobot widget: Up/Down status, 24h/7d/30d uptime %, avg/min/max response time
 - **Trip Management** — Add, edit, and delete published trips with full FlowBuilder integration
+- **Demo Mode** — One-click seed/unseed of 11 rich demo itineraries (Spiti Valley, Ladakh, Rajasthan, Andaman Islands, Meghalaya, Varanasi, Gokarna, Ooty, Chikmagalur, Varkala, Goa) complete with users, buddy trip listings, contributions, and contact messages
 - **Submissions Queue** — Review, convert to trip with AI, or delete community submissions
 - **Review Moderation** — Manage user reviews across all trips
 
@@ -64,27 +67,32 @@ LeaveApproved is a travel planning platform where users can explore curated trip
 LeaveApproved/
 ├── backend/
 │   ├── models/
-│   │   ├── Place.js          # Trip itinerary schema
-│   │   ├── UserEntry.js      # User accounts
-│   │   ├── TripListing.js    # Trip listings
-│   │   └── Contribution.js   # Community submissions
+│   │   ├── Place.js            # Trip itinerary schema
+│   │   ├── UserEntry.js        # User accounts
+│   │   ├── TripListing.js      # Buddy trip listings
+│   │   ├── Contribution.js     # Community submissions
+│   │   └── ContactMessage.js   # Contact form messages
 │   ├── routes/
-│   │   └── api.js            # All API routes
-│   ├── server.js             # Express app entry point
-│   └── .env                  # Environment variables
+│   │   ├── places.js           # Trip CRUD + likes/comments
+│   │   ├── auth.js             # Register / login
+│   │   ├── ai.js               # Gemini + Groq endpoints
+│   │   ├── buddy.js            # Buddy trip matching
+│   │   ├── admin.js            # Admin dashboard APIs
+│   │   └── demo.js             # Demo mode seed/unseed
+│   └── server.js               # Express app entry point
 │
 └── frontend/
     └── src/
         └── components/
-            ├── AdminDashboard.jsx   # Full admin panel
-            ├── Dashboard.jsx        # User trip explorer
-            ├── FlowBuilder.jsx      # Visual itinerary builder
-            ├── CustomNodes.jsx      # City, Hub, Day, POI, Budget nodes
-            ├── CustomEdge.jsx       # Animated transport edges
-            ├── TravelBuddy.jsx      # AI chat assistant
-            ├── LoginPage.jsx        # Auth (register / login)
-            ├── Landing.jsx          # Marketing landing page
-            └── TripComparison.jsx   # Side-by-side trip compare
+            ├── AdminDashboard.jsx    # Full admin panel
+            ├── Dashboard.jsx         # User trip explorer
+            ├── FlowBuilder.jsx       # Visual itinerary builder
+            ├── ItineraryFlow.jsx     # Read-only flow renderer
+            ├── CustomNodes.jsx       # City, Hub, Note, Sticker nodes
+            ├── CustomEdge.jsx        # Transport edges with emoji + labels
+            ├── TravelBuddy.jsx       # AI chat assistant
+            ├── TripComparison.jsx    # Side-by-side trip compare
+            └── LoginPage.jsx         # Auth (register / login)
 ```
 
 ---
@@ -154,10 +162,13 @@ The project is configured for single-service deployment on Render:
 | `POST` | `/api/auth/register` | Register new user |
 | `POST` | `/api/auth/login` | Login |
 | `GET` | `/api/places` | Get all published trips |
+| `POST` | `/api/places/:id/like` | Toggle like on a trip |
+| `POST` | `/api/places/:id/comment` | Post a comment |
 | `GET` | `/api/admin/uptime` | Live UptimeRobot status |
 | `GET` | `/api/admin/contributions` | All community submissions |
-| `PUT` | `/api/admin/contributions/:id` | Mark submission as processed |
-| `DELETE` | `/api/admin/contributions/:id` | Delete submission |
+| `POST` | `/api/admin/demo/on` | Seed demo data |
+| `POST` | `/api/admin/demo/off` | Remove demo data |
+| `GET` | `/api/admin/demo/status` | Check demo state |
 | `POST` | `/api/heartbeat` | Live visitor ping |
 | `GET` | `/api/active-users` | Current active visitor count |
 | `POST` | `/api/generate-trip` | AI itinerary generation (Gemini) |
@@ -167,21 +178,71 @@ The project is configured for single-service deployment on Render:
 
 ## Visual Flow Builder
 
-The FlowBuilder is the centrepiece feature — a drag-and-drop canvas built on **ReactFlow** with custom node and edge types:
+The FlowBuilder is the centrepiece feature — a drag-and-drop canvas built on **ReactFlow** with custom node and edge types.
 
-**Node Types**
-- `CityNode` — Main destination card with arrival/departure, hotel, activities, custom fields
-- `HubNode` — Transit or layover point
-- `NoteNode` — Free-text annotation
-- `DayBannerNode` — Day separator label
-- `AttractionNode` — Point of interest pin (restaurants, sights, activities)
-- `BudgetNode` — Budget breakdown card
+### Node Types
 
-**Edge Features**
-- Quadratic bezier curves with smart auto-arc
-- Draggable label panels (transport mode + reference number)
-- Color-coded arrows matching edge color
-- Dashed line option for flexible/alternative routes
+| Node | Purpose |
+|---|---|
+| `CityNode` | Main destination card — arrival/departure times, day marker, hotel, food, activities |
+| `HubNode` | Transit or layover point |
+| `NoteNode` | Free-text annotation |
+| `StickerNode` | Decorative emoji sticker |
+
+### Transport Edges
+
+Edges connect city nodes and display transport mode with an auto-matched emoji:
+
+| Emoji | Modes |
+|---|---|
+| ✈️ | FLIGHT |
+| 🚆 | TRAIN |
+| 🚇 | METRO |
+| 🚌 | BUS |
+| 🚕 | CAB, CAR |
+| 🛺 | AUTO |
+| 🛵 | BIKE, SCOOTER, CYCLE |
+| 🏍️ | MOTORBIKE, ENFIELD |
+| ⛵ | FERRY, BOAT, HOUSEBOAT |
+| 🚣 | CANOE, KAYAK, CORACLE, RAFT |
+| 🥾 | WALK, TREK, HIKE |
+| 🚙 | JEEP, SAFARI |
+| 🐪 | CAMEL |
+| 🚀 | anything else |
+
+**Multiple transport edges** between the same two nodes are supported — each fans out with an independent bezier arc, distinct colour, and its own label showing mode, price and duration. This lets itineraries express real-world route choices (e.g. Mumbai → Goa by flight, overnight train, or sleeper bus — all visible on the canvas simultaneously).
+
+Edge label panels are draggable in edit mode and display `transportDetails` (price/duration) as a subtitle in read-only view.
+
+---
+
+## Demo Mode
+
+Admins can toggle a fully seeded demo state from the dashboard in one click. Seeding creates:
+
+- **11 curated itineraries** across India with 6–8 stops each, specific hotels, food recommendations, and mixed transport modes
+- **20 demo user accounts**
+- **20 buddy trip listings**
+- **15 community contribution texts**
+- **15 contact messages**
+
+Demo data is tagged and removed cleanly on toggle-off without touching any real user content.
+
+### Itineraries included in demo
+
+| # | Route | Highlights |
+|---|---|---|
+| 1 | Delhi → **Spiti Valley** | Chandratal Lake 4300m, Key Monastery, Hikkim post office (world's highest) |
+| 2 | Delhi → **Ladakh** | Khardung La 5359m, Pangong Tso, Nubra Valley camel dunes, Tso Moriri flamingos |
+| 3 | Delhi → **Rajasthan** | Jaipur, Pushkar, Jodhpur, Ranakpur Jain Temple, Jaisalmer, Sam Sand Dunes |
+| 4 | Chennai → **Andaman Islands** | Cellular Jail, bioluminescent kayaking, Radhanagar Beach, Neil Island, Baratang caves |
+| 5 | Kolkata → **Meghalaya** | Nongriat living root bridge, Dawki glass river, Mawlynnong cleanest village |
+| 6 | Mumbai → **Varanasi** | Pre-dawn Ganga ghats, Kashi Vishwanath 3:30am, Sarnath, Bodh Gaya Mahabodhi tree |
+| 7 | Mumbai → **Gokarna** | Konkan Railway, Om Beach, Paradise Beach cliff trek, Murudeshwar, Yana caves |
+| 8 | Chennai → **Ooty** | Nilgiri Mountain Railway (UNESCO), Coonoor tea factory, Kodaikanal, Pillar Rocks |
+| 9 | Bangalore → **Chikmagalur** | Mullayanagiri 1930m, Kudremukh trek, Bhadra Tiger Reserve jeep safari |
+| 10 | Bangalore → **Varkala** | Padmanabhaswamy Temple, Kovalam beach, cliff sunset, Ashtamudi houseboat |
+| 11 | Mumbai → **Goa** *(multi-transport demo)* | 3 routes Mumbai→Goa (flight/train/bus), 2 ferry options, scooter vs bus at each leg |
 
 ---
 

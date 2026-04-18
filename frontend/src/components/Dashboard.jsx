@@ -14,6 +14,38 @@ import TravelBuddy from './TravelBuddy';
 import TripComparison from './TripComparison';
 import About from './About';
 
+function InfoTooltip({ text }) {
+  const [show, setShow] = useState(false);
+  return (
+    <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}
+      onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}
+      onClick={e => { e.stopPropagation(); setShow(s => !s); }}>
+      <span style={{ width: '15px', height: '15px', borderRadius: '50%',
+        background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: '0.58rem', fontWeight: 900, cursor: 'help',
+        color: 'rgba(255,255,255,0.5)', fontFamily: "'DM Sans', sans-serif" }}>i</span>
+      {show && (
+        <div style={{ position: 'absolute', top: 'calc(100% + 10px)', right: 0, left: 'auto',
+          background: 'rgba(4,12,8,0.97)', backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255,183,3,0.2)', borderRadius: '12px',
+          padding: '10px 14px', color: 'rgba(255,255,255,0.85)',
+          fontSize: '0.72rem', fontFamily: "'DM Sans', sans-serif",
+          fontWeight: 500, lineHeight: 1.5, zIndex: 9999,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+          pointerEvents: 'none', width: '240px', textAlign: 'center' }}>
+          <div style={{ position: 'absolute', bottom: '100%', right: '6px', left: 'auto',
+            width: 0, height: 0,
+            borderLeft: '5px solid transparent', borderRight: '5px solid transparent',
+            borderBottom: '5px solid rgba(4,12,8,0.97)' }} />
+          {text}
+        </div>
+      )}
+    </span>
+  );
+}
+
 const THEMES = [
   { id: 'forest',  name: 'Forest',  bg: '#081c15', navBg: 'rgba(8,28,21,0.85)',  secondary: '#1b4332', accent: '#ffb703', accentGlow: 'rgba(255,183,3,0.2)',   xpGradient: 'linear-gradient(90deg,#ffb703,#ff8c00)' },
   { id: 'ocean',   name: 'Ocean',   bg: '#030f1a', navBg: 'rgba(3,15,26,0.85)',  secondary: '#0a2540', accent: '#4cc9f0', accentGlow: 'rgba(76,201,240,0.2)',  xpGradient: 'linear-gradient(90deg,#4cc9f0,#0096c7)' },
@@ -81,11 +113,11 @@ export default function Dashboard() {
   };
 
   const tabs = [
-    { id: 'itineraries', label: 'ITINERARIES', icon: <Compass size={16} /> },
-    { id: 'buddy',       label: 'BUDDY',       icon: <Users size={16} /> },
-    { id: 'comparison',  label: 'COMPARE',     icon: <ArrowRightLeft size={16} /> },
-    { id: 'contribute',  label: 'CONTRIBUTE',  icon: <FileText size={16} /> },
-    { id: 'about',       label: 'ABOUT',       icon: <Info size={16} /> },
+    { id: 'itineraries', label: 'ITINERARIES', icon: <Compass size={16} />,       info: 'Browse curated travel itineraries — filter by budget, duration & distance to find your perfect trip' },
+    { id: 'buddy',       label: 'BUDDY',       icon: <Users size={16} />,         info: 'Find travel companions — post your trip or join others heading to the same destination' },
+    { id: 'comparison',  label: 'COMPARE',     icon: <ArrowRightLeft size={16} />, info: 'Side-by-side trip comparison — pick the best route, budget & timing for your getaway' },
+    { id: 'contribute',  label: 'CONTRIBUTE',  icon: <FileText size={16} />,      info: 'Share your travel story in plain text — AI converts it into a full interactive itinerary' },
+    { id: 'about',       label: 'ABOUT',       icon: <Info size={16} />,          info: 'About Leave Approved — our mission & how to get in touch' },
   ];
 
   const levels = [
@@ -404,9 +436,9 @@ export default function Dashboard() {
 
       {/* BG VIDEO (desktop) */}
       {!isMobile && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 0 }}>
-          <video src="/MUNNAR.mp4" autoPlay loop muted playsInline
-            style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6, filter: 'grayscale(0.3) brightness(0.6)' }} />
+        <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
+          <video src="/MUNNAR.mp4" autoPlay loop muted playsInline disablePictureInPicture
+            style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6, filter: 'grayscale(0.3) brightness(0.6)', pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at center, transparent, rgba(8,28,21,0.9))' }} />
           <div className="hud-grid" style={{ position: 'absolute', inset: 0,
             backgroundImage: 'linear-gradient(rgba(216,243,220,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(216,243,220,0.05) 1px,transparent 1px)',
@@ -435,6 +467,7 @@ export default function Dashboard() {
                   boxShadow: activeTab === tab.id ? `0 0 0 1px ${currentTheme.accent}40 inset` : 'none',
                   letterSpacing: '0.5px', fontFamily: "'DM Sans', sans-serif" }}>
                 {tab.icon} {tab.label}
+                <InfoTooltip text={tab.info} />
                 {tab.id === 'buddy' && buddyNotif > 0 && (
                   <span style={{ position: 'absolute', top: '4px', right: '6px', background: '#ff5d73', color: 'white', borderRadius: '50%', width: '16px', height: '16px', fontSize: '0.5rem', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {buddyNotif > 9 ? '9+' : buddyNotif}
@@ -443,6 +476,32 @@ export default function Dashboard() {
               </button>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* ── FILTER NAV BAR — desktop step 1 only ── */}
+      {!isMobile && activeTab === 'itineraries' && step === 1 && (
+        <div style={{ position: 'fixed', top: '130px', left: '50%', transform: 'translateX(-50%)',
+          display: 'flex', gap: '8px', zIndex: 1150,
+          background: 'rgba(4,12,8,0.85)', backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255,255,255,0.12)', borderRadius: '50px',
+          padding: '6px 8px' }}>
+          {[
+            { idx: 0, icon: '💰', label: 'Budget' },
+            { idx: 1, icon: '🕐', label: 'Duration' },
+            { idx: 2, icon: '📍', label: 'Distance' },
+          ].map(({ idx, icon, label }) => (
+            <button key={idx} onClick={() => setCurrentCard(idx)}
+              style={{ padding: '8px 20px', borderRadius: '50px', border: 'none',
+                cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
+                fontWeight: 700, fontSize: '0.78rem', letterSpacing: '0.5px',
+                display: 'flex', alignItems: 'center', gap: '7px',
+                transition: 'all 0.25s ease',
+                background: currentCard === idx ? '#ffb703' : 'transparent',
+                color: currentCard === idx ? '#081c15' : 'rgba(255,255,255,0.55)' }}>
+              <span>{icon}</span> {label}
+            </button>
+          ))}
         </div>
       )}
 
@@ -905,11 +964,11 @@ export default function Dashboard() {
             justifyContent: 'center', paddingTop: isMobile ? '20px' : '120px',
             paddingBottom: isMobile ? '90px' : '100px', overflowX: 'hidden', width: '100%' }}>
             <AnimatePresence mode="wait">
-              <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -30 }}
-                style={{ width: '100%', display: 'flex', justifyContent: 'center', zIndex: 100 }}>
+              <motion.div key={activeTab} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.22 }}
+                style={{ width: '100%', display: 'flex', justifyContent: 'center', zIndex: 100, overflow: 'hidden' }}>
                 {activeTab === 'buddy'        ? <TravelBuddy user={user} onXpGain={handleXpGain} />
-                  : activeTab === 'contribute'  ? <TravelBuddy user={user} onXpGain={handleXpGain} initialView="contribute" />
+                  : activeTab === 'contribute'  ? <TravelBuddy user={user} onXpGain={handleXpGain} initialView="contribute" hideNav />
                   : activeTab === 'comparison'  ? <TripComparison />
                   : activeTab === 'about'        ? <About />
                   : null}

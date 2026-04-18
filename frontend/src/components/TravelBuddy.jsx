@@ -5,6 +5,38 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { PlaneTakeoff, MapPin, Calendar, Briefcase, PlusCircle, Search, Users, CheckCircle, XCircle, Send, MessageSquare, Compass, ArrowRight, Ticket, Plane, Globe, Trash2, Mic, MicOff, FileText } from 'lucide-react';
 import { getUserAuthHeader } from '../utils/auth';
 
+function InfoTooltip({ text }) {
+  const [show, setShow] = React.useState(false);
+  return (
+    <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}
+      onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}
+      onClick={e => { e.stopPropagation(); setShow(s => !s); }}>
+      <span style={{ width: '15px', height: '15px', borderRadius: '50%',
+        background: 'rgba(0,0,0,0.15)', border: '1px solid rgba(0,0,0,0.2)',
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: '0.58rem', fontWeight: 900, cursor: 'help',
+        color: 'rgba(0,0,0,0.45)', fontFamily: "'DM Sans', sans-serif" }}>i</span>
+      {show && (
+        <div style={{ position: 'absolute', top: 'calc(100% + 10px)', right: 0, left: 'auto',
+          background: 'rgba(4,12,8,0.97)', backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255,183,3,0.2)', borderRadius: '12px',
+          padding: '10px 14px', color: 'rgba(255,255,255,0.85)',
+          fontSize: '0.72rem', fontFamily: "'DM Sans', sans-serif",
+          fontWeight: 500, lineHeight: 1.5, zIndex: 9999,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+          pointerEvents: 'none', width: '240px', textAlign: 'center' }}>
+          <div style={{ position: 'absolute', bottom: '100%', right: '6px', left: 'auto',
+            width: 0, height: 0,
+            borderLeft: '5px solid transparent', borderRight: '5px solid transparent',
+            borderBottom: '5px solid rgba(4,12,8,0.97)' }} />
+          {text}
+        </div>
+      )}
+    </span>
+  );
+}
+
 function useToast() {
   const [toast, setToast] = useState(null);
   const timerRef = useRef(null);
@@ -16,7 +48,7 @@ function useToast() {
   return { toast, show };
 }
 
-export default function TravelBuddy({ user, onXpGain, initialView }) {
+export default function TravelBuddy({ user, onXpGain, initialView, hideNav }) {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [view, setView] = useState(initialView || 'feed'); // 'feed', 'list', 'my_trips', 'contribute'
   const [trips, setTrips] = useState([]);
@@ -280,12 +312,12 @@ export default function TravelBuddy({ user, onXpGain, initialView }) {
     <div style={{ width: '100%', maxWidth: '1000px', padding: isMobile ? '16px 12px' : '20px', overflowX: 'hidden', boxSizing: 'border-box' }}>
       <ToastUI />
       {/* Navigation Headers */}
-      <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginBottom: '40px', flexWrap: 'wrap' }}>
+      {!hideNav && <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginBottom: '40px', flexWrap: 'wrap' }}>
         {[
-          { id: 'feed', label: 'EXPLORE TRIPS', icon: <Globe size={18} /> },
-          { id: 'list', label: 'LIST A TRIP', icon: <Ticket size={18} /> },
-          { id: 'my_trips', label: 'MY TRIPS', icon: <Compass size={18} /> },
-          { id: 'contribute', label: 'CONTRIBUTE TRIP', icon: <FileText size={18} /> }
+          { id: 'feed',       label: 'EXPLORE TRIPS',   icon: <Globe size={18} />,    info: 'Browse trips posted by fellow travelers and request to join them' },
+          { id: 'list',       label: 'LIST A TRIP',     icon: <Ticket size={18} />,   info: 'Post your upcoming trip and find travel buddies heading the same way' },
+          { id: 'my_trips',   label: 'MY TRIPS',        icon: <Compass size={18} />,  info: 'View all trips you have listed or joined as a buddy' },
+          { id: 'contribute', label: 'CONTRIBUTE TRIP', icon: <FileText size={18} />, info: 'Describe your trip in plain text — AI converts it into a full interactive itinerary' },
         ].map(tab => (
           <button key={tab.id} onClick={() => setView(tab.id)}
             style={{
@@ -301,12 +333,13 @@ export default function TravelBuddy({ user, onXpGain, initialView }) {
             }}>
             {React.cloneElement(tab.icon, { color: view === tab.id ? '#081c15' : '#ffb703', size: isMobile ? 14 : 18 })}
             {tab.label}
+            <InfoTooltip text={tab.info} />
           </button>
         ))}
-      </div>
+      </div>}
 
       <AnimatePresence mode="wait">
-        <motion.div key={view} initial={{ opacity: 0, y: 30, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -30, scale: 0.98 }} transition={{ duration: 0.4 }}>
+        <motion.div key={view} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.25 }}>
           
           {view === 'list' && (
             <form onSubmit={handleListTrip} style={{ margin: '0 auto', maxWidth: '800px', display: 'flex', flexDirection: isMobile ? 'column' : 'row', background: 'rgba(255,255,255,0.95)', borderRadius: '25px', overflow: 'hidden', boxShadow: '0 25px 50px rgba(0,0,0,0.5)' }}>

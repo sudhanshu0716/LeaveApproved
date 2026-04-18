@@ -195,8 +195,13 @@ router.post('/admin/demo/off', verifyAdmin, async (req, res) => {
     // Delete only trips created by VOY-SEED- users
     await TripListing.deleteMany({ creatorUid: seedUidRegex });
     await ContactMessage.deleteMany({ uid: seedUidRegex });
-    // Only delete contributions explicitly tagged as demo seed
-    await Contribution.deleteMany({ _demoSeed: true });
+    // Delete contributions tagged as demo seed OR matching demo texts (handles legacy seeded data)
+    await Contribution.deleteMany({
+      $or: [
+        { _demoSeed: true },
+        { text: { $in: contributionTexts } },
+      ],
+    });
     res.json({ active: false, message: 'Demo data removed (real data untouched)' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

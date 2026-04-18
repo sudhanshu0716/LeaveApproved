@@ -86,10 +86,23 @@ export default function CustomEdge({
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: isReadOnly ? 'center' : 'stretch', color: '#000' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: isReadOnly ? 'center' : 'flex-start' }}>
                  <span style={{ fontSize: isReadOnly ? '1.2rem' : '1rem' }}>
-                    {(data?.transport || '').toLowerCase().includes('flight') ? '✈️' : 
-                     (data?.transport || '').toLowerCase().includes('train') ? '🚆' : 
-                     (data?.transport || '').toLowerCase().includes('bus') ? '🚌' : 
-                     (data?.transport || '').toLowerCase().includes('car') || (data?.transport || '').toLowerCase().includes('cab') ? '🚕' : '🚀'}
+                    {(() => {
+                       const t = (data?.transport || '').toLowerCase();
+                       if (t.includes('flight')) return '✈️';
+                       if (t.includes('train')) return '🚆';
+                       if (t.includes('metro')) return '🚇';
+                       if (t.includes('bus')) return '🚌';
+                       if (t.includes('car') || t.includes('cab')) return '🚕';
+                       if (t.includes('auto')) return '🛺';
+                       if (t.includes('bike') || t.includes('scooter') || t.includes('cycle')) return '🛵';
+                       if (t.includes('enfield') || t.includes('motorbike') || t.includes('motorcycle')) return '🏍️';
+                       if (t.includes('ferry') || t.includes('boat') || t.includes('houseboat')) return '⛵';
+                       if (t.includes('canoe') || t.includes('kayak') || t.includes('coracle') || t.includes('raft')) return '🚣';
+                       if (t.includes('walk') || t.includes('trek') || t.includes('hike')) return '🥾';
+                       if (t.includes('camel')) return '🐪';
+                       if (t.includes('jeep') || t.includes('safari')) return '🚙';
+                       return '🚀';
+                     })()}
                  </span>
                  {isReadOnly ? (
                    <span style={{ fontWeight: 900, textTransform: 'uppercase', fontSize: '0.9rem', color: '#000' }}>{data?.transport || 'TRAVEL'}</span>

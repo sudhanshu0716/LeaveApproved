@@ -1,17 +1,29 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <!-- Neobrutalist Suitcase Body -->
-  <rect x="15" y="30" width="70" height="55" fill="#FFE600" stroke="#000" stroke-width="6"/>
-  
-  <!-- Suitcase Handle -->
-  <path d="M35 30V20C35 17.2386 37.2386 15 40 15H60C62.7614 15 65 17.2386 65 20V30" fill="none" stroke="#000" stroke-width="6"/>
-  
-  <!-- Straps -->
-  <line x1="30" y1="30" x2="30" y2="85" stroke="#000" stroke-width="4"/>
-  <line x1="70" y1="30" x2="70" y2="85" stroke="#000" stroke-width="4"/>
-  
-  <!-- Large Pink Checkmark -->
-  <path d="M35 60L45 70L65 45" fill="none" stroke="#FF5D73" stroke-width="10" stroke-linecap="square" stroke-linejoin="miter"/>
-  
-  <!-- Neobrutalist Shadow for Depth -->
-  <path d="M85 35V85H80" fill="none" stroke="#000" stroke-width="2" opacity="0.3"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Dark green pill background -->
+  <rect width="32" height="32" rx="8" fill="#081c15"/>
+
+  <!-- Gold airplane — top-down silhouette, centered, scaled to fit -->
+  <!-- Body: nose to tail -->
+  <path
+    d="M16 4
+       C17.2 4 18 5 18 6.5
+       L18.5 14
+       L25 18
+       L25 20
+       L18.5 18.5
+       L18 22
+       L20 23
+       L20 24.5
+       L16 23.5
+       L12 24.5
+       L12 23
+       L14 22
+       L13.5 18.5
+       L7 20
+       L7 18
+       L13.5 14
+       L14 6.5
+       C14 5 14.8 4 16 4Z"
+    fill="#ffb703"
+  />
 </svg>

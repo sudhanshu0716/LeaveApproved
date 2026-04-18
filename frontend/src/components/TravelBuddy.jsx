@@ -203,10 +203,14 @@ export default function TravelBuddy({ user, onXpGain, initialView }) {
   const ToastUI = () => toast ? createPortal(
     <AnimatePresence>
       <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }}
-        style={{ position: 'fixed', bottom: '32px', left: '50%', transform: 'translateX(-50%)', zIndex: 99999,
-          padding: '14px 24px', borderRadius: '16px', fontWeight: 800, fontSize: '0.9rem',
+        style={{ position: 'fixed', bottom: isMobile ? '86px' : '32px',
+          left: '16px', right: '16px', margin: '0 auto',
+          width: 'fit-content', maxWidth: 'calc(100vw - 32px)',
+          zIndex: 99999, padding: '13px 22px', borderRadius: '16px',
+          fontWeight: 800, fontSize: '0.88rem',
           background: toast.type === 'error' ? '#e63946' : '#1b4332',
-          color: 'white', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', whiteSpace: 'nowrap' }}>
+          color: 'white', boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
+          textAlign: 'center' }}>
         {toast.type === 'error' ? '✕ ' : '✓ '}{toast.msg}
       </motion.div>
     </AnimatePresence>,
@@ -273,7 +277,7 @@ export default function TravelBuddy({ user, onXpGain, initialView }) {
   }
 
   return (
-    <div style={{ width: '100%', maxWidth: '1000px', padding: '20px' }}>
+    <div style={{ width: '100%', maxWidth: '1000px', padding: isMobile ? '16px 12px' : '20px', overflowX: 'hidden', boxSizing: 'border-box' }}>
       <ToastUI />
       {/* Navigation Headers */}
       <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginBottom: '40px', flexWrap: 'wrap' }}>
@@ -358,18 +362,18 @@ export default function TravelBuddy({ user, onXpGain, initialView }) {
 
           {view === 'feed' && (
             <div>
-              <div style={{ display: 'flex', gap: '15px', marginBottom: '30px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '12px', marginBottom: '30px', alignItems: isMobile ? 'stretch' : 'center' }}>
                  <div style={{ flex: 1, position: 'relative' }}>
                     <Search size={18} color="#ffb703" style={{ position: 'absolute', top: '16px', left: '20px' }} />
-                    <input 
-                      value={searchOrigin} 
-                      onChange={e => setSearchOrigin(e.target.value)} 
-                      placeholder="Search trips by starting point... (e.g. Mumbai)"
-                      style={{ width: '100%', padding: '16px 20px 16px 50px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,183,3,0.3)', borderRadius: '20px', color: 'white', outline: 'none' }}
+                    <input
+                      value={searchOrigin}
+                      onChange={e => setSearchOrigin(e.target.value)}
+                      placeholder="Search by starting point... (e.g. Mumbai)"
+                      style={{ width: '100%', padding: '16px 20px 16px 50px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,183,3,0.3)', borderRadius: '20px', color: 'white', outline: 'none', boxSizing: 'border-box' }}
                     />
                  </div>
-                 <button onClick={fetchTrips} className="glass-btn" style={{ padding: '16px 30px', background: '#ffb703', color: '#081c15', borderRadius: '20px', border: 'none', fontWeight: 900 }}>
-                    SEARCH TRIPS
+                 <button onClick={fetchTrips} className="glass-btn" style={{ padding: '16px 30px', background: '#ffb703', color: '#081c15', borderRadius: '20px', border: 'none', fontWeight: 900, whiteSpace: 'nowrap' }}>
+                    SEARCH
                  </button>
               </div>
 
@@ -380,9 +384,9 @@ export default function TravelBuddy({ user, onXpGain, initialView }) {
                 const shortOrig = trip.origin.substring(0,3).toUpperCase();
                 const shortDest = trip.destination.substring(0,3).toUpperCase();
                 return (
-                <div key={trip._id} className="ticket-card" style={{ display: 'flex', background: 'rgba(255,255,255,0.95)', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.3)', transition: 'transform 0.2s', position: 'relative', width: '100%', boxSizing: 'border-box' }}>
+                <div key={trip._id} className="ticket-card" style={{ display: 'flex', background: 'rgba(255,255,255,0.95)', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.3)', transition: 'transform 0.2s', position: 'relative', width: '100%', maxWidth: '100%', boxSizing: 'border-box', minWidth: 0 }}>
                   {/* Left Main Ticket Panel */}
-                  <div style={{ flex: 1, padding: '25px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div style={{ flex: 1, padding: isMobile ? '18px 16px' : '25px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minWidth: 0 }}>
                      <div>
                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                           <div style={{ color: '#081c15', fontWeight: 900, letterSpacing: '2px', fontSize: '0.7rem', fontFamily: "'DM Sans', sans-serif" }}>POSTED BY</div>
@@ -395,13 +399,13 @@ export default function TravelBuddy({ user, onXpGain, initialView }) {
                        {/* Trip Route UI */}
                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '25px' }}>
                           <div style={{ textAlign: 'left' }}>
-                             <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#081c15', lineHeight: 1 }}>{shortOrig}</div>
-                             <div style={{ fontSize: '0.7rem', color: 'rgba(8,28,21,0.5)', fontWeight: 900, marginTop: '4px', fontFamily: "'DM Sans', sans-serif" }}>{trip.origin}</div>
+                             <div style={{ fontSize: isMobile ? '1.8rem' : '2.5rem', fontWeight: 900, color: '#081c15', lineHeight: 1 }}>{shortOrig}</div>
+                             <div style={{ fontSize: '0.65rem', color: 'rgba(8,28,21,0.5)', fontWeight: 900, marginTop: '4px', fontFamily: "'DM Sans', sans-serif" }}>{trip.origin}</div>
                           </div>
-                          <Plane color="#ffb703" size={30} style={{ opacity: 0.8 }} />
+                          <Plane color="#ffb703" size={isMobile ? 22 : 30} style={{ opacity: 0.8 }} />
                           <div style={{ textAlign: 'right' }}>
-                             <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#081c15', lineHeight: 1 }}>{shortDest}</div>
-                             <div style={{ fontSize: '0.7rem', color: 'rgba(8,28,21,0.5)', fontWeight: 900, marginTop: '4px', fontFamily: "'DM Sans', sans-serif" }}>{trip.destination}</div>
+                             <div style={{ fontSize: isMobile ? '1.8rem' : '2.5rem', fontWeight: 900, color: '#081c15', lineHeight: 1 }}>{shortDest}</div>
+                             <div style={{ fontSize: '0.65rem', color: 'rgba(8,28,21,0.5)', fontWeight: 900, marginTop: '4px', fontFamily: "'DM Sans', sans-serif" }}>{trip.destination}</div>
                           </div>
                        </div>
                      </div>
@@ -426,16 +430,16 @@ export default function TravelBuddy({ user, onXpGain, initialView }) {
                   </div>
                   
                   {/* Right Stub Buttons */}
-                  <div style={{ width: isMobile ? '80px' : '120px', background: '#ffb703', padding: isMobile ? '14px' : '20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '15px', alignItems: 'center' }}>
-                     <div style={{ transform: 'rotate(-90deg)', whiteSpace: 'nowrap', fontSize: '0.7rem', fontWeight: 900, letterSpacing: '4px', color: 'rgba(8,28,21,0.5)', marginBottom: '40px' }}>TRIP</div>
-                     <button 
+                  <div style={{ width: isMobile ? '72px' : '120px', background: '#ffb703', padding: isMobile ? '10px 8px' : '20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '10px', alignItems: 'center', overflow: 'hidden' }}>
+                     {!isMobile && <div style={{ transform: 'rotate(-90deg)', whiteSpace: 'nowrap', fontSize: '0.7rem', fontWeight: 900, letterSpacing: '4px', color: 'rgba(8,28,21,0.5)', marginBottom: '40px' }}>TRIP</div>}
+                     <button
                         onClick={() => handleRequestMatch(trip._id)}
                         disabled={requested}
-                        style={{ width: '50px', height: '50px', borderRadius: '50%', background: requested ? 'rgba(8,28,21,0.1)' : '#081c15', color: requested ? '#081c15' : '#ffb703', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', boxShadow: requested ? 'none' : '0 10px 15px rgba(0,0,0,0.2)', transition: 'all 0.2s' }}
+                        style={{ width: isMobile ? '42px' : '50px', height: isMobile ? '42px' : '50px', borderRadius: '50%', background: requested ? 'rgba(8,28,21,0.1)' : '#081c15', color: requested ? '#081c15' : '#ffb703', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', boxShadow: requested ? 'none' : '0 10px 15px rgba(0,0,0,0.2)', transition: 'all 0.2s', flexShrink: 0 }}
                      >
-                        {requested ? <CheckCircle size={24}/> : <PlusCircle size={24}/>}
+                        {requested ? <CheckCircle size={isMobile ? 20 : 24}/> : <PlusCircle size={isMobile ? 20 : 24}/>}
                      </button>
-                     <div style={{ fontSize: '0.6rem', fontWeight: 900, textAlign: 'center', color: '#081c15' }}>{requested ? 'PENDING' : 'JOIN TRIP'}</div>
+                     <div style={{ fontSize: isMobile ? '0.5rem' : '0.6rem', fontWeight: 900, textAlign: 'center', color: '#081c15', letterSpacing: isMobile ? '0' : '1px' }}>{requested ? 'PENDING' : 'JOIN'}</div>
                   </div>
                 </div>
               )})}

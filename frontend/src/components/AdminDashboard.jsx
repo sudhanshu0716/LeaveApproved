@@ -296,10 +296,14 @@ CRITICAL RULES:
   const ToastUI = () => toast ? (
     <AnimatePresence>
       <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }}
-        style={{ position: 'fixed', bottom: '32px', left: '50%', transform: 'translateX(-50%)', zIndex: 99999,
-          padding: '14px 24px', borderRadius: '16px', fontWeight: 800, fontSize: '0.9rem',
+        style={{ position: 'fixed', bottom: '32px',
+          left: '16px', right: '16px', margin: '0 auto',
+          width: 'fit-content', maxWidth: 'calc(100vw - 32px)',
+          zIndex: 99999, padding: '14px 24px', borderRadius: '16px',
+          fontWeight: 800, fontSize: '0.9rem',
           background: toast.type === 'error' ? '#e63946' : '#1b4332',
-          color: 'white', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', whiteSpace: 'nowrap' }}>
+          color: 'white', boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+          textAlign: 'center' }}>
         {toast.type === 'error' ? '✕ ' : '✓ '}{toast.msg}
       </motion.div>
     </AnimatePresence>

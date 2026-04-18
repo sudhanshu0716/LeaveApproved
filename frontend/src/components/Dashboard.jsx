@@ -103,7 +103,7 @@ export default function Dashboard() {
       desc: 'Plan your dream trip with the right budget.',
       sub:  'From budget escapes to luxury getaways',
       options: ['under 1000 rupees', 'under 2000 rupees', 'under 5000 rupees', 'over 5000 rupees'],
-      img: 'https://images.unsplash.com/photo-1530521954074-e64f6810b32d?w=900&q=85',
+      img: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=900&q=85',
     },
     {
       title: 'Trip\nDuration', code: 'DUR-01', type: 'days',
@@ -252,7 +252,16 @@ export default function Dashboard() {
   const MobileStep1 = () => {
     const cat = cards[currentCard];
     return (
-      <div style={{ position: 'fixed', inset: 0, zIndex: 20, background: '#050e09' }}>
+      <div
+        style={{ position: 'fixed', inset: 0, zIndex: 20, background: '#050e09' }}
+        onTouchStart={e => { e.currentTarget.dataset.swipeX = e.touches[0].clientX; }}
+        onTouchEnd={e => {
+          const diff = parseFloat(e.currentTarget.dataset.swipeX || 0) - e.changedTouches[0].clientX;
+          if (Math.abs(diff) > 45) {
+            if (diff > 0 && currentCard < cards.length - 1) setCurrentCard(c => c + 1);
+            if (diff < 0 && currentCard > 0) setCurrentCard(c => c - 1);
+          }
+        }}>
 
         {/* Background image — crossfade */}
         <AnimatePresence mode="wait">
@@ -270,7 +279,7 @@ export default function Dashboard() {
 
         {/* ── TOP BAR ── */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 30,
-          padding: 'max(48px, env(safe-area-inset-top)) 20px 0',
+          padding: 'calc(env(safe-area-inset-top) + 14px) 20px 0',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div style={{ width: 30, height: 30, borderRadius: '9px',
@@ -294,31 +303,25 @@ export default function Dashboard() {
           </button>
         </div>
 
-        {/* ── CARD NAV ARROWS (subtle, mid-screen) ── */}
-        {currentCard > 0 && (
-          <button onClick={() => setCurrentCard(c => c - 1)}
-            style={{ position: 'absolute', left: '8px', top: '38%',
-              zIndex: 30, background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '50%', width: '36px', height: '36px',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: 'rgba(255,255,255,0.6)' }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-          </button>
-        )}
-        {currentCard < cards.length - 1 && (
-          <button onClick={() => setCurrentCard(c => c + 1)}
-            style={{ position: 'absolute', right: '8px', top: '38%',
-              zIndex: 30, background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '50%', width: '36px', height: '36px',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: 'rgba(255,255,255,0.6)' }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </button>
-        )}
+        {/* ── SWIPE HINT ── */}
+        <div style={{ position: 'absolute', top: '32%', left: 0, right: 0, zIndex: 30,
+          display: 'flex', justifyContent: 'space-between', padding: '0 10px', pointerEvents: 'none' }}>
+          {currentCard > 0 && (
+            <div style={{ opacity: 0.25, color: 'white' }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </div>
+          )}
+          <div style={{ flex: 1 }} />
+          {currentCard < cards.length - 1 && (
+            <div style={{ opacity: 0.25, color: 'white' }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </div>
+          )}
+        </div>
 
         {/* ── BOTTOM CONTENT AREA ── */}
         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 25,
@@ -678,32 +681,31 @@ export default function Dashboard() {
             {/* STEP 2 — Places */}
             {step === 2 && (
               <motion.div key="step2" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
-                style={{ minHeight: '100vh', padding: isMobile ? '90px 16px 100px' : '200px 40px',
+                style={{ minHeight: '100vh', padding: isMobile ? '70px 16px 100px' : '200px 40px',
                   width: '100%', maxWidth: '1200px', margin: '0 auto', boxSizing: 'border-box' }}>
-                <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center',
-                  flexDirection: isMobile ? 'column' : 'row',
-                  justifyContent: 'space-between', marginBottom: isMobile ? '20px' : '36px', gap: '16px' }}>
+                {/* Header row — title + back button always inline */}
+                <div style={{ display: 'flex', alignItems: 'center',
+                  justifyContent: 'space-between', marginBottom: isMobile ? '14px' : '36px' }}>
                   <div>
-                    <h2 className="title" style={{ fontSize: isMobile ? '2.2rem' : '3rem', color: 'white', marginBottom: '6px', fontFamily: "'Bebas Neue', cursive" }}>
+                    <h2 className="title" style={{ fontSize: isMobile ? '1.8rem' : '3rem', color: 'white', margin: 0, fontFamily: "'Bebas Neue', cursive", lineHeight: 1 }}>
                       PLACES FOR YOU
                     </h2>
-                    <p style={{ color: '#d8f3dc', opacity: 0.5, fontWeight: 600, fontSize: isMobile ? '0.7rem' : '0.85rem', fontFamily: "'DM Sans', sans-serif" }}>
+                    <p style={{ color: '#d8f3dc', opacity: 0.5, fontWeight: 600, fontSize: '0.68rem', fontFamily: "'DM Sans', sans-serif", margin: '4px 0 0' }}>
                       {placesLoading ? 'SEARCHING...' : `${placesTotal} DESTINATION${placesTotal !== 1 ? 'S' : ''} FOUND`}
                     </p>
                   </div>
                   <button onClick={() => setStep(1)} className="glass-btn"
                     style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
-                      color: 'white', fontSize: isMobile ? '0.65rem' : '0.72rem',
-                      padding: isMobile ? '10px 18px' : '12px 22px',
-                      borderRadius: '50px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
-                      fontFamily: "'DM Sans', sans-serif", fontWeight: 700, letterSpacing: '1px',
-                      alignSelf: isMobile ? 'flex-start' : undefined }}>
+                      color: 'white', fontSize: '0.65rem',
+                      padding: '9px 16px', flexShrink: 0,
+                      borderRadius: '50px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
+                      fontFamily: "'DM Sans', sans-serif", fontWeight: 700, letterSpacing: '1px' }}>
                     ← BACK
                   </button>
                 </div>
 
                 {/* Search + Sort bar */}
-                <div style={{ display: 'flex', gap: '10px', marginBottom: isMobile ? '20px' : '32px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '10px', marginBottom: isMobile ? '16px' : '32px', flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
                   <div style={{ position: 'relative', flex: 1, minWidth: '180px' }}>
                     <svg style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                     <input
@@ -901,7 +903,7 @@ export default function Dashboard() {
         ) : (
           <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'flex-start',
             justifyContent: 'center', paddingTop: isMobile ? '20px' : '120px',
-            paddingBottom: isMobile ? '90px' : '100px' }}>
+            paddingBottom: isMobile ? '90px' : '100px', overflowX: 'hidden', width: '100%' }}>
             <AnimatePresence mode="wait">
               <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -30 }}
@@ -973,7 +975,9 @@ export default function Dashboard() {
           {showProfile && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex',
-                alignItems: 'center', justifyContent: 'center',
+                alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'center',
+                overflowY: isMobile ? 'auto' : 'visible',
+                padding: isMobile ? '20px 0 100px' : '0',
                 background: 'rgba(8,28,21,0.85)', backdropFilter: 'blur(15px)' }}
               onClick={() => setShowProfile(false)}>
               <motion.div initial={{ scale: 0.92, y: 24, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }}
@@ -982,6 +986,7 @@ export default function Dashboard() {
                 style={{ width: '92%', maxWidth: '580px', background: 'rgba(10,22,18,0.97)',
                   border: `1px solid ${currentTheme.accent}22`, padding: isMobile ? '28px 22px' : '40px',
                   borderRadius: isMobile ? '28px' : '40px', position: 'relative',
+                  flexShrink: 0,
                   boxShadow: `0 40px 100px rgba(0,0,0,0.7), 0 0 0 1px ${currentTheme.accent}12 inset` }}>
                 <button onClick={() => { setShowProfile(false); setShowActivityInfo(false); }}
                   style={{ position: 'absolute', top: isMobile ? '20px' : '28px', right: isMobile ? '20px' : '28px',
@@ -1008,7 +1013,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px', marginBottom: '24px' }}>
                   <div style={{ padding: '20px', background: 'rgba(255,255,255,0.03)',
                     borderRadius: '20px', border: '1px solid rgba(255,255,255,0.06)' }}>
                     <div style={{ fontSize: '0.58rem', color: '#ffb703', fontWeight: 900,
@@ -1113,7 +1118,7 @@ export default function Dashboard() {
                   <Briefcase size={15} color="#ffb703" style={{ flexShrink: 0 }} />
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontSize: '0.45rem', color: 'rgba(255,255,255,0.3)', fontWeight: 900, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif" }}>COMPANY</div>
-                    <div style={{ fontSize: '0.82rem', color: 'white', fontWeight: 800, fontFamily: "'DM Sans', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.company || '—'}</div>
+                    <div style={{ fontSize: '0.82rem', color: 'white', fontWeight: 800, fontFamily: "'DM Sans', sans-serif" }}>{user.company || '—'}</div>
                   </div>
                 </div>
 

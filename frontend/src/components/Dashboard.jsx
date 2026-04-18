@@ -337,6 +337,25 @@ export default function Dashboard() {
           </button>
         </div>
 
+        {/* ── FILTER PILL NAV ── */}
+        <div style={{ position: 'absolute', top: 'calc(env(safe-area-inset-top) + 62px)', left: 0, right: 0, zIndex: 30,
+          display: 'flex', justifyContent: 'center' }}>
+          <div style={{ display: 'inline-flex', gap: '5px', background: 'rgba(4,12,8,0.82)', backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '50px',
+            padding: '4px 5px' }}>
+            {[{ idx: 0, icon: '💰', label: 'Budget' }, { idx: 1, icon: '🕐', label: 'Duration' }, { idx: 2, icon: '📍', label: 'Distance' }].map(({ idx, icon, label }) => (
+              <button key={idx} onClick={() => setCurrentCard(idx)}
+                style={{ padding: '6px 14px', borderRadius: '50px', border: 'none', cursor: 'pointer',
+                  fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: '0.7rem', letterSpacing: '0.5px',
+                  display: 'flex', alignItems: 'center', gap: '5px', transition: 'all 0.2s',
+                  background: currentCard === idx ? '#ffb703' : 'transparent',
+                  color: currentCard === idx ? '#081c15' : 'rgba(255,255,255,0.55)' }}>
+                <span>{icon}</span>{label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* ── SWIPE HINT ── */}
         <div style={{ position: 'absolute', top: '32%', left: 0, right: 0, zIndex: 30,
           display: 'flex', justifyContent: 'space-between', padding: '0 10px', pointerEvents: 'none' }}>

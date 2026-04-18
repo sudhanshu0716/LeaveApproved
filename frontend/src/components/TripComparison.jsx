@@ -21,7 +21,14 @@ export default function TripComparison() {
   const [dest2, setDest2] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const { toast, show: showToast } = useToast();
+
+  React.useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   const handleCompare = async (e) => {
     e.preventDefault();
@@ -126,24 +133,24 @@ Return ONLY a valid JSON object with no markdown formatting. The JSON must exact
   ) : null;
 
   return (
-    <div style={{ width: '100%', maxWidth: '860px', padding: '0 20px 20px' }}>
+    <div style={{ width: '100%', maxWidth: '860px', padding: isMobile ? '0 12px 20px' : '0 20px 20px' }}>
       <ToastUI />
 
       {/* HUD Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '14px', marginBottom: '28px' }}>
-        <div style={{ width: '36px', height: '2px', background: 'linear-gradient(90deg, transparent, #ffb703)' }} />
-        <span style={{ color: '#ffb703', fontWeight: 900, letterSpacing: '5px', fontSize: '0.75rem', fontFamily: "'DM Sans', sans-serif" }}>AI COMPARISON</span>
-        <div style={{ width: '36px', height: '2px', background: 'linear-gradient(-90deg, transparent, #ffb703)' }} />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '14px', marginBottom: '20px' }}>
+        <div style={{ width: '28px', height: '2px', background: 'linear-gradient(90deg, transparent, #ffb703)' }} />
+        <span style={{ color: '#ffb703', fontWeight: 900, letterSpacing: '4px', fontSize: '0.7rem', fontFamily: "'DM Sans', sans-serif" }}>AI COMPARISON</span>
+        <div style={{ width: '28px', height: '2px', background: 'linear-gradient(-90deg, transparent, #ffb703)' }} />
       </div>
 
       {!result && !loading && (
         <motion.form onSubmit={handleCompare} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          style={{ padding: '36px', borderRadius: '28px', background: 'rgba(14,26,21,0.85)',
+          style={{ padding: isMobile ? '20px 16px' : '36px', borderRadius: '24px', background: 'rgba(14,26,21,0.85)',
             backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.08)',
             boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}>
 
-          <div style={{ marginBottom: '28px' }}>
-            <label style={{ color: '#ffb703', fontSize: '0.65rem', fontWeight: 900, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif" }}>
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ color: '#ffb703', fontSize: '0.62rem', fontWeight: 900, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif" }}>
               YOUR STARTING POINT
             </label>
             <input value={origin} onChange={e => setOrigin(e.target.value)} required
@@ -153,22 +160,23 @@ Return ONLY a valid JSON object with no markdown formatting. The JSON must exact
               onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; e.target.style.boxShadow = 'none'; }} />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '16px', alignItems: 'end', marginBottom: '36px' }}>
-            <div>
-              <label style={{ color: '#d8f3dc', fontSize: '0.65rem', fontWeight: 900, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif" }}>OPTION A</label>
+          {/* Destination inputs — stack on mobile */}
+          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '12px', alignItems: isMobile ? 'stretch' : 'end', marginBottom: '24px' }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ color: '#ffb703', fontSize: '0.62rem', fontWeight: 900, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif" }}>OPTION A</label>
               <input value={dest1} onChange={e => setDest1(e.target.value)} required
                 placeholder="First destination"
                 style={{ ...inputStyle, borderColor: 'rgba(255,183,3,0.2)' }}
                 onFocus={e => { e.target.style.borderColor = 'rgba(255,183,3,0.5)'; e.target.style.boxShadow = '0 0 0 3px rgba(255,183,3,0.08)'; }}
                 onBlur={e => { e.target.style.borderColor = 'rgba(255,183,3,0.2)'; e.target.style.boxShadow = 'none'; }} />
             </div>
-            <div style={{ width: '40px', height: '40px', borderRadius: '50%',
+            <div style={{ width: isMobile ? '100%' : '40px', height: isMobile ? '28px' : '40px', borderRadius: isMobile ? '8px' : '50%',
               background: 'rgba(255,183,3,0.1)', border: '1px solid rgba(255,183,3,0.3)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: '#ffb703', fontWeight: 900, fontSize: '0.65rem', flexShrink: 0,
-              fontFamily: "'DM Sans', sans-serif", boxShadow: '0 0 20px rgba(255,183,3,0.1)' }}>VS</div>
-            <div>
-              <label style={{ color: '#4cc9f0', fontSize: '0.65rem', fontWeight: 900, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif" }}>OPTION B</label>
+              fontFamily: "'DM Sans', sans-serif", alignSelf: isMobile ? 'auto' : 'flex-end', marginBottom: isMobile ? 0 : '10px' }}>VS</div>
+            <div style={{ flex: 1 }}>
+              <label style={{ color: '#4cc9f0', fontSize: '0.62rem', fontWeight: 900, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif" }}>OPTION B</label>
               <input value={dest2} onChange={e => setDest2(e.target.value)} required
                 placeholder="Second destination"
                 style={{ ...inputStyle, borderColor: 'rgba(76,201,240,0.2)' }}
@@ -177,8 +185,8 @@ Return ONLY a valid JSON object with no markdown formatting. The JSON must exact
             </div>
           </div>
 
-          <button type="submit" className="btn-gold" style={{ width: '100%', padding: '17px', fontSize: '0.95rem', borderRadius: '14px' }}>
-            <Plane size={18} /> ANALYZE WITH AI
+          <button type="submit" className="btn-gold" style={{ width: '100%', padding: isMobile ? '14px' : '17px', fontSize: '0.9rem', borderRadius: '14px' }}>
+            <Plane size={16} /> ANALYZE WITH AI
           </button>
         </motion.form>
       )}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import LoginPage from './components/LoginPage';
 import Dashboard from './components/Dashboard';
 import AdminDashboard from './components/AdminDashboard';
@@ -48,7 +48,9 @@ function App() {
       <div className="app-wrapper">
         <Routes>
           <Route path="/" element={<LoginPage />} />
-          <Route path="/dashboard" element={<Dashboard darkMode={darkMode} setDarkMode={setDarkMode} />} />
+          <Route path="/dashboard" element={<Navigate to="/dashboard/itineraries" replace />} />
+          <Route path="/dashboard/itineraries/:placeId" element={<Dashboard darkMode={darkMode} setDarkMode={setDarkMode} />} />
+          <Route path="/dashboard/:tab" element={<Dashboard darkMode={darkMode} setDarkMode={setDarkMode} />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="*" element={
             <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#050e09', color: 'white', fontFamily: "'DM Sans', sans-serif" }}>

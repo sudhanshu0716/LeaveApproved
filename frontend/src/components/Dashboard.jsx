@@ -7,7 +7,7 @@ import {
   Globe, Zap, Target, CheckCircle, PlaneTakeoff, Heart,
   Users, ArrowRightLeft, Info, FileText
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { getUserAuthHeader } from '../utils/auth';
 import ItineraryFlow from './ItineraryFlow';
 import TravelBuddy from './TravelBuddy';
@@ -55,12 +55,25 @@ const THEMES = [
 ];
 
 export default function Dashboard({ darkMode = true, setDarkMode }) {
-  const [activeTab, setActiveTab] = useState('itineraries');
+  const VALID_TABS = ['itineraries', 'buddy', 'comparison', 'contribute', 'about'];
+  const { tab: urlTab, placeId: urlPlaceId } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = urlPlaceId ? 'itineraries' : (VALID_TABS.includes(urlTab) ? urlTab : 'itineraries');
   const [compareSubView, setCompareSubView] = useState(0); // 0=trip comparison, 1=cost AI
   const [places, setPlaces]       = useState([]);
   const [selectedPlace, setSelectedPlace] = useState(null);
-  const [step, setStep]           = useState(1);
-  const [currentCard, setCurrentCard] = useState(0);
+  // step is derived from URL: placeId→3, ?filter→2, else→1
+  const step = urlPlaceId ? 3 : (searchParams.get('filter') ? 2 : 1);
+  const setStep = (s) => {
+    if (s === 1) navigate('/dashboard/itineraries');
+    // step 2 is set via handleSelection which updates searchParams
+    // step 3 is set via navigate('/dashboard/itineraries/:id')
+  };
+  const currentCard = parseInt(searchParams.get('card') || '0');
+  const setCurrentCard = (val) => {
+    const n = typeof val === 'function' ? val(currentCard) : val;
+    setSearchParams(p => { const np = new URLSearchParams(p); np.set('card', n); return np; }, { replace: true });
+  };
   const [isMobile, setIsMobile]   = useState(window.innerWidth < 768);
   const [user, setUser]           = useState({ name: '', company: '' });
   const [xp, setXp]               = useState(45);
@@ -83,6 +96,9 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
   const [buddyInitView, setBuddyInitView] = useState('feed'); // used to deep-link into MY TRIPS
   const [buddyNavKey, setBuddyNavKey] = useState(0);
   const navigate = useNavigate();
+
+  // Navigate to a tab by updating the URL
+  const setActiveTab = (tabId) => navigate(`/dashboard/${tabId}`);
 
   // ── Activity helpers ──────────────────────────────
   const activityKey = (uid) => `travel_activity_${uid || 'guest'}`;
@@ -177,6 +193,23 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
     setWeekActivity(readWeekActivity(p.uid));
   }, [navigate]);
 
+  // Restore step 2 (places list) from URL filter params on refresh
+  useEffect(() => {
+    const filterType = searchParams.get('filter');
+    const filterValue = searchParams.get('value');
+    if (!filterType || !filterValue || urlPlaceId) return;
+    setLastFilter({ type: filterType, value: filterValue });
+    fetchPlaces(filterType, filterValue, '', 'newest');
+  }, []);  // only on mount
+
+  // Restore itinerary detail view from URL on refresh
+  useEffect(() => {
+    if (!urlPlaceId) return;
+    axios.get(`/api/places/${urlPlaceId}`, { headers: getUserAuthHeader() })
+      .then(r => { setSelectedPlace(r.data); })
+      .catch(() => { navigate('/dashboard/itineraries'); });
+  }, [urlPlaceId]);
+
   useEffect(() => {
     if (!user.uid) return;
     axios.get(`/api/visitors/${user.uid}`, { headers: getUserAuthHeader() })
@@ -266,7 +299,8 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
     setSearchQuery('');
     setSortBy('newest');
     await fetchPlaces(type, value, '', 'newest');
-    setStep(2);
+    // Encode filter in URL so refresh restores step 2
+    setSearchParams({ filter: type, value }, { replace: false });
   };
 
   const logout = () => { localStorage.removeItem('travel_user'); localStorage.removeItem('travel_token'); navigate('/'); };
@@ -827,7 +861,7 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
                       {placesLoading ? 'SEARCHING...' : `${placesTotal} DESTINATION${placesTotal !== 1 ? 'S' : ''} FOUND`}
                     </p>
                   </div>
-                  <button onClick={() => setStep(1)} className="glass-btn"
+                  <button onClick={() => navigate('/dashboard/itineraries')} className="glass-btn"
                     style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
                       color: 'white', fontSize: '0.65rem',
                       padding: '9px 16px', flexShrink: 0,
@@ -911,7 +945,7 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
                   <div style={{ textAlign: 'center', padding: '80px 20px' }}>
                     <div style={{ fontSize: isMobile ? '3rem' : '4.5rem', fontFamily: "'Bebas Neue', cursive", marginBottom: '16px', letterSpacing: '3px', color: 'rgba(255,255,255,0.15)' }}>NO TRIPS FOUND</div>
                     <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '0.9rem', color: 'rgba(255,255,255,0.35)', lineHeight: 1.6 }}>No destinations match those filters.<br/>Try a different budget or distance range.</p>
-                    <button onClick={() => setStep(1)} className="btn-gold" style={{ margin: '24px auto 0', width: 'fit-content', padding: '14px 28px', fontSize: '0.8rem' }}>
+                    <button onClick={() => navigate('/dashboard/itineraries')} className="btn-gold" style={{ margin: '24px auto 0', width: 'fit-content', padding: '14px 28px', fontSize: '0.8rem' }}>
                       ← BACK
                     </button>
                   </div>
@@ -948,13 +982,8 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
                         <motion.div key={place._id}
                           whileHover={{ y: isMobile ? 0 : -6, boxShadow: '0 24px 60px rgba(0,0,0,0.5)' }}
                           whileTap={{ scale: 0.98 }}
-                          onClick={async () => {
-                            // Fetch full place data (nodes/edges excluded from list for perf)
-                            try {
-                              const full = await axios.get(`/api/places/${place._id}`, { headers: getUserAuthHeader() });
-                              setSelectedPlace(full.data);
-                            } catch { setSelectedPlace(place); }
-                            setStep(3);
+                          onClick={() => {
+                            navigate(`/dashboard/itineraries/${place._id}`);
                           }}
                           style={{
                             borderRadius: isMobile ? '20px' : '24px',
@@ -1056,7 +1085,7 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   marginBottom: isMobile ? '16px' : '32px',
                   padding: isMobile ? '0 14px' : '0' }}>
-                  <button onClick={() => setStep(2)}
+                  <button onClick={() => navigate(-1)}
                     style={{ padding: isMobile ? '9px 16px' : '11px 24px', borderRadius: '50px',
                       color: 'white', background: 'rgba(255,255,255,0.1)',
                       border: '1px solid rgba(255,255,255,0.15)', cursor: 'pointer',

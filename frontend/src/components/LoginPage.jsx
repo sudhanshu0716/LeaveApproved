@@ -46,7 +46,7 @@ export default function LoginPage() {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
     window.addEventListener('resize', handleResize);
     const savedUser = localStorage.getItem('travel_user');
-    if (savedUser) navigate('/dashboard');
+    if (savedUser) navigate('/dashboard/itineraries');
     return () => window.removeEventListener('resize', handleResize);
   }, [navigate]);
 
@@ -78,7 +78,7 @@ export default function LoginPage() {
       setIsCutting(true);
       setTimeout(() => {
         setLoading(false);
-        navigate('/dashboard');
+        navigate('/dashboard/itineraries');
       }, 1600);
     } catch (err) {
       setError(err.response?.data?.error || 'Sign in failed. Please try again.');
@@ -110,7 +110,7 @@ export default function LoginPage() {
       setIsCutting(true);
       setTimeout(() => {
         setLoading(false);
-        navigate('/dashboard');
+        navigate('/dashboard/itineraries');
       }, 1600);
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed. Please try again.');

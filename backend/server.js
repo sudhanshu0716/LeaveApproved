@@ -44,6 +44,7 @@ app.use('/api/buddy', require('./routes/buddy'));
 app.use('/api', require('./routes/admin'));
 app.use('/api/ai', require('./routes/ai'));
 app.use('/api', require('./routes/contact'));
+app.use('/api', require('./routes/demo'));
 
 // ── XP sync ─────────────────────────────────────────────────────
 const UserEntry = require('./models/UserEntry');

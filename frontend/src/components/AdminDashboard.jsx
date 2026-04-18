@@ -52,6 +52,33 @@ export default function AdminDashboard() {
   const [uptimeLoading, setUptimeLoading] = useState(true);
   const { toast, show: showToast } = useToast();
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [demoActive, setDemoActive] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
+
+  // Fetch demo status on login
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    axios.get('/api/admin/demo/status', { headers: adminAuthHeader() })
+      .then(r => setDemoActive(r.data.active))
+      .catch(() => {});
+  }, [isAuthenticated]);
+
+  const toggleDemo = async () => {
+    setDemoLoading(true);
+    try {
+      const endpoint = demoActive ? '/api/admin/demo/off' : '/api/admin/demo/on';
+      const res = await axios.post(endpoint, {}, { headers: adminAuthHeader() });
+      setDemoActive(res.data.active);
+      showToast(res.data.message, 'success');
+      // Refresh analytics after toggling
+      setTimeout(() => {
+        axios.get('/api/analytics', { headers: adminAuthHeader() }).then(r => setAnalytics(r.data)).catch(() => {});
+      }, 500);
+    } catch (err) {
+      showToast(err.response?.data?.error || 'Demo toggle failed', 'error');
+    }
+    setDemoLoading(false);
+  };
 
   // Poll live visitor count every 30s when authenticated
   useEffect(() => {
@@ -418,6 +445,20 @@ CRITICAL RULES:
               {tab.icon} {tab.label}
             </button>
           ))}
+          <div style={{ width: '1px', height: '24px', background: 'rgba(0,0,0,0.1)', margin: '0 4px' }} />
+          {/* Demo Mode toggle */}
+          <button
+            onClick={toggleDemo}
+            disabled={demoLoading}
+            title={demoActive ? 'Turn off demo data' : 'Load demo data for client preview'}
+            style={{ padding: '9px 14px', fontSize: '0.78rem', fontWeight: 700, borderRadius: '12px', border: `1.5px solid ${demoActive ? 'rgba(255,183,3,0.5)' : 'rgba(27,67,50,0.2)'}`, cursor: demoLoading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', background: demoActive ? 'rgba(255,183,3,0.12)' : 'transparent', color: demoActive ? '#b07d00' : '#1b4332', transition: 'all 0.25s' }}
+          >
+            {/* Toggle pill */}
+            <span style={{ display: 'inline-flex', alignItems: 'center', width: '32px', height: '18px', borderRadius: '9px', background: demoActive ? '#ffb703' : 'rgba(0,0,0,0.15)', position: 'relative', transition: 'background 0.25s', flexShrink: 0 }}>
+              <span style={{ position: 'absolute', left: demoActive ? '16px' : '2px', width: '14px', height: '14px', borderRadius: '50%', background: 'white', transition: 'left 0.25s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+            </span>
+            DEMO {demoLoading ? '...' : demoActive ? 'ON' : 'OFF'}
+          </button>
           <div style={{ width: '1px', height: '24px', background: 'rgba(0,0,0,0.1)', margin: '0 4px' }} />
           <button
             onClick={() => { localStorage.removeItem('admin_token'); setIsAuthenticated(false); }}

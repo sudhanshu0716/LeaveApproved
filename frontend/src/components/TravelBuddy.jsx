@@ -484,7 +484,9 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
               <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(400px, 1fr))', gap: isMobile ? '16px' : '30px' }}>
                 {trips.length === 0 && <div style={{ color: 'white', opacity: 0.5, textAlign: 'center', width: '100%', padding: '40px', fontFamily: "'DM Sans', sans-serif" }}>No trips found. Try a different city or post your own!</div>}
               {trips.map(trip => {
-                const requested = trip.matches?.some(m => m.requesterUid === user.uid);
+                const myMatch = trip.matches?.find(m => m.requesterUid === user.uid);
+                const requested = !!myMatch;
+                const accepted = myMatch?.status === 'accepted';
                 const shortOrig = trip.origin.substring(0,3).toUpperCase();
                 const shortDest = trip.destination.substring(0,3).toUpperCase();
                 return (
@@ -539,11 +541,17 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
                      <button
                         onClick={() => handleRequestMatch(trip._id)}
                         disabled={requested}
-                        style={{ width: isMobile ? '42px' : '50px', height: isMobile ? '42px' : '50px', borderRadius: '50%', background: requested ? 'rgba(8,28,21,0.1)' : '#081c15', color: requested ? '#081c15' : '#ffb703', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', boxShadow: requested ? 'none' : '0 10px 15px rgba(0,0,0,0.2)', transition: 'all 0.2s', flexShrink: 0 }}
+                        style={{ width: isMobile ? '42px' : '50px', height: isMobile ? '42px' : '50px', borderRadius: '50%',
+                          background: accepted ? '#1b4332' : requested ? 'rgba(8,28,21,0.1)' : '#081c15',
+                          color: accepted ? '#d8f3dc' : requested ? '#081c15' : '#ffb703',
+                          border: 'none', cursor: requested ? 'default' : 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center',
+                          boxShadow: requested ? 'none' : '0 10px 15px rgba(0,0,0,0.2)', transition: 'all 0.2s', flexShrink: 0 }}
                      >
-                        {requested ? <CheckCircle size={isMobile ? 20 : 24}/> : <PlusCircle size={isMobile ? 20 : 24}/>}
+                        {accepted ? <CheckCircle size={isMobile ? 20 : 24}/> : requested ? <CheckCircle size={isMobile ? 20 : 24}/> : <PlusCircle size={isMobile ? 20 : 24}/>}
                      </button>
-                     <div style={{ fontSize: isMobile ? '0.5rem' : '0.6rem', fontWeight: 900, textAlign: 'center', color: '#081c15', letterSpacing: isMobile ? '0' : '1px' }}>{requested ? 'PENDING' : 'JOIN'}</div>
+                     <div style={{ fontSize: isMobile ? '0.5rem' : '0.6rem', fontWeight: 900, textAlign: 'center', color: '#081c15', letterSpacing: isMobile ? '0' : '1px' }}>
+                       {accepted ? 'IN GROUP' : requested ? 'PENDING' : 'JOIN'}
+                     </div>
                   </div>
                 </div>
               )})}

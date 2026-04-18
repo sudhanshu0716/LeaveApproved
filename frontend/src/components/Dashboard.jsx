@@ -865,32 +865,49 @@ export default function Dashboard() {
                     </div>
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
-                  {[{ icon: <Target size={16}/>, color: '#ffb703', label: 'Goals' }, { icon: <Globe size={16}/>, color: '#4cc9f0', label: 'Explore' }, { icon: <Zap size={16}/>, color: '#f72585', label: 'Energy' }, { icon: <Briefcase size={16}/>, color: '#d8f3dc', label: 'Work' }].map((a, i) => (
-                    <div key={i} style={{ flex: 1, padding: '12px 8px', borderRadius: '16px',
-                      background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', color: a.color }}>
-                      {a.icon}
-                      <span style={{ fontSize: '0.45rem', color: 'rgba(255,255,255,0.3)', fontFamily: "'DM Sans', sans-serif", fontWeight: 700, letterSpacing: '0.5px' }}>{a.label.toUpperCase()}</span>
+                {/* XP Progress to next level */}
+                <div style={{ padding: '18px 20px', background: 'rgba(255,183,3,0.04)', borderRadius: '20px', border: '1px solid rgba(255,183,3,0.15)', marginBottom: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <div style={{ fontSize: '0.58rem', color: '#ffb703', fontWeight: 900, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif" }}>
+                      LEVEL {currentLevel} → {currentLevel + 1}
                     </div>
-                  ))}
-                </div>
-                <div style={{ padding: isMobile ? '20px' : '24px', background: 'rgba(255,183,3,0.04)',
-                  borderRadius: '24px', border: '1px solid rgba(255,183,3,0.15)' }}>
-                  <div style={{ fontSize: '0.58rem', color: '#ffb703', fontWeight: 900,
-                    letterSpacing: '2px', marginBottom: '16px', fontFamily: "'DM Sans', sans-serif" }}>ACCOUNT SETTINGS</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    <input type="email" placeholder="your.email@example.com"
-                      value={user.email || ''} onChange={e => setUser({...user, email: e.target.value})}
-                      className="input-dark"
-                      style={{ width: '100%', boxSizing: 'border-box', padding: '13px 18px' }} />
-                    <button onClick={handleEmailUpdate} disabled={isUpdatingEmail}
-                      className="btn-gold"
-                      style={{ width: '100%', padding: '13px 20px', fontSize: '0.8rem', borderRadius: '14px',
-                        opacity: isUpdatingEmail ? 0.6 : 1 }}>
-                      {isUpdatingEmail ? 'SAVING...' : <><CheckCircle size={15} /> SAVE EMAIL</>}
-                    </button>
+                    <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.4)', fontWeight: 700, fontFamily: "'DM Sans', sans-serif" }}>{progressXp} / 100 XP</div>
                   </div>
+                  <div style={{ height: '6px', background: 'rgba(255,255,255,0.06)', borderRadius: '3px', overflow: 'hidden' }}>
+                    <motion.div initial={{ width: 0 }} animate={{ width: `${progressXp}%` }} transition={{ duration: 1.2, ease: 'easeOut' }}
+                      style={{ height: '100%', background: 'linear-gradient(90deg, #ffb703, #ff8c00)', borderRadius: '3px' }} />
+                  </div>
+                  <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', marginTop: '8px', fontFamily: "'DM Sans', sans-serif" }}>
+                    {100 - progressXp} XP to reach <span style={{ color: '#ffb703', fontWeight: 700 }}>{levels[Math.min(currentLevel, levels.length - 1)].name.toUpperCase()}</span>
+                  </div>
+                </div>
+
+                {/* Company + Quick Actions */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', background: 'rgba(255,255,255,0.03)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '16px' }}>
+                  <Briefcase size={15} color="#ffb703" style={{ flexShrink: 0 }} />
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: '0.45rem', color: 'rgba(255,255,255,0.3)', fontWeight: 900, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif" }}>COMPANY</div>
+                    <div style={{ fontSize: '0.82rem', color: 'white', fontWeight: 800, fontFamily: "'DM Sans', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.company || '—'}</div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                  {[
+                    { icon: <PlaneTakeoff size={15}/>, label: 'LIST TRIP', tab: 'buddy', color: '#ffb703' },
+                    { icon: <Compass size={15}/>, label: 'EXPLORE', tab: 'itineraries', color: '#4cc9f0' },
+                    { icon: <FileText size={15}/>, label: 'CONTRIBUTE', tab: 'contribute', color: '#4ade80' },
+                  ].map(a => (
+                    <button key={a.tab} onClick={() => { setShowProfile(false); setActiveTab(a.tab); if (a.tab === 'itineraries') setStep(1); }}
+                      style={{ padding: '14px 8px', borderRadius: '16px', background: 'rgba(255,255,255,0.03)',
+                        border: '1px solid rgba(255,255,255,0.07)', cursor: 'pointer',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '7px', color: a.color,
+                        transition: 'all 0.2s', fontFamily: "'DM Sans', sans-serif' "}}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; }}>
+                      {a.icon}
+                      <span style={{ fontSize: '0.45rem', color: 'rgba(255,255,255,0.4)', fontWeight: 700, letterSpacing: '0.5px' }}>{a.label}</span>
+                    </button>
+                  ))}
                 </div>
               </motion.div>
             </motion.div>

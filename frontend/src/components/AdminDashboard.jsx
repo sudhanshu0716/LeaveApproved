@@ -7,7 +7,7 @@ import {
   CheckCircle, BarChart2, Navigation, Clock, DollarSign,
   RefreshCw, Menu, X, TrendingUp, Globe, Activity,
   Database, Cpu, Heart, MessageCircle, MapPin, Calendar,
-  Package
+  Package, Wifi, WifiOff, Timer, ArrowUp, ArrowDown
 } from 'lucide-react';
 import FlowBuilder from './FlowBuilder';
 
@@ -36,6 +36,8 @@ export default function AdminDashboard() {
   const [aiModel, setAiModel] = useState('groq');
   const [contributions, setContributions] = useState([]);
   const [liveVisitors, setLiveVisitors] = useState(0);
+  const [uptime, setUptime] = useState(null);
+  const [uptimeLoading, setUptimeLoading] = useState(true);
 
   // Poll live visitor count every 30s when authenticated
   useEffect(() => {
@@ -43,6 +45,24 @@ export default function AdminDashboard() {
     const fetchLive = () => axios.get('/api/active-users').then(r => setLiveVisitors(r.data.count)).catch(() => {});
     fetchLive();
     const interval = setInterval(fetchLive, 30000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
+
+  // Fetch UptimeRobot data every 5 min
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const fetchUptime = () => {
+      setUptimeLoading(true);
+      axios.get('/api/admin/uptime')
+        .then(r => {
+          if (r.data.error) { setUptime({ error: r.data.error }); }
+          else { setUptime(r.data); }
+        })
+        .catch(e => setUptime({ error: e.message }))
+        .finally(() => setUptimeLoading(false));
+    };
+    fetchUptime();
+    const interval = setInterval(fetchUptime, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, [isAuthenticated]);
 
@@ -75,6 +95,13 @@ export default function AdminDashboard() {
   const fetchContributions = async () => {
     try { const res = await axios.get('/api/admin/contributions'); setContributions(res.data); }
     catch (err) { console.error(err); }
+  };
+
+  const deleteContribution = async (id) => {
+    try {
+      await axios.delete(`/api/admin/contributions/${id}`);
+      fetchContributions();
+    } catch (err) { console.error(err); }
   };
 
   const synthesizeContribution = async (contribution) => {
@@ -467,23 +494,92 @@ CRITICAL RULES:
                 </div>
               </div>
 
-              {/* System status */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '28px' }}>
-                {[
-                  { icon: <Activity size={22} color="#1b4332" />, bg: 'rgba(27,67,50,0.08)', label: 'Server Health', value: '99.8% Uptime' },
-                  { icon: <Cpu size={22} color="#ffb703" />, bg: 'rgba(255,183,3,0.1)', label: 'AI Engine', value: 'Active & Ready' },
-                  { icon: <Database size={22} color="#2d6a4f" />, bg: 'rgba(82,183,136,0.1)', label: 'DB Latency', value: '14ms' },
-                ].map(item => (
-                  <div key={item.label} style={{ padding: '20px', background: 'white', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
-                    <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: item.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      {item.icon}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#999', marginBottom: '2px' }}>{item.label}</div>
-                      <div style={{ fontSize: '1rem', fontWeight: 900, color: '#081c15' }}>{item.value}</div>
-                    </div>
+              {/* UptimeRobot Live Status */}
+              <div style={{ background: 'white', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.06)', marginBottom: '28px' }}>
+                <div style={{ padding: '18px 24px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <Activity size={18} color="#1b4332" />
+                    <h4 style={{ margin: 0, fontWeight: 900, color: '#081c15', fontSize: '0.9rem' }}>Website Status</h4>
                   </div>
-                ))}
+                  {uptime && (
+                    <span style={{ fontSize: '0.7rem', color: '#aaa', fontWeight: 600 }}>
+                      {uptime.url}
+                    </span>
+                  )}
+                </div>
+
+                {uptimeLoading ? (
+                  <div style={{ padding: '40px', textAlign: 'center', color: '#aaa', fontWeight: 700, fontSize: '0.85rem' }}>
+                    Loading status...
+                  </div>
+                ) : (!uptime || uptime.error) ? (
+                  <div style={{ padding: '40px', textAlign: 'center', color: '#e63946', fontWeight: 700, fontSize: '0.85rem' }}>
+                    {uptime?.error || 'Could not fetch status data.'}
+                  </div>
+                ) : (
+                  <div style={{ padding: '20px 24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+
+                    {/* Column 1: Status */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#999', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Current Status</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{
+                          width: '14px', height: '14px', borderRadius: '50%',
+                          background: uptime.status === 2 ? '#52b788' : '#e63946',
+                          boxShadow: uptime.status === 2 ? '0 0 0 4px rgba(82,183,136,0.25)' : '0 0 0 4px rgba(230,57,70,0.25)'
+                        }} />
+                        <span style={{ fontWeight: 900, fontSize: '1.3rem', color: uptime.status === 2 ? '#1b4332' : '#e63946' }}>
+                          {uptime.statusText}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', background: uptime.status === 2 ? 'rgba(82,183,136,0.08)' : 'rgba(230,57,70,0.08)', borderRadius: '10px' }}>
+                        {uptime.status === 2 ? <Wifi size={15} color="#52b788" /> : <WifiOff size={15} color="#e63946" />}
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: uptime.status === 2 ? '#2d6a4f' : '#e63946' }}>
+                          {uptime.name}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Column 2: Uptime % */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#999', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Uptime</div>
+                      {[
+                        { label: '24h', value: uptime.uptime24h },
+                        { label: '7d', value: uptime.uptime7d },
+                        { label: '30d', value: uptime.uptime30d },
+                      ].map(u => (
+                        <div key={u.label} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#aaa', width: '28px' }}>{u.label}</span>
+                          <div style={{ flex: 1, height: '6px', background: '#f0f0f0', borderRadius: '4px', overflow: 'hidden' }}>
+                            <div style={{ height: '100%', width: `${u.value}%`, background: parseFloat(u.value) >= 99 ? '#52b788' : parseFloat(u.value) >= 95 ? '#ffb703' : '#e63946', borderRadius: '4px', transition: 'width 0.8s ease' }} />
+                          </div>
+                          <span style={{ fontSize: '0.78rem', fontWeight: 900, color: '#081c15', width: '52px', textAlign: 'right' }}>
+                            {parseFloat(u.value).toFixed(2)}%
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Column 3: Response Time */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#999', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Response Time</div>
+                      {[
+                        { label: 'Avg', value: uptime.avgResponse, icon: <Timer size={13} color="#2d6a4f" /> },
+                        { label: 'Min', value: uptime.minResponse, icon: <ArrowDown size={13} color="#52b788" /> },
+                        { label: 'Max', value: uptime.maxResponse, icon: <ArrowUp size={13} color="#e63946" /> },
+                      ].map(r => (
+                        <div key={r.label} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: '#f8fdf9', borderRadius: '10px' }}>
+                          {r.icon}
+                          <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#555', flex: 1 }}>{r.label}</span>
+                          <span style={{ fontSize: '0.9rem', fontWeight: 900, color: '#081c15' }}>
+                            {r.value != null ? `${r.value} ms` : '—'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                  </div>
+                )}
               </div>
 
               {/* Visitors table */}
@@ -827,15 +923,21 @@ CRITICAL RULES:
                         </div>
                         <p style={{ margin: 0, color: '#555', fontSize: '0.92rem', lineHeight: 1.6 }}>"{contrib.text}"</p>
                       </div>
-                      {contrib.status === 'pending' ? (
-                        <button onClick={() => synthesizeContribution(contrib)} style={{ flexShrink: 0, padding: '12px 20px', background: '#081c15', color: '#ffb703', border: 'none', borderRadius: '12px', fontWeight: 900, fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '7px', whiteSpace: 'nowrap', boxShadow: '0 4px 16px rgba(8,28,21,0.15)' }}>
-                          <Zap size={15} /> Convert to Trip
+                      <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {contrib.status === 'pending' && (
+                          <button onClick={() => synthesizeContribution(contrib)} style={{ padding: '12px 20px', background: '#081c15', color: '#ffb703', border: 'none', borderRadius: '12px', fontWeight: 900, fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '7px', whiteSpace: 'nowrap', boxShadow: '0 4px 16px rgba(8,28,21,0.15)' }}>
+                            <Zap size={15} /> Convert to Trip
+                          </button>
+                        )}
+                        {contrib.status === 'processed' && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#2d6a4f', fontSize: '0.78rem', fontWeight: 900 }}>
+                            <CheckCircle size={16} /> Done
+                          </div>
+                        )}
+                        <button onClick={() => deleteContribution(contrib._id)} style={{ padding: '10px 14px', background: '#fff0f0', color: '#e63946', border: '1.5px solid #fcd0d3', borderRadius: '12px', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+                          <Trash2 size={14} /> Delete
                         </button>
-                      ) : (
-                        <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '6px', color: '#2d6a4f', fontSize: '0.78rem', fontWeight: 900 }}>
-                          <CheckCircle size={16} /> Done
-                        </div>
-                      )}
+                      </div>
                     </motion.div>
                   ))}
                 </div>

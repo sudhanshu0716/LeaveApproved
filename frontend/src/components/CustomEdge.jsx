@@ -55,7 +55,7 @@ export default function CustomEdge({
 
   return (
     <>
-      <BaseEdge path={edgePath} markerEnd={markerEnd} style={{ ...style, ...edgeStyle, stroke: edgeColor, strokeWidth: 3, opacity: isReadOnly ? 0.5 : 1 }} />
+      <BaseEdge path={edgePath} markerEnd={markerEnd} style={{ ...style, ...edgeStyle, stroke: edgeColor, strokeWidth: 3, opacity: 1 }} />
       <EdgeLabelRenderer>
         {/* Outer div centres the label on the curve point; inner motion.div handles drag */}
         <div style={{ position: 'absolute', left: labelX, top: labelY, transform: 'translate(-50%, -50%)', pointerEvents: isReadOnly ? 'none' : 'all', zIndex: 1000 }} className="nopan">

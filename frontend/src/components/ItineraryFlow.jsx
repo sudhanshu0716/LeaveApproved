@@ -15,7 +15,6 @@ function FlowContent({ place }) {
   const containerRef = useRef(null);
   const flowCanvasRef = useRef(null);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [pdfCapturing, setPdfCapturing] = useState(false);
   const savedUser = JSON.parse(localStorage.getItem('travel_user') || '{}');
   const [likedBy, setLikedBy] = useState(Array.isArray(place.likedBy) ? place.likedBy : []);
   const [comments, setComments] = useState(place.comments || []);
@@ -65,24 +64,14 @@ function FlowContent({ place }) {
       data: { ...n.data, readOnly: true }
     })), [place.nodes]);
 
+  // animated:false + forced markerEnd so arrows always show (same as admin FlowBuilder)
   const readOnlyEdges = useMemo(() =>
     (place.edges || []).map(e => ({
       ...e,
       type: 'customEdge',
-      animated: true,
-      selectable: true,
-      data: { ...e.data, readOnly: true }
-    })), [place.edges]);
-
-  // Static non-animated edges used only during PDF capture
-  const captureEdges = useMemo(() =>
-    (place.edges || []).map(e => ({
-      ...e,
-      type: 'customEdge',
       animated: false,
-      selectable: false,
-      markerEnd: { type: 'arrowclosed', color: '#555', width: 20, height: 20 },
-      style: { stroke: '#555', strokeWidth: 2 },
+      selectable: true,
+      markerEnd: { type: 'arrowclosed', color: e.data?.color || '#1b4332', width: 22, height: 22 },
       data: { ...e.data, readOnly: true }
     })), [place.edges]);
 
@@ -126,65 +115,53 @@ function FlowContent({ place }) {
     } catch (err) { console.error(err); }
   };
 
-  const handleDownloadPDF = async () => {
-    if (isDownloading || !flowCanvasRef.current) return;
+  const handleDownloadPDF = () => {
+    if (isDownloading) return;
     setIsDownloading(true);
-    try {
-      const html2canvas = (await import('html2canvas')).default;
-      const { jsPDF } = await import('jspdf');
 
-      const target = flowCanvasRef.current;
-
-      // 1. Swap to static arrow edges + expand canvas height
-      setPdfCapturing(true);
-      const origHeight = target.style.height;
-      const origMinHeight = target.style.minHeight;
-      target.style.height = '900px';
-      target.style.minHeight = '900px';
-
-      // 2. Wait for React re-render with static edges, then fit view
-      await new Promise(r => setTimeout(r, 80));
-      if (flowInstanceRef.current) {
-        flowInstanceRef.current.fitView({ padding: 0.12, duration: 0 });
-        await new Promise(r => setTimeout(r, 350));
-      }
-
-      // 3. Hide UI overlays (zoom buttons, attribution, panels)
-      const uiOverlays = target.querySelectorAll(
-        '.react-flow__controls, .react-flow__attribution, .react-flow__panel'
-      );
-      uiOverlays.forEach(el => { el._prevDisplay = el.style.display; el.style.display = 'none'; });
-
-      // 4. Capture
-      const canvas = await html2canvas(target, {
-        scale: 2.5,
-        useCORS: true,
-        backgroundColor: '#f4f9f6',
-        logging: false,
-        width: target.offsetWidth,
-        height: target.offsetHeight,
-      });
-
-      // 5. Restore everything
-      uiOverlays.forEach(el => { el.style.display = el._prevDisplay || ''; });
-      target.style.height = origHeight;
-      target.style.minHeight = origMinHeight;
-      setPdfCapturing(false);
-      if (flowInstanceRef.current) {
-        setTimeout(() => flowInstanceRef.current?.fitView({ padding: 0.25, duration: 300 }), 50);
-      }
-
-      // 6. Build PDF sized exactly to the captured image
-      const imgW = canvas.width;
-      const imgH = canvas.height;
-      const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [imgW, imgH] });
-      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, imgW, imgH);
-      pdf.save(`${place.name.replace(/\s+/g, '_')}_itinerary.pdf`);
-    } catch (err) {
-      console.error('PDF export failed:', err);
-      setPdfCapturing(false);
+    // Fit all nodes into view before printing
+    if (flowInstanceRef.current) {
+      flowInstanceRef.current.fitView({ padding: 0.12, duration: 0 });
     }
-    setIsDownloading(false);
+
+    // Give a ref ID so print CSS can isolate this container
+    if (containerRef.current) containerRef.current.setAttribute('id', 'itinerary-print-root');
+
+    // Inject @media print styles: hide everything else, show only this container
+    const style = document.createElement('style');
+    style.id = '__itinerary_print_style__';
+    style.textContent = `
+      @media print {
+        @page { margin: 0; size: landscape; }
+        body * { visibility: hidden !important; }
+        #itinerary-print-root,
+        #itinerary-print-root * { visibility: visible !important; }
+        #itinerary-print-root {
+          position: fixed !important;
+          inset: 0 !important;
+          width: 100vw !important;
+          height: 100vh !important;
+          z-index: 999999 !important;
+          overflow: hidden !important;
+          background: white !important;
+        }
+        .pdf-hide,
+        .react-flow__controls,
+        .react-flow__attribution,
+        .react-flow__panel { visibility: hidden !important; }
+      }
+    `;
+    document.head.appendChild(style);
+
+    setTimeout(() => {
+      window.print();
+      // Clean up after the print dialog closes
+      setTimeout(() => {
+        style.remove();
+        if (containerRef.current) containerRef.current.removeAttribute('id');
+        setIsDownloading(false);
+      }, 1500);
+    }, 250);
   };
 
   const flowHeight = isExpanded
@@ -278,8 +255,8 @@ function FlowContent({ place }) {
                 opacity: isDownloading ? 0.7 : 1,
               }}>
               {isDownloading
-                ? <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ animation: 'spin 1s linear infinite' }}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> SAVING…</>
-                : <><Download size={12} /> PDF</>}
+                ? <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ animation: 'spin 1s linear infinite' }}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> OPENING…</>
+                : <><Download size={12} /> SAVE</>}
             </button>
             {/* Expand */}
             <button
@@ -344,7 +321,7 @@ function FlowContent({ place }) {
         {place.nodes?.length > 0 ? (
           <ReactFlow
             nodes={readOnlyNodes}
-            edges={pdfCapturing ? captureEdges : readOnlyEdges}
+            edges={readOnlyEdges}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             onInit={(instance) => {

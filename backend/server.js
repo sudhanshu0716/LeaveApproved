@@ -13,14 +13,17 @@ app.use(express.json());
 const PORT = process.env.PORT || 5000;
 
 mongoose.connect(process.env.MONGODB_URI)
-.then(() => console.log('MongoDB connected'))
-.catch(err => console.log('MongoDB connection error:', err));
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.log('MongoDB connection error:', err));
 
 // Routes
-const apiRoutes = require('./routes/api');
-app.use('/api', apiRoutes);
+app.use('/api', require('./routes/auth'));
+app.use('/api', require('./routes/places'));
+app.use('/api', require('./routes/buddy'));
+app.use('/api', require('./routes/admin'));
+app.use('/api/ai', require('./routes/ai'));
 
-// SERVE FRONTEND (Production Only)
+// Serve frontend in production
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../frontend/dist')));
   app.get('*', (req, res) => {

@@ -1,0 +1,133 @@
+const express = require('express');
+const router = express.Router();
+const TripListing = require('../models/TripListing');
+const Contribution = require('../models/Contribution');
+const UserEntry = require('../models/UserEntry');
+
+// List a new trip
+router.post('/trips', async (req, res) => {
+  try {
+    const { creatorUid, creatorName, creatorCompany, origin, destination, budget, days, date } = req.body;
+    const newTrip = new TripListing({ creatorUid, creatorName, creatorCompany, origin, destination, budget, days, date });
+    await UserEntry.findOneAndUpdate({ uid: creatorUid }, { $inc: { xp: 5 } });
+    await newTrip.save();
+    res.status(201).json(newTrip);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get trip feed (excluding self)
+router.get('/trips', async (req, res) => {
+  try {
+    const { origin, uid } = req.query;
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    let query = { status: 'listed', date: { $gte: yesterday } };
+    if (origin) query.origin = new RegExp(origin, 'i');
+    if (uid) query.creatorUid = { $ne: uid };
+    const trips = await TripListing.find(query).sort({ date: 1 });
+    res.json(trips);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Request a match
+router.post('/trips/:id/match', async (req, res) => {
+  try {
+    const { requesterUid, requesterName, requesterCompany } = req.body;
+    const trip = await TripListing.findById(req.params.id);
+    if (!trip) return res.status(404).json({ error: 'Trip not found' });
+    if (trip.matches.some(m => m.requesterUid === requesterUid))
+      return res.status(400).json({ error: 'Match sequence already initiated' });
+    trip.matches.push({ requesterUid, requesterName, requesterCompany, status: 'pending' });
+    await trip.save();
+    res.json(trip);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Accept a match
+router.post('/trips/:id/accept-match', async (req, res) => {
+  try {
+    const { acceptedUid } = req.body;
+    const trip = await TripListing.findById(req.params.id);
+    if (!trip) return res.status(404).json({ error: 'Trip not found' });
+    const matchDetails = trip.matches.find(m => m.requesterUid === acceptedUid);
+    if (matchDetails) { matchDetails.status = 'accepted'; matchDetails.chatActive = true; }
+    await UserEntry.findOneAndUpdate({ uid: trip.creatorUid }, { $inc: { xp: 15 } });
+    await UserEntry.findOneAndUpdate({ uid: acceptedUid }, { $inc: { xp: 15 } });
+    await trip.save();
+    res.json({ success: true, message: 'Trip started! Points distributed.', trip });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get my trips
+router.get('/my-trips', async (req, res) => {
+  try {
+    const { uid } = req.query;
+    const created = await TripListing.find({ creatorUid: uid });
+    const requested = await TripListing.find({ 'matches.requesterUid': uid });
+    res.json({ created, requested });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete a trip
+router.delete('/trips/:id', async (req, res) => {
+  try {
+    const { uid } = req.body;
+    const trip = await TripListing.findById(req.params.id);
+    if (!trip) return res.status(404).json({ error: 'Trip not found' });
+    if (trip.creatorUid !== uid) return res.status(403).json({ error: 'Not authorized' });
+    await TripListing.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Chat: send message
+router.post('/trips/:id/chat', async (req, res) => {
+  try {
+    const { senderUid, senderName, text } = req.body;
+    const trip = await TripListing.findById(req.params.id);
+    if (!trip) return res.status(404).json({ error: 'Trip not found' });
+    trip.messages.push({ senderUid, senderName, text });
+    await trip.save();
+    res.json({ success: true, message: trip.messages[trip.messages.length - 1] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Chat: get messages
+router.get('/trips/:id/chat', async (req, res) => {
+  try {
+    const trip = await TripListing.findById(req.params.id);
+    if (!trip) return res.status(404).json({ error: 'Trip not found' });
+    res.json(trip.messages || []);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Submit a contribution
+router.post('/contribute', async (req, res) => {
+  try {
+    const { userName, text } = req.body;
+    if (!userName || !text) return res.status(400).json({ error: 'Name and itinerary text are required.' });
+    const contribution = new Contribution({ userName, text });
+    await contribution.save();
+    res.status(201).json(contribution);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+module.exports = router;

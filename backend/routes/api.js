@@ -118,6 +118,25 @@ router.put('/visitors/:uid', async (req, res) => {
   }
 });
 
+// ── Live Visitor Heartbeat (in-memory, no DB needed) ──────────────────────────
+const activeSessions = new Map(); // sessionId -> lastSeen timestamp
+
+router.post('/heartbeat', (req, res) => {
+  const { sessionId } = req.body;
+  if (sessionId) activeSessions.set(sessionId, Date.now());
+  res.json({ ok: true });
+});
+
+router.get('/active-users', (req, res) => {
+  const cutoff = Date.now() - 2 * 60 * 1000; // last 2 minutes
+  let count = 0;
+  for (const [id, ts] of activeSessions.entries()) {
+    if (ts < cutoff) activeSessions.delete(id); // prune stale
+    else count++;
+  }
+  res.json({ count });
+});
+
 // Admin: Analytics
 router.get('/analytics', async (req, res) => {
   try {

@@ -55,26 +55,26 @@ export default function CustomEdge({
 
   return (
     <>
-      <BaseEdge path={edgePath} markerEnd={markerEnd} style={{ ...style, ...edgeStyle, stroke: edgeColor, strokeWidth: 4, opacity: isReadOnly ? 0.3 : 1 }} />
+      <BaseEdge path={edgePath} markerEnd={markerEnd} style={{ ...style, ...edgeStyle, stroke: edgeColor, strokeWidth: 3, opacity: isReadOnly ? 0.5 : 1 }} />
       <EdgeLabelRenderer>
-        <div style={{ position: 'absolute', left: labelX, top: labelY, pointerEvents: isReadOnly ? 'none' : 'all', zIndex: 1000 }} className="nopan">
+        {/* Outer div centres the label on the curve point; inner motion.div handles drag */}
+        <div style={{ position: 'absolute', left: labelX, top: labelY, transform: 'translate(-50%, -50%)', pointerEvents: isReadOnly ? 'none' : 'all', zIndex: 1000 }} className="nopan">
           <motion.div
             drag={!isReadOnly}
             dragMomentum={false}
             onDragEnd={handleDragEnd}
             className="glass-panel"
             style={{
-              x: '-50%', y: '-50%',
-              padding: isReadOnly ? '12px 20px' : '16px',
+              padding: isReadOnly ? '10px 16px' : '12px 14px',
               display: 'flex',
               flexDirection: 'column',
-              gap: isReadOnly ? '4px' : '12px',
-              width: isReadOnly ? 'auto' : '180px',
+              gap: isReadOnly ? '4px' : '10px',
+              width: isReadOnly ? 'auto' : '160px',
               cursor: isReadOnly ? 'default' : 'grab',
               background: 'white',
-              border: isReadOnly ? '2px solid #000' : '1px solid rgba(0,0,0,0.1)',
-              boxShadow: isReadOnly ? '8px 8px 0px #000' : 'var(--shadow-premium)',
-              borderRadius: isReadOnly ? '16px' : '12px'
+              border: isReadOnly ? '2px solid #000' : '1.5px solid rgba(0,0,0,0.12)',
+              boxShadow: isReadOnly ? '6px 6px 0px #000' : '0 4px 18px rgba(0,0,0,0.12)',
+              borderRadius: isReadOnly ? '14px' : '14px'
             }}
           >
             {!isReadOnly && data?.onDeleteEdge && (

@@ -192,7 +192,7 @@ export default function LoginPage() {
       </div>
 
       {/* ── BRAND LOGO ── */}
-      <div style={{ position: 'fixed', top: isMobile ? '44px' : '28px', left: '22px', zIndex: 1000, display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <div style={{ position: 'fixed', top: isMobile ? '44px' : '28px', left: '22px', zIndex: 1000, display: isMobile ? 'none' : 'flex', alignItems: 'center', gap: '10px' }}>
         <div style={{ background: 'rgba(255,183,3,0.12)', padding: isMobile ? '8px' : '10px', borderRadius: '14px', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,183,3,0.2)', boxShadow: '0 0 20px rgba(255,183,3,0.1)' }}>
           <Compass size={isMobile ? 20 : 24} color="#ffb703" />
         </div>

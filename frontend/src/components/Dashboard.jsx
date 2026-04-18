@@ -14,6 +14,14 @@ import TravelBuddy from './TravelBuddy';
 import TripComparison from './TripComparison';
 import About from './About';
 
+const THEMES = [
+  { id: 'forest',  name: 'Forest',  bg: '#081c15', navBg: 'rgba(8,28,21,0.85)',  secondary: '#1b4332', accent: '#ffb703', accentGlow: 'rgba(255,183,3,0.2)',   xpGradient: 'linear-gradient(90deg,#ffb703,#ff8c00)' },
+  { id: 'ocean',   name: 'Ocean',   bg: '#030f1a', navBg: 'rgba(3,15,26,0.85)',  secondary: '#0a2540', accent: '#4cc9f0', accentGlow: 'rgba(76,201,240,0.2)',  xpGradient: 'linear-gradient(90deg,#4cc9f0,#0096c7)' },
+  { id: 'royal',   name: 'Royal',   bg: '#0a0415', navBg: 'rgba(10,4,21,0.85)',  secondary: '#1e0a35', accent: '#c77dff', accentGlow: 'rgba(199,125,255,0.2)', xpGradient: 'linear-gradient(90deg,#c77dff,#9b59b6)' },
+  { id: 'crimson', name: 'Crimson', bg: '#140206', navBg: 'rgba(20,2,6,0.85)',   secondary: '#2b0814', accent: '#ff5d73', accentGlow: 'rgba(255,93,115,0.2)',  xpGradient: 'linear-gradient(90deg,#ff5d73,#e63946)' },
+  { id: 'arctic',  name: 'Arctic',  bg: '#050d12', navBg: 'rgba(5,13,18,0.85)', secondary: '#0d1f2d', accent: '#00d4aa', accentGlow: 'rgba(0,212,170,0.2)',   xpGradient: 'linear-gradient(90deg,#00d4aa,#00b4d8)' },
+];
+
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('itineraries');
   const [places, setPlaces]       = useState([]);
@@ -26,7 +34,45 @@ export default function Dashboard() {
   const [showProfile, setShowProfile]   = useState(false);
   const [isUpdatingEmail, setIsUpdatingEmail] = useState(false);
   const [profileStats, setProfileStats] = useState({ created: 0, requested: 0 });
+  const [currentTheme, setCurrentTheme] = useState(() => {
+    const saved = localStorage.getItem('travel_theme');
+    return THEMES.find(t => t.id === saved) || THEMES[0];
+  });
+  const [weekActivity, setWeekActivity] = useState([0,0,0,0,0,0,0]);
+  const [showActivityInfo, setShowActivityInfo] = useState(false);
   const navigate = useNavigate();
+
+  // ── Activity helpers ──────────────────────────────
+  const activityKey = (uid) => `travel_activity_${uid || 'guest'}`;
+
+  // Always use LOCAL date string to avoid UTC-offset bugs (e.g. IST midnight ≠ UTC midnight)
+  const localDateStr = (d) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  const recordActivity = (uid, n = 1) => {
+    const today = localDateStr(new Date());
+    const raw = JSON.parse(localStorage.getItem(activityKey(uid)) || '{}');
+    raw[today] = (raw[today] || 0) + n;
+    // Keep last 30 days only
+    const trimmed = {};
+    Object.keys(raw).sort().slice(-30).forEach(k => (trimmed[k] = raw[k]));
+    localStorage.setItem(activityKey(uid), JSON.stringify(trimmed));
+  };
+
+  const readWeekActivity = (uid) => {
+    const raw = JSON.parse(localStorage.getItem(activityKey(uid)) || '{}');
+    const today = new Date();
+    const daysFromMonday = (today.getDay() + 6) % 7; // Mon=0 … Sun=6
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(today);
+      d.setDate(today.getDate() - daysFromMonday + i);
+      return raw[localDateStr(d)] || 0;
+    }); // index 0=Mon … 6=Sun
+  };
 
   const tabs = [
     { id: 'itineraries', label: 'ITINERARIES', icon: <Compass size={16} /> },
@@ -82,6 +128,11 @@ export default function Dashboard() {
     const p = JSON.parse(saved);
     setUser(p);
     if (p.xp !== undefined) setXp(p.xp);
+    // Migrate: remove any stale 'guest' key from before uid was known
+    localStorage.removeItem(activityKey('guest'));
+    // Record today's login as activity
+    recordActivity(p.uid, 1);
+    setWeekActivity(readWeekActivity(p.uid));
   }, [navigate]);
 
   useEffect(() => {
@@ -103,6 +154,8 @@ export default function Dashboard() {
     axios.get(`/api/buddy/my-trips?uid=${user.uid}`, { headers: getUserAuthHeader() })
       .then(r => setProfileStats({ created: r.data.created?.length || 0, requested: r.data.requested?.length || 0 }))
       .catch(() => {});
+    // Refresh chart with latest data each time modal opens
+    setWeekActivity(readWeekActivity(user.uid));
   }, [showProfile, user.uid]);
 
   useEffect(() => {
@@ -110,8 +163,21 @@ export default function Dashboard() {
     setCurrentCard(0);
   }, [step]);
 
+  useEffect(() => {
+    document.documentElement.style.setProperty('--accent-gold', currentTheme.accent);
+    document.documentElement.style.setProperty('--primary-green', currentTheme.bg);
+    document.documentElement.style.setProperty('--secondary-green', currentTheme.secondary);
+    localStorage.setItem('travel_theme', currentTheme.id);
+  }, [currentTheme]);
+
   /* ── handlers ── */
-  const handleXpGain = (n) => setXp(p => p + n);
+  const handleXpGain = (n) => {
+    setXp(p => p + n);
+    if (user.uid) {
+      recordActivity(user.uid, 1);
+      setWeekActivity(readWeekActivity(user.uid));
+    }
+  };
 
   const handleSelection = async (type, value) => {
     handleXpGain(15);
@@ -288,7 +354,7 @@ export default function Dashboard() {
      RENDER
   ──────────────────────────────────────────────── */
   return (
-    <div className="safari-theme" style={{ width: '100%', minHeight: '100vh', background: '#081c15', position: 'relative', overflowX: 'hidden' }}>
+    <div className="safari-theme" style={{ width: '100%', minHeight: '100vh', background: currentTheme.bg, position: 'relative', overflowX: 'hidden' }}>
 
       {/* BG VIDEO (desktop) */}
       {!isMobile && (
@@ -306,21 +372,21 @@ export default function Dashboard() {
       {!isMobile && (
         <div style={{ position: 'fixed', top: '28px', left: '50%', transform: 'translateX(-50%)', zIndex: 1200 }}>
           <div style={{ padding: '5px', borderRadius: '50px', display: 'flex', gap: '2px',
-            background: 'rgba(8,28,21,0.85)', backdropFilter: 'blur(24px)',
+            background: currentTheme.navBg, backdropFilter: 'blur(24px)',
             WebkitBackdropFilter: 'blur(24px)',
             border: '1px solid rgba(255,255,255,0.1)',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,183,3,0.06) inset' }}>
+            boxShadow: `0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px ${currentTheme.accentGlow} inset` }}>
             {tabs.map(tab => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                 style={{ padding: '9px 18px', borderRadius: '40px', border: 'none',
                   background: activeTab === tab.id
-                    ? 'rgba(255,183,3,0.15)'
+                    ? `${currentTheme.accent}22`
                     : 'transparent',
-                  color: activeTab === tab.id ? '#ffb703' : 'rgba(255,255,255,0.45)',
+                  color: activeTab === tab.id ? currentTheme.accent : 'rgba(255,255,255,0.45)',
                   fontSize: '0.68rem', fontWeight: 800, cursor: 'pointer',
                   display: 'flex', alignItems: 'center', gap: '7px',
                   transition: 'all 0.25s ease',
-                  boxShadow: activeTab === tab.id ? '0 0 0 1px rgba(255,183,3,0.25) inset' : 'none',
+                  boxShadow: activeTab === tab.id ? `0 0 0 1px ${currentTheme.accent}40 inset` : 'none',
                   letterSpacing: '0.5px', fontFamily: "'DM Sans', sans-serif" }}>
                 {tab.icon} {tab.label}
               </button>
@@ -333,7 +399,7 @@ export default function Dashboard() {
       {!isMobile && !(activeTab === 'itineraries' && step === 1) && (
         <div style={{ position: 'fixed', top: '20px', right: '24px', zIndex: 1200,
           padding: '8px 8px 8px 18px', borderRadius: '50px', display: 'flex', alignItems: 'center', gap: '12px',
-          background: 'rgba(8,28,21,0.85)', backdropFilter: 'blur(15px)',
+          background: currentTheme.navBg, backdropFilter: 'blur(15px)',
           WebkitBackdropFilter: 'blur(15px)',
           border: '1px solid rgba(255,255,255,0.12)',
           boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>
@@ -387,11 +453,11 @@ export default function Dashboard() {
               display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg width="22" height="22" viewBox="0 0 46 46" style={{ position: 'absolute', transform: 'rotate(-90deg)' }}>
                 <circle cx="23" cy="23" r="20" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="4" />
-                <circle cx="23" cy="23" r="20" fill="none" stroke="#ffb703" strokeWidth="4"
+                <circle cx="23" cy="23" r="20" fill="none" stroke={currentTheme.accent} strokeWidth="4"
                   strokeDasharray="125" strokeDashoffset={125 - (125 * progressXp) / 100}
                   strokeLinecap="round" style={{ transition: 'stroke-dashoffset 1s ease-out' }} />
               </svg>
-              <span style={{ color: '#ffb703', fontWeight: 900, fontSize: '0.55rem', zIndex: 2 }}>{currentLevel}</span>
+              <span style={{ color: currentTheme.accent, fontWeight: 900, fontSize: '0.55rem', zIndex: 2 }}>{currentLevel}</span>
             </div>
             <span style={{ fontSize: '0.48rem', fontWeight: 700, letterSpacing: '0.5px', color: 'rgba(255,255,255,0.35)' }}>PROFILE</span>
           </button>
@@ -753,34 +819,50 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* XP WIDGET — desktop only */}
+      {/* XP SYNERGY WIDGET — desktop only */}
       {!isMobile && step !== 3 && (
         <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 1 }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+          transition={{ delay: 1 }} whileHover={{ scale: 1.03, y: -2 }} whileTap={{ scale: 0.97 }}
           onClick={() => setShowProfile(true)}
           style={{ position: 'fixed', bottom: '40px', right: '40px', zIndex: 1000, cursor: 'pointer' }}>
-          <div className="glass-panel xp-hover-pill"
-            style={{ padding: '8px', borderRadius: '50px', background: 'rgba(8,28,21,0.9)',
-              backdropFilter: 'blur(20px)', border: '1px solid rgba(255,183,3,0.4)',
-              display: 'flex', alignItems: 'center', overflow: 'hidden',
-              boxShadow: '0 10px 30px rgba(0,0,0,0.6),0 0 20px rgba(255,183,3,0.15)' }}>
-            <div style={{ position: 'relative', width: '46px', height: '46px',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <svg width="46" height="46" viewBox="0 0 46 46" style={{ position: 'absolute', transform: 'rotate(-90deg)' }}>
-                <circle cx="23" cy="23" r="20" fill="rgba(0,0,0,0.5)" stroke="rgba(255,255,255,0.05)" strokeWidth="3" />
-                <circle cx="23" cy="23" r="20" fill="none" stroke="#ffb703" strokeWidth="3"
-                  strokeDasharray="125" strokeDashoffset={125 - (125 * progressXp) / 100}
-                  style={{ transition: 'stroke-dashoffset 1s ease-out' }} strokeLinecap="round" />
+          <div style={{
+            padding: '14px 20px 14px 14px',
+            borderRadius: '22px',
+            background: currentTheme.navBg,
+            backdropFilter: 'blur(24px)',
+            WebkitBackdropFilter: 'blur(24px)',
+            border: `1px solid ${currentTheme.accent}55`,
+            display: 'flex', alignItems: 'center', gap: '14px',
+            boxShadow: `0 16px 48px rgba(0,0,0,0.65), 0 0 28px ${currentTheme.accentGlow}`,
+            transition: 'all 0.3s ease',
+          }}>
+            {/* XP Ring */}
+            <div style={{ position: 'relative', width: '54px', height: '54px', flexShrink: 0 }}>
+              <svg width="54" height="54" viewBox="0 0 54 54" style={{ position: 'absolute', transform: 'rotate(-90deg)' }}>
+                <circle cx="27" cy="27" r="23" fill="rgba(0,0,0,0.35)" stroke="rgba(255,255,255,0.05)" strokeWidth="4" />
+                <circle cx="27" cy="27" r="23" fill="none" stroke={currentTheme.accent} strokeWidth="4"
+                  strokeDasharray="144" strokeDashoffset={144 - (144 * progressXp) / 100}
+                  strokeLinecap="round" style={{ transition: 'stroke-dashoffset 1s ease-out, stroke 0.5s ease' }} />
               </svg>
-              <div style={{ color: '#ffb703', fontWeight: 900, fontSize: '0.9rem', zIndex: 2 }}>{currentLevel}</div>
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1px' }}>
+                <span style={{ color: currentTheme.accent, fontWeight: 900, fontSize: '1.05rem', lineHeight: 1, fontFamily: "'DM Sans', sans-serif", transition: 'color 0.5s ease' }}>{currentLevel}</span>
+                <span style={{ color: 'rgba(255,255,255,0.25)', fontWeight: 700, fontSize: '0.36rem', letterSpacing: '1.5px', fontFamily: "'DM Sans', sans-serif" }}>LVL</span>
+              </div>
             </div>
-            <div className="xp-widget-details" style={{ overflow: 'hidden', whiteSpace: 'nowrap',
-              transition: 'all 0.4s cubic-bezier(0.175,0.885,0.32,1.275)' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                <div style={{ fontSize: '0.7rem', fontWeight: 900, color: '#ffb703',
-                  letterSpacing: '1px', textTransform: 'uppercase' }}>{levelData.name}</div>
-                <div style={{ fontSize: '0.55rem', color: '#d8f3dc', opacity: 0.7,
-                  fontWeight: 900, marginTop: '2px' }}>{progressXp} / 100 XP</div>
+            {/* Text block */}
+            <div style={{ minWidth: '110px' }}>
+              <div style={{ fontSize: '0.4rem', color: 'rgba(255,255,255,0.2)', fontWeight: 900, letterSpacing: '3px', marginBottom: '4px', fontFamily: "'DM Sans', sans-serif" }}>SYNERGY</div>
+              <div style={{ fontSize: '0.92rem', color: currentTheme.accent, fontWeight: 900, letterSpacing: '0.5px', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.1, transition: 'color 0.5s ease' }}>{levelData.name.toUpperCase()}</div>
+              {/* XP bar */}
+              <div style={{ marginTop: '8px' }}>
+                <div style={{ height: '3px', background: 'rgba(255,255,255,0.07)', borderRadius: '2px', overflow: 'hidden' }}>
+                  <motion.div initial={{ width: 0 }} animate={{ width: `${progressXp}%` }} transition={{ duration: 1.2, ease: 'easeOut' }}
+                    style={{ height: '100%', background: currentTheme.xpGradient, borderRadius: '2px', transition: 'background 0.5s ease' }} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '5px' }}>
+                  <span style={{ fontSize: '0.42rem', color: 'rgba(255,255,255,0.25)', fontFamily: "'DM Sans', sans-serif", fontWeight: 700 }}>{progressXp} / 100 XP</span>
+                  <span style={{ fontSize: '0.42rem', color: 'rgba(255,255,255,0.12)', fontFamily: "'DM Sans', sans-serif", fontWeight: 700 }}>{100 - progressXp} TO GO</span>
+                </div>
               </div>
             </div>
           </div>
@@ -800,10 +882,10 @@ export default function Dashboard() {
                 exit={{ scale: 0.92, y: 24, opacity: 0 }} transition={{ type: 'spring', damping: 22, stiffness: 300 }}
                 onClick={e => e.stopPropagation()}
                 style={{ width: '92%', maxWidth: '580px', background: 'rgba(10,22,18,0.97)',
-                  border: '1px solid rgba(255,183,3,0.15)', padding: isMobile ? '28px 22px' : '40px',
+                  border: `1px solid ${currentTheme.accent}22`, padding: isMobile ? '28px 22px' : '40px',
                   borderRadius: isMobile ? '28px' : '40px', position: 'relative',
-                  boxShadow: '0 40px 100px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,183,3,0.08) inset' }}>
-                <button onClick={() => setShowProfile(false)}
+                  boxShadow: `0 40px 100px rgba(0,0,0,0.7), 0 0 0 1px ${currentTheme.accent}12 inset` }}>
+                <button onClick={() => { setShowProfile(false); setShowActivityInfo(false); }}
                   style={{ position: 'absolute', top: isMobile ? '20px' : '28px', right: isMobile ? '20px' : '28px',
                     background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
                     color: 'rgba(255,255,255,0.7)', width: '38px', height: '38px', borderRadius: '50%',
@@ -817,7 +899,7 @@ export default function Dashboard() {
                   <div style={{ width: isMobile ? '72px' : '90px', height: isMobile ? '72px' : '90px', borderRadius: '24px', flexShrink: 0,
                     background: 'linear-gradient(145deg,#1b4332,#081c15)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    border: '2px solid rgba(255,183,3,0.5)', boxShadow: '0 0 30px rgba(255,183,3,0.2)' }}>
+                    border: `2px solid ${currentTheme.accent}80`, boxShadow: `0 0 30px ${currentTheme.accentGlow}` }}>
                     <User size={isMobile ? 36 : 44} color="#ffb703" />
                   </div>
                   <div>
@@ -842,25 +924,71 @@ export default function Dashboard() {
                   </div>
                   <div style={{ padding: '20px', background: 'rgba(255,255,255,0.03)',
                     borderRadius: '20px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                    <div style={{ fontSize: '0.58rem', color: '#ffb703', fontWeight: 900,
-                      letterSpacing: '2px', marginBottom: '14px', fontFamily: "'DM Sans', sans-serif" }}>WEEKLY ACTIVITY</div>
-                    <div style={{ height: '56px', width: '100%', display: 'flex', alignItems: 'flex-end', gap: '5px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', position: 'relative' }}>
+                      <div style={{ fontSize: '0.58rem', color: currentTheme.accent, fontWeight: 900, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif" }}>WEEKLY ACTIVITY</div>
+                      <button
+                        onClick={() => setShowActivityInfo(v => !v)}
+                        style={{ width: '16px', height: '16px', borderRadius: '50%', border: `1px solid ${currentTheme.accent}55`,
+                          background: showActivityInfo ? `${currentTheme.accent}22` : 'rgba(255,255,255,0.04)',
+                          color: currentTheme.accent, fontSize: '0.55rem', fontWeight: 900,
+                          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          transition: 'all 0.2s ease', flexShrink: 0, fontFamily: 'serif', lineHeight: 1 }}>
+                        i
+                      </button>
+                      {showActivityInfo && (
+                        <div style={{ position: 'absolute', top: '22px', right: 0, zIndex: 10,
+                          width: '180px', padding: '12px 14px', borderRadius: '14px',
+                          background: 'rgba(10,20,15,0.98)', border: `1px solid ${currentTheme.accent}30`,
+                          boxShadow: `0 12px 32px rgba(0,0,0,0.7), 0 0 0 1px ${currentTheme.accent}15 inset` }}>
+                          <div style={{ fontSize: '0.48rem', color: currentTheme.accent, fontWeight: 900, letterSpacing: '2px', marginBottom: '8px', fontFamily: "'DM Sans', sans-serif" }}>HOW IT GROWS</div>
+                          {[
+                            { icon: '🔑', text: 'Opening the app' },
+                            { icon: '🗺️', text: 'Selecting a trip category' },
+                            { icon: '✈️', text: 'Listing or joining trips' },
+                            { icon: '📝', text: 'Contributing a place' },
+                          ].map(row => (
+                            <div key={row.text} style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '6px' }}>
+                              <span style={{ fontSize: '0.7rem' }}>{row.icon}</span>
+                              <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.5)', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.4 }}>{row.text}</span>
+                            </div>
+                          ))}
+                          <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.06)', fontSize: '0.48rem', color: 'rgba(255,255,255,0.2)', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>
+                            Each action adds +1 to today's bar. Bars reset every Monday.
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ height: '64px', width: '100%', display: 'flex', alignItems: 'flex-end', gap: '5px', paddingTop: '16px', boxSizing: 'border-box' }}>
                       {(() => {
-                        const d = new Date().getDay(); // 0=Sun,1=Mon,...6=Sat
-                        const todayIdx = [6,0,1,2,3,4,5][d]; // map to M=0..S=5,S=6
-                        return [40, 60, 45, 80, 55, 90, 70].map((h, i) => (
-                          <div key={i} style={{ flex: 1, height: `${i === todayIdx ? 90 : h}%`, borderRadius: '4px',
-                            background: i === todayIdx
-                              ? 'linear-gradient(to top, #ffb703, #ffd166)'
-                              : 'rgba(216,243,220,0.12)',
-                            transition: 'height 0.3s ease' }} />
-                        ));
+                        const todayIdx = (new Date().getDay() + 6) % 7; // Mon=0 … Sun=6
+                        const maxVal = Math.max(...weekActivity, 1);
+                        return weekActivity.map((count, i) => {
+                          const isToday = i === todayIdx;
+                          const heightPct = isToday ? 90 : Math.max(8, Math.round((count / maxVal) * 78));
+                          return (
+                            <div key={i} style={{ flex: 1, height: `${heightPct}%`, borderRadius: '4px',
+                              background: isToday
+                                ? currentTheme.xpGradient.replace('90deg', 'to top')
+                                : count > 0
+                                  ? `${currentTheme.accent}30`
+                                  : 'rgba(255,255,255,0.07)',
+                              border: isToday ? 'none' : count > 0 ? `1px solid ${currentTheme.accent}25` : 'none',
+                              transition: 'height 0.5s ease, background 0.5s ease',
+                              position: 'relative' }}>
+                              {count > 0 && !isToday && (
+                                <div style={{ position: 'absolute', top: '-14px', left: '50%', transform: 'translateX(-50%)',
+                                  fontSize: '0.38rem', color: currentTheme.accent, fontWeight: 900, fontFamily: "'DM Sans', sans-serif",
+                                  opacity: 0.6, whiteSpace: 'nowrap' }}>{count}</div>
+                              )}
+                            </div>
+                          );
+                        });
                       })()}
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px' }}>
                       {['M','T','W','T','F','S','S'].map((d,i) => {
-                        const todayI = [6,0,1,2,3,4,5][new Date().getDay()];
-                        return <span key={i} style={{ flex:1, textAlign:'center', fontSize: '0.48rem', color: i===todayI ? '#ffb703' : 'rgba(255,255,255,0.2)', fontFamily: "'DM Sans', sans-serif", fontWeight: 700 }}>{d}</span>;
+                        const todayI = (new Date().getDay() + 6) % 7; // Mon=0 … Sun=6
+                        return <span key={i} style={{ flex:1, textAlign:'center', fontSize: '0.48rem', color: i===todayI ? currentTheme.accent : 'rgba(255,255,255,0.2)', fontFamily: "'DM Sans', sans-serif", fontWeight: 700 }}>{d}</span>;
                       })}
                     </div>
                   </div>
@@ -875,7 +1003,7 @@ export default function Dashboard() {
                   </div>
                   <div style={{ height: '6px', background: 'rgba(255,255,255,0.06)', borderRadius: '3px', overflow: 'hidden' }}>
                     <motion.div initial={{ width: 0 }} animate={{ width: `${progressXp}%` }} transition={{ duration: 1.2, ease: 'easeOut' }}
-                      style={{ height: '100%', background: 'linear-gradient(90deg, #ffb703, #ff8c00)', borderRadius: '3px' }} />
+                      style={{ height: '100%', background: currentTheme.xpGradient, borderRadius: '3px', transition: 'background 0.5s ease' }} />
                   </div>
                   <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', marginTop: '8px', fontFamily: "'DM Sans', sans-serif" }}>
                     {100 - progressXp} XP to reach <span style={{ color: '#ffb703', fontWeight: 700 }}>{levels[Math.min(currentLevel, levels.length - 1)].name.toUpperCase()}</span>
@@ -901,13 +1029,36 @@ export default function Dashboard() {
                       style={{ padding: '14px 8px', borderRadius: '16px', background: 'rgba(255,255,255,0.03)',
                         border: '1px solid rgba(255,255,255,0.07)', cursor: 'pointer',
                         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '7px', color: a.color,
-                        transition: 'all 0.2s', fontFamily: "'DM Sans', sans-serif' "}}
+                        transition: 'all 0.2s', fontFamily: "'DM Sans', sans-serif" }}
                       onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; }}
                       onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; }}>
                       {a.icon}
                       <span style={{ fontSize: '0.45rem', color: 'rgba(255,255,255,0.4)', fontWeight: 700, letterSpacing: '0.5px' }}>{a.label}</span>
                     </button>
                   ))}
+                </div>
+
+                {/* ── THEME SWITCHER ── */}
+                <div style={{ marginTop: '16px', padding: '16px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div style={{ fontSize: '0.45rem', color: 'rgba(255,255,255,0.2)', fontWeight: 900, letterSpacing: '2.5px', marginBottom: '12px', fontFamily: "'DM Sans', sans-serif" }}>INTERFACE THEME</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    {THEMES.map(t => (
+                      <button key={t.id} onClick={() => setCurrentTheme(t)}
+                        title={t.name}
+                        style={{
+                          width: '34px', height: '34px', borderRadius: '50%', cursor: 'pointer', flexShrink: 0,
+                          background: `linear-gradient(135deg, ${t.secondary} 0%, ${t.accent} 100%)`,
+                          border: currentTheme.id === t.id ? '3px solid white' : '2px solid rgba(255,255,255,0.12)',
+                          boxShadow: currentTheme.id === t.id ? `0 0 16px ${t.accent}99, 0 0 4px ${t.accent}66` : 'none',
+                          transition: 'all 0.25s ease',
+                          transform: currentTheme.id === t.id ? 'scale(1.15)' : 'scale(1)',
+                        }} />
+                    ))}
+                    <div style={{ marginLeft: '6px' }}>
+                      <div style={{ fontSize: '0.62rem', color: currentTheme.accent, fontWeight: 900, fontFamily: "'DM Sans', sans-serif", letterSpacing: '0.5px', transition: 'color 0.4s ease' }}>{currentTheme.name.toUpperCase()}</div>
+                      <div style={{ fontSize: '0.42rem', color: 'rgba(255,255,255,0.2)', fontFamily: "'DM Sans', sans-serif", fontWeight: 700, letterSpacing: '1px' }}>ACTIVE THEME</div>
+                    </div>
+                  </div>
                 </div>
               </motion.div>
             </motion.div>
@@ -938,9 +1089,6 @@ export default function Dashboard() {
           background: linear-gradient(to bottom, transparent, rgba(216,243,220,0.08), transparent);
           animation: scan 10s linear infinite;
         }
-        .xp-widget-details { width: 0; opacity: 0; padding-left: 0; }
-        .xp-hover-pill { transition: all 0.4s cubic-bezier(0.175,0.885,0.32,1.275); }
-        .xp-hover-pill:hover .xp-widget-details { width: 120px; opacity: 1; padding-left: 14px; padding-right: 10px; }
         .place-card-cta:hover {
           background: rgba(255,183,3,0.2) !important;
           border-color: rgba(255,183,3,0.4) !important;

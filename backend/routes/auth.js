@@ -29,7 +29,7 @@ router.post('/auth/register', async (req, res) => {
     if (username.length < 3)
       return res.status(400).json({ error: 'Username must be at least 3 characters.' });
 
-    const exists = await UserEntry.findOne({ $or: [{ email: email.toLowerCase() }, { username }] });
+    const exists = await UserEntry.findOne({ $or: [{ email: email.toLowerCase() }, { username: { $regex: `^${username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } }] });
     if (exists) {
       const field = exists.email === email.toLowerCase() ? 'Email' : 'Username';
       return res.status(409).json({ error: `${field} is already taken.` });
@@ -54,7 +54,7 @@ router.post('/auth/login', async (req, res) => {
     if (!login || !password)
       return res.status(400).json({ error: 'Username/email and password are required.' });
 
-    const user = await UserEntry.findOne({ $or: [{ username: login }, { email: login.toLowerCase() }] });
+    const user = await UserEntry.findOne({ $or: [{ username: { $regex: `^${login.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } }, { email: login.toLowerCase() }] });
     if (!user) return res.status(401).json({ error: 'No account found with that username or email.' });
 
     const match = await bcrypt.compare(password, user.password);

@@ -188,6 +188,23 @@ function FlowContent({ place }) {
 
   return (
     <div ref={containerRef} style={containerStyle}>
+      {/* Floating collapse button — always visible when expanded */}
+      {isExpanded && (
+        <button
+          className="pdf-hide"
+          onClick={() => setIsExpanded(false)}
+          style={{
+            position: 'fixed', top: '80px', right: '24px', zIndex: 10001,
+            background: 'rgba(8,28,21,0.9)', backdropFilter: 'blur(12px)',
+            border: '1px solid rgba(255,255,255,0.2)',
+            padding: '9px 18px', borderRadius: '50px', color: 'white',
+            fontSize: '0.68rem', fontWeight: 700, letterSpacing: '1px',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '7px',
+            fontFamily: "'DM Sans', sans-serif", boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+          }}>
+          <Minimize size={12} /> COLLAPSE
+        </button>
+      )}
       {/* ── HEADER ── */}
       <div style={{
         background: 'linear-gradient(135deg, #081c15 0%, #1b4332 60%, #2d6a4f 100%)',

@@ -54,8 +54,9 @@ const THEMES = [
   { id: 'arctic',  name: 'Arctic',  bg: '#050d12', navBg: 'rgba(5,13,18,0.85)', secondary: '#0d1f2d', accent: '#00d4aa', accentGlow: 'rgba(0,212,170,0.2)',   xpGradient: 'linear-gradient(90deg,#00d4aa,#00b4d8)' },
 ];
 
-export default function Dashboard() {
+export default function Dashboard({ darkMode = true, setDarkMode }) {
   const [activeTab, setActiveTab] = useState('itineraries');
+  const [compareSubView, setCompareSubView] = useState(0); // 0=trip comparison, 1=cost AI
   const [places, setPlaces]       = useState([]);
   const [selectedPlace, setSelectedPlace] = useState(null);
   const [step, setStep]           = useState(1);
@@ -77,8 +78,10 @@ export default function Dashboard() {
   const [sortBy, setSortBy] = useState('newest');
   const [placesTotal, setPlacesTotal] = useState(0);
   const [lastFilter, setLastFilter] = useState({ type: '', value: '' });
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [buddyNotif, setBuddyNotif] = useState(0); // pending match requests count
   const [buddyInitView, setBuddyInitView] = useState('feed'); // used to deep-link into MY TRIPS
+  const [buddyNavKey, setBuddyNavKey] = useState(0);
   const navigate = useNavigate();
 
   // ── Activity helpers ──────────────────────────────
@@ -118,7 +121,7 @@ export default function Dashboard() {
     { id: 'buddy',       label: 'BUDDY',       icon: <Users size={16} />,         info: 'Find travel companions — post your trip or join others heading to the same destination' },
     { id: 'comparison',  label: 'COMPARE',     icon: <ArrowRightLeft size={16} />, info: 'Side-by-side trip comparison — pick the best route, budget & timing for your getaway' },
     { id: 'contribute',  label: 'CONTRIBUTE',  icon: <FileText size={16} />,      info: 'Share your travel story in plain text — AI converts it into a full interactive itinerary' },
-    { id: 'about',       label: 'ABOUT',       icon: <Info size={16} />,          info: 'About Leave Approved — our mission & how to get in touch' },
+    { id: 'about',       label: 'ABOUT',       icon: null,                         info: 'About Leave Approved — our mission & how to get in touch' },
   ];
 
   const levels = [
@@ -326,15 +329,17 @@ export default function Dashboard() {
               LEAVE APPROVED.
             </span>
           </div>
-          <button onClick={logout}
-            style={{ padding: '7px 16px', borderRadius: '50px',
-              background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)',
-              WebkitBackdropFilter: 'blur(12px)',
-              border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.75)',
-              fontSize: '0.58rem', fontWeight: 700, cursor: 'pointer', letterSpacing: '1px',
-              fontFamily: "'DM Sans', sans-serif" }}>
-            EXIT
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button onClick={logout}
+              style={{ padding: '7px 16px', borderRadius: '50px',
+                background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+                border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.75)',
+                fontSize: '0.58rem', fontWeight: 700, cursor: 'pointer', letterSpacing: '1px',
+                fontFamily: "'DM Sans', sans-serif" }}>
+              EXIT
+            </button>
+          </div>
         </div>
 
         {/* ── FILTER PILL NAV ── */}
@@ -453,7 +458,7 @@ export default function Dashboard() {
      RENDER
   ──────────────────────────────────────────────── */
   return (
-    <div className="safari-theme" style={{ width: '100%', minHeight: '100vh', background: currentTheme.bg, position: 'relative', overflowX: 'hidden' }}>
+    <div className="safari-theme" style={{ width: '100%', minHeight: '100vh', background: darkMode ? currentTheme.bg : '#f8f5ee', position: 'relative', overflowX: 'hidden', color: darkMode ? 'white' : '#081c15' }}>
 
       {/* BG VIDEO (desktop) */}
       {!isMobile && (
@@ -477,8 +482,8 @@ export default function Dashboard() {
             boxShadow: `0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px ${currentTheme.accentGlow} inset` }}>
             {tabs.map(tab => (
               <button key={tab.id} onClick={() => {
-                if (tab.id === 'buddy' && buddyNotif > 0) setBuddyInitView('my_trips');
-                else if (tab.id === 'buddy') setBuddyInitView('feed');
+                if (tab.id === 'buddy' && buddyNotif > 0) { setBuddyInitView('my_trips'); setBuddyNavKey(k => k + 1); }
+                else if (tab.id === 'buddy') { setBuddyInitView('feed'); setBuddyNavKey(k => k + 1); }
                 setActiveTab(tab.id);
                 if (tab.id === 'itineraries') setStep(1);
               }}
@@ -539,10 +544,16 @@ export default function Dashboard() {
           WebkitBackdropFilter: 'blur(15px)',
           border: '1px solid rgba(255,255,255,0.12)',
           boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '0.45rem', fontWeight: 900, color: '#d8f3dc', opacity: 0.5, letterSpacing: '2px' }}>LOGGED IN</div>
-            <div style={{ fontSize: '0.78rem', fontWeight: 900, color: 'white', letterSpacing: '1px' }}>
-              {user.name?.split(' ')[0].toUpperCase() || 'USER'}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
+            onClick={() => { setBuddyInitView('profile'); setBuddyNavKey(k => k + 1); setActiveTab('buddy'); }}>
+            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #ffb703, #ff8c00)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 900, color: '#081c15', flexShrink: 0, overflow: 'hidden' }}>
+              {(() => { const av = user?.uid ? localStorage.getItem(`la_avatar_url_${user.uid}`) : null; return av ? <img src={av} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (user.name?.[0] || 'U').toUpperCase(); })()}
+            </div>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontSize: '0.42rem', fontWeight: 900, color: '#d8f3dc', opacity: 0.5, letterSpacing: '2px', textAlign: 'center' }}>LOGGED IN</div>
+              <div style={{ fontSize: '0.78rem', fontWeight: 900, color: 'white', letterSpacing: '1px' }}>
+                {user.name?.split(' ')[0].toUpperCase() || 'USER'}
+              </div>
             </div>
           </div>
           <button onClick={logout}
@@ -568,8 +579,8 @@ export default function Dashboard() {
             const isActive = activeTab === tab.id;
             return (
               <button key={tab.id} onClick={() => {
-                  if (tab.id === 'buddy' && buddyNotif > 0) setBuddyInitView('my_trips');
-                  else if (tab.id === 'buddy') setBuddyInitView('feed');
+                  if (tab.id === 'buddy' && buddyNotif > 0) { setBuddyInitView('my_trips'); setBuddyNavKey(k => k + 1); }
+                  else if (tab.id === 'buddy') { setBuddyInitView('feed'); setBuddyNavKey(k => k + 1); }
                   setActiveTab(tab.id);
                   if (tab.id === 'itineraries') setStep(1);
                 }}
@@ -591,7 +602,7 @@ export default function Dashboard() {
             );
           })}
           {/* Profile / XP button */}
-          <button onClick={() => setShowProfile(true)}
+          <button onClick={() => { setBuddyInitView('profile'); setBuddyNavKey(k => k + 1); setActiveTab('buddy'); }}
             style={{ background: 'none', border: '1px solid transparent', borderRadius: '14px', cursor: 'pointer',
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
               padding: '7px 12px', minWidth: '48px', fontFamily: "'DM Sans', sans-serif" }}>
@@ -632,10 +643,16 @@ export default function Dashboard() {
             </div>
             <div style={{ padding: '8px 8px 8px 18px', borderRadius: '50px', display: 'flex', alignItems: 'center', gap: '12px',
               background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(15px)', border: '1px solid rgba(255,255,255,0.15)' }}>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '0.5rem', fontWeight: 900, color: '#d8f3dc', opacity: 0.5 }}>LOGGED IN</div>
-                <div style={{ fontSize: '0.8rem', fontWeight: 900, color: 'white', letterSpacing: '1px' }}>
-                  {user.name?.split(' ')[0].toUpperCase() || 'VOID'}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
+                onClick={() => { setBuddyInitView('profile'); setBuddyNavKey(k => k + 1); setActiveTab('buddy'); }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #ffb703, #ff8c00)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 900, color: '#081c15', flexShrink: 0, overflow: 'hidden' }}>
+                  {(() => { const av = user?.uid ? localStorage.getItem(`la_avatar_url_${user.uid}`) : null; return av ? <img src={av} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (user.name?.[0] || 'U').toUpperCase(); })()}
+                </div>
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontSize: '0.45rem', fontWeight: 900, color: '#d8f3dc', opacity: 0.5, textAlign: 'center', letterSpacing: '1.5px' }}>LOGGED IN</div>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 900, color: 'white', letterSpacing: '1px' }}>
+                    {user.name?.split(' ')[0].toUpperCase() || 'VOID'}
+                  </div>
                 </div>
               </div>
               <button onClick={logout}
@@ -702,62 +719,88 @@ export default function Dashboard() {
                     style={{ width: '80vw', maxWidth: '720px' }}>
                     {(() => {
                       const cat = cards[currentCard];
+                      const cardIcons = { budget: '💳', days: '🕐', distance: '🗺️' };
+                      const subtitles = {
+                        budget: ['Street food & hostels','Budget explorer','Comfort traveler','Luxury experience'],
+                        days:   ['Quick getaway','Weekend escape','Short vacation','Grand expedition'],
+                        distance: ['Day trip zone','Regional escape','Cross-state journey','Distant horizons'],
+                      };
+                      const optIcons = { distance: ['🚶','🛵','🚗','✈️'], budget: ['💸','💵','💳','💎'], days: ['⚡','🌅','🗓️','🌍'] };
                       return (
-                        <div className="luggage-tag" style={{ display: 'flex',
-                          background: 'rgba(15,30,25,0.85)', backdropFilter: 'blur(50px)',
-                          border: '1.5px solid rgba(255,255,255,0.15)', borderRadius: '24px',
-                          position: 'relative', overflow: 'hidden',
-                          boxShadow: '0 50px 100px rgba(0,0,0,0.5)',
-                          clipPath: 'polygon(50px 0%,100% 0%,100% 100%,0% 100%,0% 50px)' }}>
-                          <div style={{ position: 'absolute', inset: '10px', pointerEvents: 'none',
-                            border: '1px dashed rgba(216,243,220,0.1)', borderRadius: '18px' }} />
-                          <div style={{ width: '100px', borderRight: '2px dashed rgba(255,255,255,0.15)',
-                            display: 'flex', flexDirection: 'column', alignItems: 'center',
-                            justifyContent: 'flex-start', padding: '50px 15px',
-                            background: 'rgba(255,255,255,0.02)' }}>
-                            <div style={{ transform: 'rotate(-90deg) translateY(-40px)',
-                              whiteSpace: 'nowrap', color: '#ffb703', fontWeight: 900,
-                              fontSize: '0.75rem', letterSpacing: '5px', opacity: 0.9 }}>{cat.code}</div>
-                            <div style={{ marginTop: 'auto', textAlign: 'center' }}>
-                              <div style={{ fontSize: '0.4rem', color: '#d8f3dc', opacity: 0.3, fontWeight: 900 }}>FLIGHT // LF-9932</div>
-                              <div style={{ fontSize: '0.4rem', color: '#ffb703', fontWeight: 900 }}>CLASS // ELITE</div>
-                            </div>
-                          </div>
-                          <div style={{ flex: 1, padding: '40px 50px' }}>
-                            <div style={{ marginBottom: '25px' }}>
-                              <div style={{ fontSize: '0.6rem', fontWeight: 900, color: '#ffb703',
-                                letterSpacing: '4px', marginBottom: '8px', opacity: 0.8 }}>
-                                STEP 0{currentCard + 1}
+                        <div style={{ position: 'relative', borderRadius: '24px', overflow: 'hidden', width: '100%',
+                          boxShadow: '0 50px 120px rgba(0,0,0,0.75)' }}>
+                          {/* Full-bleed travel image */}
+                          <div style={{ position: 'absolute', inset: 0,
+                            backgroundImage: `url(${cat.img})`,
+                            backgroundSize: 'cover', backgroundPosition: 'center',
+                            filter: 'brightness(0.6) saturate(1.1)' }} />
+                          {/* Gradient overlay — transparent top, very dark bottom */}
+                          <div style={{ position: 'absolute', inset: 0,
+                            background: 'linear-gradient(170deg, rgba(4,12,8,0.15) 0%, rgba(4,12,8,0.45) 35%, rgba(4,12,8,0.88) 62%, rgba(4,12,8,0.97) 100%)' }} />
+                          {/* Amber glow at bottom */}
+                          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '220px',
+                            background: 'radial-gradient(ellipse at 30% 100%, rgba(255,183,3,0.1) 0%, transparent 70%)',
+                            pointerEvents: 'none' }} />
+
+                          {/* Content */}
+                          <div style={{ position: 'relative', padding: '36px 44px 32px', minHeight: '500px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                            {/* Top bar */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#ffb703' }} />
+                                <span style={{ fontSize: '0.55rem', fontWeight: 900, color: 'rgba(255,255,255,0.45)', letterSpacing: '4px', fontFamily: "'DM Sans', sans-serif" }}>LEAVE APPROVED</span>
                               </div>
-                              <h3 className="title" style={{ fontSize: '2.5rem', color: 'white',
-                                margin: 0, lineHeight: 1, whiteSpace: 'pre-line' }}>{cat.title}</h3>
-                              <p style={{ color: 'rgba(216,243,220,0.6)', fontSize: '0.85rem',
-                                fontWeight: 600, marginTop: '12px', maxWidth: '450px' }}>{cat.desc}</p>
+                              <span style={{ fontSize: '0.58rem', fontWeight: 900, color: '#ffb703', letterSpacing: '3px', fontFamily: "'DM Sans', sans-serif",
+                                background: 'rgba(255,183,3,0.12)', border: '1px solid rgba(255,183,3,0.3)', borderRadius: '50px', padding: '5px 14px' }}>
+                                STEP 0{currentCard + 1}
+                              </span>
                             </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '12px' }}>
-                              {cat.options.map(opt => (
+
+                            {/* Title block — mid card */}
+                            <div style={{ marginTop: 'auto', marginBottom: '24px' }}>
+                              <h2 style={{ fontSize: '4rem', color: 'white', margin: '0 0 8px', fontFamily: "'Bebas Neue', cursive",
+                                letterSpacing: '3px', lineHeight: 0.92, whiteSpace: 'pre-line',
+                                textShadow: '0 4px 24px rgba(0,0,0,0.4)' }}>{cat.title}</h2>
+                              <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.82rem', margin: 0,
+                                fontWeight: 500, fontFamily: "'DM Sans', sans-serif", maxWidth: '420px', lineHeight: 1.5 }}>{cat.desc}</p>
+                            </div>
+
+                            {/* Divider */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                              <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.12)' }} />
+                              <span style={{ fontSize: '0.52rem', fontWeight: 900, color: 'rgba(255,183,3,0.65)', letterSpacing: '3px', fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap' }}>CHOOSE YOUR RANGE</span>
+                              <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.12)' }} />
+                            </div>
+
+                            {/* Options 2x2 */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                              {cat.options.map((opt, oi) => (
                                 <button key={opt} onClick={() => handleSelection(cat.type, opt)}
-                                  className="premium-choice"
-                                  style={{ padding: '18px 20px', borderRadius: '14px',
-                                    background: 'rgba(255,255,255,0.03)',
-                                    border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.85)',
-                                    fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer',
-                                    transition: 'all 0.25s ease', textAlign: 'left',
-                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                    fontFamily: "'DM Sans', sans-serif", letterSpacing: '0.5px' }}>
-                                  {opt.toUpperCase()} <ChevronRight size={15} style={{ opacity: 0.35, flexShrink: 0 }} />
+                                  style={{ padding: '15px 18px', borderRadius: '16px',
+                                    background: 'rgba(255,255,255,0.07)',
+                                    backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
+                                    border: '1px solid rgba(255,255,255,0.11)',
+                                    cursor: 'pointer', transition: 'all 0.22s ease', textAlign: 'left',
+                                    display: 'flex', alignItems: 'center', gap: '13px',
+                                    fontFamily: "'DM Sans', sans-serif" }}
+                                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,183,3,0.16)'; e.currentTarget.style.borderColor = 'rgba(255,183,3,0.35)'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.3)'; }}
+                                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.11)'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
+                                  <div style={{ width: '40px', height: '40px', borderRadius: '12px',
+                                    background: 'rgba(255,183,3,0.18)', border: '1px solid rgba(255,183,3,0.3)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    fontSize: '1.1rem', flexShrink: 0 }}>
+                                    {(optIcons[cat.type] || optIcons.days)[oi]}
+                                  </div>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'white',
+                                      letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '3px' }}>{opt}</div>
+                                    <div style={{ fontSize: '0.58rem', color: 'rgba(255,183,3,0.75)', fontWeight: 600 }}>
+                                      {(subtitles[cat.type] || subtitles.days)[oi]}
+                                    </div>
+                                  </div>
+                                  <ChevronRight size={14} color="rgba(255,255,255,0.2)" style={{ flexShrink: 0 }} />
                                 </button>
                               ))}
-                            </div>
-                            <div style={{ marginTop: '30px', paddingTop: '25px',
-                              borderTop: '2px solid rgba(255,255,255,0.05)',
-                              display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <div>
-                                <div style={{ fontSize: '0.5rem', color: '#d8f3dc', opacity: 0.2, fontWeight: 900, letterSpacing: '1px' }}>FOR PERSONAL USE ONLY</div>
-                                <div style={{ fontSize: '0.5rem', color: '#d8f3dc', opacity: 0.2, fontWeight: 900, letterSpacing: '1px' }}>POWERED BY LEAVE APPROVED</div>
-                              </div>
-                              <div style={{ height: '30px', width: '130px', opacity: 0.3,
-                                background: 'repeating-linear-gradient(90deg,rgba(255,255,255,0.15),rgba(255,255,255,0.15) 2px,transparent 2px,transparent 6px)' }} />
                             </div>
                           </div>
                         </div>
@@ -808,31 +851,63 @@ export default function Dashboard() {
                       style={{ width: '100%', boxSizing: 'border-box', padding: '12px 16px 12px 38px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '50px', color: 'white', fontSize: '0.82rem', fontFamily: "'DM Sans', sans-serif", outline: 'none' }}
                     />
                   </div>
-                  <select
-                    value={sortBy}
-                    onChange={e => { setSortBy(e.target.value); fetchPlaces(lastFilter.type, lastFilter.value, searchQuery, e.target.value); }}
-                    style={{ padding: '12px 18px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '50px', color: 'white', fontSize: '0.78rem', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer', outline: 'none' }}>
-                    <option value="newest" style={{ background: '#1b4332' }}>Newest</option>
-                    <option value="popular" style={{ background: '#1b4332' }}>Most Liked</option>
-                    <option value="name" style={{ background: '#1b4332' }}>A → Z</option>
-                  </select>
+                  {/* Custom sort dropdown */}
+                  <div style={{ position: 'relative', flexShrink: 0 }}>
+                    <button
+                      onClick={() => setShowSortDropdown(v => !v)}
+                      style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 18px', background: showSortDropdown ? 'rgba(212,175,55,0.15)' : 'rgba(255,255,255,0.07)', border: `1px solid ${showSortDropdown ? 'rgba(212,175,55,0.5)' : 'rgba(255,255,255,0.12)'}`, borderRadius: '50px', color: 'white', fontSize: '0.78rem', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer', outline: 'none', whiteSpace: 'nowrap', transition: 'all 0.2s ease' }}>
+                      <span style={{ color: showSortDropdown ? '#d4af37' : 'rgba(255,255,255,0.85)' }}>
+                        {{ newest: 'Newest', popular: 'Most Liked', name: 'A → Z' }[sortBy]}
+                      </span>
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ transform: showSortDropdown ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease', color: showSortDropdown ? '#d4af37' : 'rgba(255,255,255,0.5)' }}><path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </button>
+                    <AnimatePresence>
+                      {showSortDropdown && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -6, scale: 0.97 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: -6, scale: 0.97 }}
+                          transition={{ duration: 0.15 }}
+                          style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, minWidth: '150px', background: 'rgba(10,20,14,0.97)', border: '1px solid rgba(212,175,55,0.25)', borderRadius: '16px', overflow: 'hidden', zIndex: 100, backdropFilter: 'blur(20px)', boxShadow: '0 16px 40px rgba(0,0,0,0.6)' }}>
+                          {[{ value: 'newest', label: 'Newest' }, { value: 'popular', label: 'Most Liked' }, { value: 'name', label: 'A → Z' }].map(opt => (
+                            <button
+                              key={opt.value}
+                              onClick={() => { setSortBy(opt.value); fetchPlaces(lastFilter.type, lastFilter.value, searchQuery, opt.value); setShowSortDropdown(false); }}
+                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '12px 18px', background: sortBy === opt.value ? 'rgba(212,175,55,0.12)' : 'transparent', border: 'none', color: sortBy === opt.value ? '#d4af37' : 'rgba(255,255,255,0.75)', fontSize: '0.8rem', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer', textAlign: 'left', transition: 'background 0.15s ease', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+                              onMouseEnter={e => { if (sortBy !== opt.value) e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
+                              onMouseLeave={e => { if (sortBy !== opt.value) e.currentTarget.style.background = 'transparent'; }}>
+                              {opt.label}
+                              {sortBy === opt.value && <span style={{ fontSize: '0.65rem', color: '#d4af37' }}>✓</span>}
+                            </button>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 </div>
 
-                {/* Skeleton loading */}
-                {placesLoading ? (
-                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(360px, 1fr))', gap: isMobile ? '16px' : '28px' }}>
-                    {[1,2,3,4,5,6].map(i => (
-                      <div key={i} style={{ borderRadius: isMobile ? '20px' : '24px', overflow: 'hidden', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                        <div style={{ height: isMobile ? '110px' : '130px', background: 'linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite' }} />
-                        <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                          <div style={{ height: '14px', background: 'rgba(255,255,255,0.06)', borderRadius: '8px', width: '60%' }} />
-                          <div style={{ height: '10px', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', width: '80%' }} />
-                          <div style={{ height: '10px', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', width: '45%' }} />
+                {/* Loading states */}
+                {placesLoading && places.length === 0 ? (
+                  /* Initial load — golden skeleton */
+                  <div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', marginBottom: '36px', paddingTop: '8px' }}>
+                      <div style={{ width: '44px', height: '44px', borderRadius: '50%', border: '3px solid rgba(212,175,55,0.15)', borderTopColor: '#d4af37', animation: 'spin 0.8s linear infinite' }} />
+                      <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '0.75rem', color: 'rgba(212,175,55,0.6)', letterSpacing: '2px', fontWeight: 600 }}>LOADING...</span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(360px, 1fr))', gap: isMobile ? '16px' : '28px' }}>
+                      {[1,2,3,4].map(i => (
+                        <div key={i} style={{ borderRadius: isMobile ? '20px' : '24px', overflow: 'hidden', background: 'rgba(212,175,55,0.03)', border: '1px solid rgba(212,175,55,0.08)' }}>
+                          <div style={{ height: isMobile ? '110px' : '130px', background: 'linear-gradient(90deg, rgba(212,175,55,0.03) 25%, rgba(212,175,55,0.09) 50%, rgba(212,175,55,0.03) 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite' }} />
+                          <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            <div style={{ height: '14px', background: 'rgba(212,175,55,0.07)', borderRadius: '8px', width: '60%' }} />
+                            <div style={{ height: '10px', background: 'rgba(212,175,55,0.05)', borderRadius: '8px', width: '80%' }} />
+                            <div style={{ height: '10px', background: 'rgba(212,175,55,0.05)', borderRadius: '8px', width: '45%' }} />
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                ) : places.length === 0 ? (
+                ) : !placesLoading && places.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '80px 20px' }}>
                     <div style={{ fontSize: isMobile ? '3rem' : '4.5rem', fontFamily: "'Bebas Neue', cursive", marginBottom: '16px', letterSpacing: '3px', color: 'rgba(255,255,255,0.15)' }}>NO TRIPS FOUND</div>
                     <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '0.9rem', color: 'rgba(255,255,255,0.35)', lineHeight: 1.6 }}>No destinations match those filters.<br/>Try a different budget or distance range.</p>
@@ -841,6 +916,21 @@ export default function Dashboard() {
                     </button>
                   </div>
                 ) : (
+                  <div style={{ position: 'relative' }}>
+                    {/* Filter-change overlay spinner */}
+                    <AnimatePresence>
+                      {placesLoading && (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.15 }}
+                          style={{ position: 'absolute', inset: 0, zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '14px', background: 'rgba(4,12,8,0.55)', backdropFilter: 'blur(4px)', borderRadius: '16px', minHeight: '200px' }}>
+                          <div style={{ width: '40px', height: '40px', borderRadius: '50%', border: '3px solid rgba(212,175,55,0.15)', borderTopColor: '#d4af37', animation: 'spin 0.8s linear infinite' }} />
+                          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '0.7rem', color: 'rgba(212,175,55,0.65)', letterSpacing: '2px', fontWeight: 600 }}>UPDATING...</span>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   <div style={{ display: 'grid',
                     gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(360px, 1fr))',
                     gap: isMobile ? '16px' : '28px' }}>
@@ -953,6 +1043,7 @@ export default function Dashboard() {
                       );
                     })}
                   </div>
+                  </div>
                 )}
               </motion.div>
             )}
@@ -998,9 +1089,27 @@ export default function Dashboard() {
               <motion.div key={activeTab} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.22 }}
                 style={{ width: '100%', display: 'flex', justifyContent: 'center', zIndex: 100, overflow: 'hidden' }}>
-                {activeTab === 'buddy'        ? <TravelBuddy key={buddyInitView} user={user} onXpGain={handleXpGain} initialView={buddyInitView} onMatchAccepted={refreshBuddyNotif} />
-                  : activeTab === 'contribute'  ? <TravelBuddy user={user} onXpGain={handleXpGain} initialView="contribute" hideNav />
-                  : activeTab === 'comparison'  ? <TripComparison />
+                {activeTab === 'buddy'        ? <TravelBuddy key={buddyNavKey} user={user} onXpGain={handleXpGain} initialView={buddyInitView} onMatchAccepted={refreshBuddyNotif} darkMode={darkMode} />
+                  : activeTab === 'contribute'  ? <TravelBuddy user={user} onXpGain={handleXpGain} initialView="contribute" hideNav darkMode={darkMode} />
+                  : activeTab === 'comparison'  ? (
+                    <div style={{ width: '100%', maxWidth: '900px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      {/* Sub-nav: Trip Comparison | Cost AI */}
+                      <div style={{ display: 'inline-flex', gap: '6px', background: 'rgba(4,12,8,0.85)', backdropFilter: 'blur(20px)',
+                        border: '1px solid rgba(255,255,255,0.12)', borderRadius: '50px', padding: '5px 6px', marginBottom: '24px' }}>
+                        {[{ icon: '⇄', label: 'COMPARE TRIPS' }, { icon: '💰', label: 'COST AI' }].map((item, i) => (
+                          <button key={i} onClick={() => setCompareSubView(i)}
+                            style={{ padding: '8px 20px', borderRadius: '50px', border: 'none', cursor: 'pointer',
+                              fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: '0.75rem', letterSpacing: '1px',
+                              display: 'flex', alignItems: 'center', gap: '7px', transition: 'all 0.2s',
+                              background: compareSubView === i ? '#ffb703' : 'transparent',
+                              color: compareSubView === i ? '#081c15' : 'rgba(255,255,255,0.55)' }}>
+                            <span>{item.icon}</span>{item.label}
+                          </button>
+                        ))}
+                      </div>
+                      {compareSubView === 0 ? <TripComparison /> : <TravelBuddy user={user} onXpGain={handleXpGain} initialView="cost" hideNav darkMode={darkMode} />}
+                    </div>
+                  )
                   : activeTab === 'about'        ? <About />
                   : null}
               </motion.div>
@@ -1092,8 +1201,8 @@ export default function Dashboard() {
                   <div style={{ width: isMobile ? '72px' : '90px', height: isMobile ? '72px' : '90px', borderRadius: '24px', flexShrink: 0,
                     background: 'linear-gradient(145deg,#1b4332,#081c15)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    border: `2px solid ${currentTheme.accent}80`, boxShadow: `0 0 30px ${currentTheme.accentGlow}` }}>
-                    <User size={isMobile ? 36 : 44} color="#ffb703" />
+                    border: `2px solid ${currentTheme.accent}80`, boxShadow: `0 0 30px ${currentTheme.accentGlow}`, overflow: 'hidden' }}>
+                    {(() => { const av = user?.uid ? localStorage.getItem(`la_avatar_url_${user.uid}`) : null; return av ? <img src={av} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <User size={isMobile ? 36 : 44} color="#ffb703" />; })()}
                   </div>
                   <div>
                     <span style={{ fontSize: '0.6rem', fontWeight: 900, color: '#ffb703', letterSpacing: '4px', fontFamily: "'DM Sans', sans-serif", opacity: 0.8 }}>USER PROFILE</span>
@@ -1214,11 +1323,11 @@ export default function Dashboard() {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
                   {[
-                    { icon: <PlaneTakeoff size={15}/>, label: 'LIST TRIP', tab: 'buddy', color: '#ffb703' },
+                    { icon: <PlaneTakeoff size={15}/>, label: 'LIST TRIP', tab: 'buddy', buddyView: 'list', color: '#ffb703' },
                     { icon: <Compass size={15}/>, label: 'EXPLORE', tab: 'itineraries', color: '#4cc9f0' },
                     { icon: <FileText size={15}/>, label: 'CONTRIBUTE', tab: 'contribute', color: '#4ade80' },
                   ].map(a => (
-                    <button key={a.tab} onClick={() => { setShowProfile(false); setActiveTab(a.tab); if (a.tab === 'itineraries') setStep(1); }}
+                    <button key={a.label} onClick={() => { setShowProfile(false); if (a.buddyView) setBuddyInitView(a.buddyView); setActiveTab(a.tab); if (a.tab === 'itineraries') setStep(1); }}
                       style={{ padding: '14px 8px', borderRadius: '16px', background: 'rgba(255,255,255,0.03)',
                         border: '1px solid rgba(255,255,255,0.07)', cursor: 'pointer',
                         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '7px', color: a.color,
@@ -1278,6 +1387,9 @@ export default function Dashboard() {
         @keyframes shimmer {
           0%   { background-position: -200% 0; }
           100% { background-position: 200% 0; }
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
         }
         input[placeholder="Search destinations..."]::placeholder { color: rgba(255,255,255,0.3); }
         select option { background: #1b4332; color: white; }

@@ -15,6 +15,14 @@ const chatMessageSchema = new mongoose.Schema({
   timestamp: { type: Date, default: Date.now }
 }, { _id: true });
 
+const expenseSchema = new mongoose.Schema({
+  description: { type: String, required: true },
+  amount: { type: Number, required: true },
+  paidBy: { type: String, required: true },
+  paidByName: { type: String, required: true },
+  date: { type: Date, default: Date.now }
+}, { _id: true });
+
 const tripListingSchema = new mongoose.Schema({
   creatorUid: { type: String, required: true },
   creatorName: { type: String, required: true },
@@ -26,8 +34,10 @@ const tripListingSchema = new mongoose.Schema({
   date: { type: Date, required: true, expires: 1209600 },
   maxBuddies: { type: Number, default: 3, min: 1, max: 20 },
   status: { type: String, enum: ['listed', 'started'], default: 'listed' },
+  tags: [{ type: String }],
   matches: [matchRequestSchema],
   messages: [chatMessageSchema],
+  expenses: [expenseSchema],
   createdAt: { type: Date, default: Date.now }
 });
 

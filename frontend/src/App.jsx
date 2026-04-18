@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import LoginPage from './components/LoginPage';
 import Dashboard from './components/Dashboard';
@@ -31,13 +31,24 @@ function Heartbeat() {
 }
 
 function App() {
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('la_darkMode');
+    return saved !== null ? saved === 'true' : true;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('la_darkMode', darkMode ? 'true' : 'false');
+    document.body.style.background = darkMode ? '' : '#f8f5ee';
+    document.body.style.color = darkMode ? '' : '#081c15';
+  }, [darkMode]);
+
   return (
     <Router>
       <Heartbeat />
       <div className="app-wrapper">
         <Routes>
           <Route path="/" element={<LoginPage />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard" element={<Dashboard darkMode={darkMode} setDarkMode={setDarkMode} />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="*" element={
             <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#050e09', color: 'white', fontFamily: "'DM Sans', sans-serif" }}>

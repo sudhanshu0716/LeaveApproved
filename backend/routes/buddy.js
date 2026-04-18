@@ -3,14 +3,22 @@ const router = express.Router();
 const TripListing = require('../models/TripListing');
 const Contribution = require('../models/Contribution');
 const UserEntry = require('../models/UserEntry');
+const UserProfile = require('../models/UserProfile');
 const { verifyToken } = require('../middleware/auth');
+const cloudinary = require('cloudinary').v2;
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 // List a new trip (authenticated)
 router.post('/trips', verifyToken, async (req, res) => {
   try {
-    const { creatorName, creatorCompany, origin, destination, budget, days, date, maxBuddies } = req.body;
+    const { creatorName, creatorCompany, origin, destination, budget, days, date, maxBuddies, tags } = req.body;
     const creatorUid = req.user.uid;
-    const newTrip = new TripListing({ creatorUid, creatorName, creatorCompany, origin, destination, budget, days, date, maxBuddies: maxBuddies || 3 });
+    const newTrip = new TripListing({ creatorUid, creatorName, creatorCompany, origin, destination, budget, days, date, maxBuddies: maxBuddies || 3, tags: Array.isArray(tags) ? tags : [] });
     await UserEntry.findOneAndUpdate({ uid: creatorUid }, { $inc: { xp: 5 } });
     await newTrip.save();
     res.status(201).json(newTrip);
@@ -117,6 +125,74 @@ router.get('/trips/:id/chat', async (req, res) => {
     const trip = await TripListing.findById(req.params.id);
     if (!trip) return res.status(404).json({ error: 'Trip not found' });
     res.json(trip.messages || []);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Add expense to a trip
+router.post('/trips/:id/expense', verifyToken, async (req, res) => {
+  try {
+    const { description, amount, paidBy, paidByName } = req.body;
+    const trip = await TripListing.findById(req.params.id);
+    if (!trip) return res.status(404).json({ error: 'Trip not found' });
+    trip.expenses.push({ description, amount: parseFloat(amount), paidBy, paidByName });
+    await trip.save();
+    res.json({ success: true, expenses: trip.expenses });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get expenses for a trip
+router.get('/trips/:id/expenses', async (req, res) => {
+  try {
+    const trip = await TripListing.findById(req.params.id);
+    if (!trip) return res.status(404).json({ error: 'Trip not found' });
+    res.json(trip.expenses || []);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Upload avatar to Cloudinary (authenticated)
+router.post('/users/upload-avatar', verifyToken, async (req, res) => {
+  try {
+    const { base64 } = req.body;
+    if (!base64) return res.status(400).json({ error: 'No image data provided' });
+    const result = await cloudinary.uploader.upload(base64, {
+      folder: 'leave_approved_avatars',
+      public_id: `avatar_${req.user.uid}`,
+      overwrite: true,
+      transformation: [{ width: 200, height: 200, crop: 'fill', gravity: 'face' }],
+    });
+    res.json({ url: result.secure_url });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get user profile (public)
+router.get('/users/:uid/profile', async (req, res) => {
+  try {
+    const profile = await UserProfile.findOne({ uid: req.params.uid });
+    if (!profile) return res.json({ uid: req.params.uid, bio: '', avatarUrl: '', name: '' });
+    res.json(profile);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Save user profile (authenticated)
+router.put('/users/profile', verifyToken, async (req, res) => {
+  try {
+    const { bio, avatarUrl, name } = req.body;
+    const profile = await UserProfile.findOneAndUpdate(
+      { uid: req.user.uid },
+      { uid: req.user.uid, bio, avatarUrl, name, updatedAt: new Date() },
+      { upsert: true, new: true }
+    );
+    res.json(profile);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

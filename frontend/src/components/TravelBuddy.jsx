@@ -1210,7 +1210,7 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
           )}
 
           {view === 'feed' && (
-            <div>
+            <div style={{ display: 'flex', flexDirection: 'column', height: isMobile ? 'auto' : 'calc(100vh - 290px)' }}>
               {/* Feature 5: Tag filters */}
               {(() => {
                 const allTags = ['All', ...Array.from(new Set(trips.flatMap(t => t.tags || [])))];
@@ -1251,6 +1251,14 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
                    📍 MAP VIEW
                  </button>
               </div>
+
+              {/* Scrollable cards area — desktop only */}
+              <div style={{
+                overflowY: isMobile ? 'visible' : 'auto',
+                flex: isMobile ? 'none' : 1,
+                paddingRight: isMobile ? 0 : '4px',
+                marginTop: '8px',
+              }}>
 
               {/* Feature 14: Trip Board / Map View */}
               {mapView && (() => {
@@ -1472,6 +1480,7 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
                 </div>
               )})}
             </div>
+              </div>
           </div>
           )}
 

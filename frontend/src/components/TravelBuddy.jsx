@@ -17,19 +17,36 @@ function InfoTooltip({ text }) {
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         fontSize: '0.58rem', fontWeight: 900, cursor: 'help',
         color: 'rgba(0,0,0,0.45)', fontFamily: "'DM Sans', sans-serif" }}>i</span>
-      {show && (
-        <div style={{ position: 'fixed', top: '90px', left: '50%', transform: 'translateX(-50%)',
-          background: 'rgba(4,12,8,0.97)', backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          border: '1px solid rgba(255,183,3,0.2)', borderRadius: '12px',
-          padding: '10px 14px', color: 'rgba(255,255,255,0.85)',
-          fontSize: '0.72rem', fontFamily: "'DM Sans', sans-serif",
-          fontWeight: 500, lineHeight: 1.5, zIndex: 9999,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
-          pointerEvents: 'none', width: 'min(240px, 80vw)', textAlign: 'center' }}>
-          {text}
-        </div>
-      )}
+      {show && (() => {
+        const mobile = window.innerWidth <= 768;
+        return mobile ? (
+          <div style={{ position: 'fixed', top: '90px', left: '50%', transform: 'translateX(-50%)',
+            background: 'rgba(4,12,8,0.97)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255,183,3,0.2)', borderRadius: '12px',
+            padding: '10px 14px', color: 'rgba(255,255,255,0.85)',
+            fontSize: '0.72rem', fontFamily: "'DM Sans', sans-serif",
+            fontWeight: 500, lineHeight: 1.5, zIndex: 9999,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+            pointerEvents: 'none', width: 'min(240px, 80vw)', textAlign: 'center' }}>
+            {text}
+          </div>
+        ) : (
+          <div style={{ position: 'absolute', top: 'calc(100% + 10px)', right: 0,
+            background: 'rgba(4,12,8,0.97)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255,183,3,0.2)', borderRadius: '12px',
+            padding: '10px 14px', color: 'rgba(255,255,255,0.85)',
+            fontSize: '0.72rem', fontFamily: "'DM Sans', sans-serif",
+            fontWeight: 500, lineHeight: 1.5, zIndex: 9999,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+            pointerEvents: 'none', width: '240px', textAlign: 'center' }}>
+            <div style={{ position: 'absolute', bottom: '100%', right: '6px',
+              width: 0, height: 0,
+              borderLeft: '5px solid transparent', borderRight: '5px solid transparent',
+              borderBottom: '5px solid rgba(4,12,8,0.97)' }} />
+            {text}
+          </div>
+        );
+      })()}
     </span>
   );
 }
@@ -489,8 +506,8 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
           {view === 'list' && (
             <form onSubmit={handleListTrip} style={{ margin: '0 auto', maxWidth: '800px', display: 'flex', flexDirection: isMobile ? 'column' : 'row', background: 'rgba(255,255,255,0.95)', borderRadius: isMobile ? '20px' : '25px', overflow: 'hidden', boxShadow: '0 25px 50px rgba(0,0,0,0.5)' }}>
               {/* Left panel */}
-              <div style={{ flex: isMobile ? 'none' : '0 0 250px', background: 'linear-gradient(135deg, #081c15, #1b4332)', padding: isMobile ? '14px 18px' : '40px', color: 'white', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: isMobile ? '12px' : '16px', justifyContent: isMobile ? 'flex-start' : 'center', position: 'relative' }}>
-                 <PlaneTakeoff size={isMobile ? 24 : 50} color="#ffb703" style={{ flexShrink: 0 }} />
+              <div style={{ flex: isMobile ? 'none' : '0 0 250px', background: 'linear-gradient(135deg, #081c15, #1b4332)', padding: isMobile ? '14px 18px' : '40px', color: 'white', display: 'flex', flexDirection: isMobile ? 'row' : 'column', alignItems: isMobile ? 'center' : 'flex-start', gap: isMobile ? '12px' : '0', justifyContent: 'center', position: 'relative' }}>
+                 <PlaneTakeoff size={isMobile ? 24 : 50} color="#ffb703" style={{ flexShrink: 0, marginBottom: isMobile ? 0 : '20px' }} />
                  <div>
                    <h2 style={{ fontSize: isMobile ? '1rem' : '2rem', fontWeight: 900, lineHeight: 1.1, margin: 0, fontFamily: "'Bebas Neue', cursive", letterSpacing: '2px' }}>TRIP PLANNER</h2>
                    <p style={{ opacity: 0.7, fontSize: isMobile ? '0.7rem' : '0.8rem', marginTop: '4px', marginBottom: 0, fontFamily: "'DM Sans', sans-serif" }}>Create a new trip listing</p>

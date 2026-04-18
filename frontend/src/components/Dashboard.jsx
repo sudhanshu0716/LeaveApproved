@@ -40,6 +40,12 @@ export default function Dashboard() {
   });
   const [weekActivity, setWeekActivity] = useState([0,0,0,0,0,0,0]);
   const [showActivityInfo, setShowActivityInfo] = useState(false);
+  const [placesLoading, setPlacesLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('newest');
+  const [placesTotal, setPlacesTotal] = useState(0);
+  const [lastFilter, setLastFilter] = useState({ type: '', value: '' });
+  const [buddyNotif, setBuddyNotif] = useState(0); // pending match requests count
   const navigate = useNavigate();
 
   // ── Activity helpers ──────────────────────────────
@@ -154,9 +160,25 @@ export default function Dashboard() {
     axios.get(`/api/buddy/my-trips?uid=${user.uid}`, { headers: getUserAuthHeader() })
       .then(r => setProfileStats({ created: r.data.created?.length || 0, requested: r.data.requested?.length || 0 }))
       .catch(() => {});
-    // Refresh chart with latest data each time modal opens
     setWeekActivity(readWeekActivity(user.uid));
   }, [showProfile, user.uid]);
+
+  // Poll for pending buddy match notifications every 30s
+  useEffect(() => {
+    if (!user.uid) return;
+    const checkNotifs = () => {
+      axios.get(`/api/buddy/my-trips?uid=${user.uid}`, { headers: getUserAuthHeader() })
+        .then(r => {
+          const pending = (r.data.created || []).reduce((acc, t) =>
+            acc + (t.matches || []).filter(m => m.status === 'pending').length, 0);
+          setBuddyNotif(pending);
+        })
+        .catch(() => {});
+    };
+    checkNotifs();
+    const iv = setInterval(checkNotifs, 30000);
+    return () => clearInterval(iv);
+  }, [user.uid]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'auto' });
@@ -172,20 +194,41 @@ export default function Dashboard() {
 
   /* ── handlers ── */
   const handleXpGain = (n) => {
-    setXp(p => p + n);
+    const newXp = xp + n;
+    setXp(newXp);
     if (user.uid) {
       recordActivity(user.uid, 1);
       setWeekActivity(readWeekActivity(user.uid));
+      // Sync XP to backend (fire-and-forget)
+      axios.patch(`/api/visitors/${user.uid}/xp`, { xp: newXp }, { headers: getUserAuthHeader() }).catch(() => {});
     }
+  };
+
+  const fetchPlaces = async (type, value, search = '', sort = 'newest') => {
+    setPlacesLoading(true);
+    try {
+      const clean = value.replace(' rupees', '').replace('km', '');
+      const params = new URLSearchParams({ type, value: clean, sort });
+      if (search.trim()) params.set('search', search.trim());
+      const res = await axios.get(`/api/places?${params}`);
+      // Handle both old (array) and new (object) response shapes
+      if (Array.isArray(res.data)) {
+        setPlaces(res.data);
+        setPlacesTotal(res.data.length);
+      } else {
+        setPlaces(res.data.places || []);
+        setPlacesTotal(res.data.total || 0);
+      }
+    } catch { setPlaces([]); setPlacesTotal(0); }
+    setPlacesLoading(false);
   };
 
   const handleSelection = async (type, value) => {
     handleXpGain(15);
-    try {
-      const clean = value.replace(' rupees', '').replace('km', '');
-      const res = await axios.get(`/api/places?type=${type}&value=${clean}`);
-      setPlaces(res.data);
-    } catch { setPlaces([]); }
+    setLastFilter({ type, value });
+    setSearchQuery('');
+    setSortBy('newest');
+    await fetchPlaces(type, value, '', 'newest');
     setStep(2);
   };
 
@@ -385,10 +428,15 @@ export default function Dashboard() {
                   color: activeTab === tab.id ? currentTheme.accent : 'rgba(255,255,255,0.45)',
                   fontSize: '0.68rem', fontWeight: 800, cursor: 'pointer',
                   display: 'flex', alignItems: 'center', gap: '7px',
-                  transition: 'all 0.25s ease',
+                  transition: 'all 0.25s ease', position: 'relative',
                   boxShadow: activeTab === tab.id ? `0 0 0 1px ${currentTheme.accent}40 inset` : 'none',
                   letterSpacing: '0.5px', fontFamily: "'DM Sans', sans-serif" }}>
                 {tab.icon} {tab.label}
+                {tab.id === 'buddy' && buddyNotif > 0 && (
+                  <span style={{ position: 'absolute', top: '4px', right: '6px', background: '#ff5d73', color: 'white', borderRadius: '50%', width: '16px', height: '16px', fontSize: '0.5rem', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {buddyNotif > 9 ? '9+' : buddyNotif}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -434,13 +482,18 @@ export default function Dashboard() {
               <button key={tab.id} onClick={() => { setActiveTab(tab.id); if (tab.id === 'itineraries') setStep(1); }}
                 style={{ background: isActive ? 'rgba(255,183,3,0.1)' : 'none',
                   border: isActive ? '1px solid rgba(255,183,3,0.2)' : '1px solid transparent',
-                  borderRadius: '14px', cursor: 'pointer',
+                  borderRadius: '14px', cursor: 'pointer', position: 'relative',
                   display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
                   padding: '7px 12px', minWidth: '48px',
                   color: isActive ? '#ffb703' : 'rgba(255,255,255,0.35)',
                   transition: 'all 0.2s ease', fontFamily: "'DM Sans', sans-serif" }}>
                 {tab.icon}
                 <span style={{ fontSize: '0.48rem', fontWeight: 700, letterSpacing: '0.5px' }}>{tab.label}</span>
+                {tab.id === 'buddy' && buddyNotif > 0 && (
+                  <span style={{ position: 'absolute', top: '2px', right: '4px', background: '#ff5d73', color: 'white', borderRadius: '50%', width: '14px', height: '14px', fontSize: '0.45rem', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {buddyNotif > 9 ? '9+' : buddyNotif}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -629,13 +682,13 @@ export default function Dashboard() {
                   width: '100%', maxWidth: '1200px', margin: '0 auto', boxSizing: 'border-box' }}>
                 <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center',
                   flexDirection: isMobile ? 'column' : 'row',
-                  justifyContent: 'space-between', marginBottom: isMobile ? '24px' : '48px', gap: '16px' }}>
+                  justifyContent: 'space-between', marginBottom: isMobile ? '20px' : '36px', gap: '16px' }}>
                   <div>
                     <h2 className="title" style={{ fontSize: isMobile ? '2.2rem' : '3rem', color: 'white', marginBottom: '6px', fontFamily: "'Bebas Neue', cursive" }}>
                       PLACES FOR YOU
                     </h2>
                     <p style={{ color: '#d8f3dc', opacity: 0.5, fontWeight: 600, fontSize: isMobile ? '0.7rem' : '0.85rem', fontFamily: "'DM Sans', sans-serif" }}>
-                      {places.length} DESTINATION{places.length !== 1 ? 'S' : ''} FOUND
+                      {placesLoading ? 'SEARCHING...' : `${placesTotal} DESTINATION${placesTotal !== 1 ? 'S' : ''} FOUND`}
                     </p>
                   </div>
                   <button onClick={() => setStep(1)} className="glass-btn"
@@ -649,7 +702,45 @@ export default function Dashboard() {
                   </button>
                 </div>
 
-                {places.length === 0 ? (
+                {/* Search + Sort bar */}
+                <div style={{ display: 'flex', gap: '10px', marginBottom: isMobile ? '20px' : '32px', flexWrap: 'wrap' }}>
+                  <div style={{ position: 'relative', flex: 1, minWidth: '180px' }}>
+                    <svg style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                    <input
+                      value={searchQuery}
+                      onChange={e => {
+                        setSearchQuery(e.target.value);
+                        fetchPlaces(lastFilter.type, lastFilter.value, e.target.value, sortBy);
+                      }}
+                      placeholder="Search destinations..."
+                      style={{ width: '100%', boxSizing: 'border-box', padding: '12px 16px 12px 38px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '50px', color: 'white', fontSize: '0.82rem', fontFamily: "'DM Sans', sans-serif", outline: 'none' }}
+                    />
+                  </div>
+                  <select
+                    value={sortBy}
+                    onChange={e => { setSortBy(e.target.value); fetchPlaces(lastFilter.type, lastFilter.value, searchQuery, e.target.value); }}
+                    style={{ padding: '12px 18px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '50px', color: 'white', fontSize: '0.78rem', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer', outline: 'none' }}>
+                    <option value="newest" style={{ background: '#1b4332' }}>Newest</option>
+                    <option value="popular" style={{ background: '#1b4332' }}>Most Liked</option>
+                    <option value="name" style={{ background: '#1b4332' }}>A → Z</option>
+                  </select>
+                </div>
+
+                {/* Skeleton loading */}
+                {placesLoading ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(360px, 1fr))', gap: isMobile ? '16px' : '28px' }}>
+                    {[1,2,3,4,5,6].map(i => (
+                      <div key={i} style={{ borderRadius: isMobile ? '20px' : '24px', overflow: 'hidden', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                        <div style={{ height: isMobile ? '110px' : '130px', background: 'linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite' }} />
+                        <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                          <div style={{ height: '14px', background: 'rgba(255,255,255,0.06)', borderRadius: '8px', width: '60%' }} />
+                          <div style={{ height: '10px', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', width: '80%' }} />
+                          <div style={{ height: '10px', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', width: '45%' }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : places.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '80px 20px' }}>
                     <div style={{ fontSize: isMobile ? '3rem' : '4.5rem', fontFamily: "'Bebas Neue', cursive", marginBottom: '16px', letterSpacing: '3px', color: 'rgba(255,255,255,0.15)' }}>NO TRIPS FOUND</div>
                     <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '0.9rem', color: 'rgba(255,255,255,0.35)', lineHeight: 1.6 }}>No destinations match those filters.<br/>Try a different budget or distance range.</p>
@@ -675,7 +766,14 @@ export default function Dashboard() {
                         <motion.div key={place._id}
                           whileHover={{ y: isMobile ? 0 : -6, boxShadow: '0 24px 60px rgba(0,0,0,0.5)' }}
                           whileTap={{ scale: 0.98 }}
-                          onClick={() => { setSelectedPlace(place); setStep(3); }}
+                          onClick={async () => {
+                            // Fetch full place data (nodes/edges excluded from list for perf)
+                            try {
+                              const full = await axios.get(`/api/places/${place._id}`, { headers: getUserAuthHeader() });
+                              setSelectedPlace(full.data);
+                            } catch { setSelectedPlace(place); }
+                            setStep(3);
+                          }}
                           style={{
                             borderRadius: isMobile ? '20px' : '24px',
                             overflow: 'hidden', cursor: 'pointer',
@@ -1082,6 +1180,12 @@ export default function Dashboard() {
           0%, 100% { opacity: 0.6; }
           50%       { opacity: 1; }
         }
+        @keyframes shimmer {
+          0%   { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+        input[placeholder="Search destinations..."]::placeholder { color: rgba(255,255,255,0.3); }
+        select option { background: #1b4332; color: white; }
         .hud-grid::after {
           content: '';
           position: absolute;

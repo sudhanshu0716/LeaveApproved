@@ -23,4 +23,10 @@ const placeSchema = new mongoose.Schema({
   }]
 });
 
+// Indexes for fast filtering at scale
+placeSchema.index({ budgetRange: 1 });
+placeSchema.index({ days: 1 });
+placeSchema.index({ distance: 1 });
+placeSchema.index({ name: 'text', description: 'text' }); // full-text search
+
 module.exports = mongoose.model('Place', placeSchema);

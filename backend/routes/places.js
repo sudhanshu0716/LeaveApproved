@@ -3,11 +3,13 @@ const router = express.Router();
 const Place = require('../models/Place');
 const { verifyAdmin, verifyToken } = require('../middleware/auth');
 
-// Get places (with optional filters)
+// Get places (with optional filters, search, sort, pagination)
 router.get('/places', async (req, res) => {
   try {
-    const { type, value } = req.query;
+    const { type, value, search, sort = 'newest', page = 1, limit = 50 } = req.query;
     let query = {};
+
+    // Filter
     if (type === 'budget') {
       query.budgetRange = new RegExp(value, 'i');
     } else if (type === 'days') {
@@ -19,8 +21,44 @@ router.get('/places', async (req, res) => {
     } else if (type === 'distance') {
       query.distance = new RegExp(value, 'i');
     }
-    const places = await Place.find(query);
-    res.json(places);
+
+    // Search by name or destination
+    if (search && search.trim()) {
+      query.$or = [
+        { name: new RegExp(search.trim(), 'i') },
+        { from: new RegExp(search.trim(), 'i') },
+        { description: new RegExp(search.trim(), 'i') },
+      ];
+    }
+
+    // Sort
+    const sortMap = {
+      newest: { _id: -1 },
+      popular: { 'likedBy': -1 },
+      name: { name: 1 },
+    };
+    const sortObj = sortMap[sort] || sortMap.newest;
+
+    const skip = (Math.max(1, parseInt(page)) - 1) * Math.min(100, parseInt(limit));
+    const places = await Place.find(query)
+      .sort(sortObj)
+      .skip(skip)
+      .limit(Math.min(100, parseInt(limit)))
+      .select('-nodes -edges'); // omit heavy graph data from list view
+
+    const total = await Place.countDocuments(query);
+    res.json({ places, total, page: parseInt(page), limit: parseInt(limit) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get single place (full data with nodes/edges)
+router.get('/places/:id', async (req, res) => {
+  try {
+    const place = await Place.findById(req.params.id);
+    if (!place) return res.status(404).json({ error: 'Place not found' });
+    res.json(place);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

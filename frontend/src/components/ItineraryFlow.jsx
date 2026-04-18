@@ -5,7 +5,7 @@ import 'reactflow/dist/style.css';
 import { motion } from 'framer-motion';
 import { CityNode, NoteNode, StickerNode, HubNode } from './CustomNodes';
 import CustomEdge from './CustomEdge';
-import { Heart, ZoomIn, ZoomOut, Maximize, Minimize, Send, Trash2, X } from 'lucide-react';
+import { Heart, ZoomIn, ZoomOut, Maximize, Minimize, Send, Trash2, MapPin, Calendar, Wallet, Navigation } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 function FlowContent({ place }) {
@@ -139,45 +139,99 @@ function FlowContent({ place }) {
     <div style={containerStyle}>
       {/* ── HEADER ── */}
       <div style={{
-        padding: isMobile ? '14px 18px' : '24px 40px',
-        borderBottom: '1px solid #edf5ee',
-        background: 'linear-gradient(135deg, #1b4332, #2d6a4f)',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        background: 'linear-gradient(135deg, #081c15 0%, #1b4332 60%, #2d6a4f 100%)',
         flexShrink: 0,
         position: 'relative', overflow: 'hidden',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'relative', zIndex: 2 }}>
-          <div style={{ background: '#ffb703', padding: isMobile ? '8px' : '12px', borderRadius: '12px', boxShadow: '0 4px 12px rgba(255,183,3,0.4)' }}>
-            <Maximize size={isMobile ? 16 : 20} color="#1b4332" />
+        {/* Decorative circles */}
+        <div style={{ position: 'absolute', right: '-30px', top: '-30px', width: '180px', height: '180px', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', left: '-20px', bottom: '-40px', width: '120px', height: '120px', background: 'rgba(255,183,3,0.06)', borderRadius: '50%', pointerEvents: 'none' }} />
+
+        {/* Top row: route + expand button */}
+        <div style={{
+          padding: isMobile ? '16px 18px 12px' : '28px 40px 20px',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+          position: 'relative', zIndex: 2,
+        }}>
+          <div>
+            {/* FROM → TO route */}
+            {place.from ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                <span style={{ fontSize: isMobile ? '0.7rem' : '0.8rem', fontWeight: 700, color: 'rgba(216,243,220,0.6)', letterSpacing: '1px', fontFamily: "'DM Sans', sans-serif" }}>
+                  {place.from.toUpperCase()}
+                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#ffb703' }}>
+                  <div style={{ width: isMobile ? '20px' : '32px', height: '1px', background: 'rgba(255,183,3,0.5)' }} />
+                  <Navigation size={isMobile ? 11 : 13} color="#ffb703" />
+                  <div style={{ width: isMobile ? '20px' : '32px', height: '1px', background: 'rgba(255,183,3,0.5)' }} />
+                </div>
+                <span style={{ fontSize: isMobile ? '0.7rem' : '0.8rem', fontWeight: 700, color: '#ffb703', letterSpacing: '1px', fontFamily: "'DM Sans', sans-serif" }}>
+                  {place.name.toUpperCase()}
+                </span>
+              </div>
+            ) : null}
+            <h2 style={{
+              fontSize: isMobile ? '1.6rem' : '2.2rem', color: '#fff', margin: 0,
+              fontWeight: 400, textTransform: 'uppercase', letterSpacing: '3px',
+              fontFamily: "'Bebas Neue', cursive", lineHeight: 1,
+            }}>
+              {place.name}
+            </h2>
+            {place.description && !isMobile && (
+              <p style={{ margin: '8px 0 0', color: 'rgba(216,243,220,0.55)', fontSize: '0.8rem', fontFamily: "'DM Sans', sans-serif", fontWeight: 400, maxWidth: '480px', lineHeight: 1.5 }}>
+                {place.description}
+              </p>
+            )}
           </div>
-          <h2 style={{
-            fontSize: isMobile ? '1.2rem' : '1.6rem', color: '#fff', margin: 0,
-            fontWeight: 400, textTransform: 'uppercase', letterSpacing: '2px',
-            fontFamily: "'Bebas Neue', cursive",
-          }}>
-            {place.name}
-          </h2>
+
+          <button
+            onClick={() => setIsExpanded(e => !e)}
+            style={{
+              background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              padding: isMobile ? '8px 14px' : '10px 20px',
+              borderRadius: '50px', color: 'white',
+              fontSize: isMobile ? '0.6rem' : '0.7rem',
+              fontWeight: 700, letterSpacing: '1px', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: '7px',
+              fontFamily: "'DM Sans', sans-serif", flexShrink: 0,
+            }}>
+            {isExpanded
+              ? <><Minimize size={12} /> EXIT</>
+              : <><Maximize size={12} /> EXPAND</>}
+          </button>
         </div>
 
-        <button
-          onClick={() => setIsExpanded(e => !e)}
-          style={{
-            background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)',
-            border: '1px solid rgba(255,255,255,0.25)',
-            padding: isMobile ? '8px 14px' : '10px 24px',
-            borderRadius: '50px', color: 'white',
-            fontSize: isMobile ? '0.62rem' : '0.75rem',
-            fontWeight: 700, letterSpacing: '1px', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: '8px',
-            fontFamily: "'DM Sans', sans-serif",
-            position: 'relative', zIndex: 2,
-          }}>
-          {isExpanded
-            ? <><Minimize size={13} /> EXIT FULL SCREEN</>
-            : <><Maximize size={13} /> FULL SCREEN</>}
-        </button>
-
-        <div style={{ position: 'absolute', right: '-20px', top: '-20px', width: '140px', height: '140px', background: 'rgba(255,255,255,0.04)', borderRadius: '50%', pointerEvents: 'none' }} />
+        {/* Trip meta badges */}
+        <div style={{
+          padding: isMobile ? '0 18px 16px' : '0 40px 24px',
+          display: 'flex', gap: '10px', flexWrap: 'wrap',
+          position: 'relative', zIndex: 2,
+        }}>
+          {place.days && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', padding: '6px 14px', borderRadius: '50px' }}>
+              <Calendar size={11} color="#ffb703" />
+              <span style={{ fontSize: '0.62rem', fontWeight: 700, color: 'rgba(255,255,255,0.8)', letterSpacing: '1px', fontFamily: "'DM Sans', sans-serif" }}>{place.days.toUpperCase()}</span>
+            </div>
+          )}
+          {place.budgetRange && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', padding: '6px 14px', borderRadius: '50px' }}>
+              <Wallet size={11} color="#ffb703" />
+              <span style={{ fontSize: '0.62rem', fontWeight: 700, color: 'rgba(255,255,255,0.8)', letterSpacing: '1px', fontFamily: "'DM Sans', sans-serif" }}>{place.budgetRange.toUpperCase()}</span>
+            </div>
+          )}
+          {place.distance && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', padding: '6px 14px', borderRadius: '50px' }}>
+              <MapPin size={11} color="#ffb703" />
+              <span style={{ fontSize: '0.62rem', fontWeight: 700, color: 'rgba(255,255,255,0.8)', letterSpacing: '1px', fontFamily: "'DM Sans', sans-serif" }}>{place.distance.toUpperCase()}</span>
+            </div>
+          )}
+          {place.nodes?.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,183,3,0.15)', border: '1px solid rgba(255,183,3,0.3)', padding: '6px 14px', borderRadius: '50px' }}>
+              <span style={{ fontSize: '0.62rem', fontWeight: 700, color: '#ffb703', letterSpacing: '1px', fontFamily: "'DM Sans', sans-serif" }}>{place.nodes.length} STOPS</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── FLOW CANVAS ── */}
@@ -185,37 +239,49 @@ function FlowContent({ place }) {
         height: flowHeight,
         minHeight: isExpanded ? 0 : (isMobile ? '240px' : '400px'),
         flex: isExpanded ? 1 : undefined,
-        width: '100%', overflow: 'hidden', position: 'relative', background: '#f7f9f8'
+        width: '100%', overflow: 'hidden', position: 'relative',
+        background: 'linear-gradient(135deg, #f0f7f2 0%, #f7faf8 100%)',
       }}>
-        <ReactFlow
-          nodes={readOnlyNodes}
-          edges={readOnlyEdges}
-          nodeTypes={nodeTypes}
-          edgeTypes={edgeTypes}
-          onInit={(instance) => {
-            flowInstanceRef.current = instance;
-            // fitView fires after ReactFlow finishes measuring all nodes
-            instance.fitView({ padding: 0.25, duration: 400 });
-          }}
-          nodesDraggable={false}
-          nodesConnectable={false}
-          elementsSelectable={true}
-          minZoom={0.05}
-          maxZoom={3}
-        >
-          <Background color="#dde5e0" gap={40} size={1} />
-          <div style={{ position: 'absolute', bottom: '20px', left: '20px', zIndex: 10, display: 'flex', gap: '10px' }}>
-            <button onClick={() => zoomIn()} style={{ background: '#fff', border: '1px solid #ddd', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', padding: '10px', borderRadius: '12px', color: '#1b4332', cursor: 'pointer', display: 'flex' }}>
-              <ZoomIn size={18} />
-            </button>
-            <button onClick={() => zoomOut()} style={{ background: '#fff', border: '1px solid #ddd', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', padding: '10px', borderRadius: '12px', color: '#1b4332', cursor: 'pointer', display: 'flex' }}>
-              <ZoomOut size={18} />
-            </button>
-            <button onClick={() => flowInstanceRef.current?.fitView({ padding: 0.25, duration: 400 })} style={{ background: '#1b4332', border: 'none', boxShadow: '0 4px 12px rgba(27,67,50,0.25)', padding: '10px', borderRadius: '12px', color: '#fff', cursor: 'pointer', display: 'flex' }}>
-              <Maximize size={18} />
-            </button>
+        {place.nodes?.length > 0 ? (
+          <ReactFlow
+            nodes={readOnlyNodes}
+            edges={readOnlyEdges}
+            nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
+            onInit={(instance) => {
+              flowInstanceRef.current = instance;
+              instance.fitView({ padding: 0.25, duration: 400 });
+            }}
+            nodesDraggable={false}
+            nodesConnectable={false}
+            elementsSelectable={true}
+            minZoom={0.05}
+            maxZoom={3}
+          >
+            <Background color="#c8ddd0" gap={40} size={1} />
+            <div style={{ position: 'absolute', bottom: '20px', left: '20px', zIndex: 10, display: 'flex', gap: '8px' }}>
+              <button onClick={() => zoomIn()} style={{ background: '#fff', border: '1px solid rgba(27,67,50,0.12)', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', padding: '10px', borderRadius: '12px', color: '#1b4332', cursor: 'pointer', display: 'flex' }}>
+                <ZoomIn size={16} />
+              </button>
+              <button onClick={() => zoomOut()} style={{ background: '#fff', border: '1px solid rgba(27,67,50,0.12)', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', padding: '10px', borderRadius: '12px', color: '#1b4332', cursor: 'pointer', display: 'flex' }}>
+                <ZoomOut size={16} />
+              </button>
+              <button onClick={() => flowInstanceRef.current?.fitView({ padding: 0.25, duration: 400 })} style={{ background: '#1b4332', border: 'none', boxShadow: '0 4px 12px rgba(27,67,50,0.3)', padding: '10px', borderRadius: '12px', color: '#fff', cursor: 'pointer', display: 'flex' }}>
+                <Maximize size={16} />
+              </button>
+            </div>
+          </ReactFlow>
+        ) : (
+          <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px' }}>
+            <div style={{ width: '60px', height: '60px', borderRadius: '20px', background: 'rgba(27,67,50,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <MapPin size={28} color="#1b4332" style={{ opacity: 0.4 }} />
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 900, color: '#1b4332', opacity: 0.3, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif" }}>NO ITINERARY NODES YET</div>
+              <div style={{ fontSize: '0.65rem', color: '#999', marginTop: '6px', fontFamily: "'DM Sans', sans-serif" }}>This trip hasn't been mapped yet.</div>
+            </div>
           </div>
-        </ReactFlow>
+        )}
       </div>
 
       {/* ── LIKES + COMMENT COUNT ── */}

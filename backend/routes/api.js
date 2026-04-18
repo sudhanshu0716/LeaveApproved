@@ -253,12 +253,14 @@ router.delete('/places/:id/comment/:commentId', async (req, res) => {
 // Proxy for AI Generation (Supports Groq or Gemini)
 router.post('/ai/generate', async (req, res) => {
   try {
-    const { prompt } = req.body;
+    const { prompt, model } = req.body;
     const groqKey = process.env.GROQ_API_KEY;
     const geminiKey = process.env.GEMINI_API_KEY;
 
-    // 1. Try Groq first (Fastest & Free)
-    if (groqKey) {
+    const useGemini = model === 'gemini';
+
+    // ── 1. GROQ (unless Gemini explicitly selected) ──────────────────
+    if (!useGemini && groqKey) {
       try {
         const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
@@ -269,13 +271,13 @@ router.post('/ai/generate', async (req, res) => {
           body: JSON.stringify({
             model: "llama-3.3-70b-versatile",
             messages: [{ role: "user", content: prompt }],
-            temperature: 0.1
+            temperature: 0.1,
+            response_format: { type: "json_object" }
           })
         });
 
         const groqData = await groqResponse.json();
         if (groqData.choices && groqData.choices[0]) {
-          // Translate Groq response to Gemini structure for Frontend compatibility
           return res.json({
             candidates: [{
               content: {
@@ -284,12 +286,13 @@ router.post('/ai/generate', async (req, res) => {
             }]
           });
         }
+        console.error("Groq returned no choices:", groqData);
       } catch (e) {
-        console.error("Groq Failed, falling back to Gemini:", e);
+        console.error("Groq failed, falling back to Gemini:", e.message);
       }
     }
 
-    // 2. Fallback to Gemini
+    // ── 2. GEMINI (used when selected, or as Groq fallback) ──────────
     if (!geminiKey) return res.status(500).json({ error: "No AI API keys configured." });
 
     const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`, {

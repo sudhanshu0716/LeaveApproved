@@ -17,7 +17,7 @@ export default function AdminDashboard() {
   const [filterSuspicious, setFilterSuspicious] = useState(false);
   
   const [form, setForm] = useState({
-    name: '', description: '', budgetRange: 'under 5000 rupees', days: '2 day', distance: 'under 250km'
+    from: '', name: '', description: '', budgetRange: 'under 5000 rupees', days: '2 day', distance: 'under 250km'
   });
   const [editingId, setEditingId] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -28,6 +28,7 @@ export default function AdminDashboard() {
   const [edges, setEdges] = useState([]);
   const [aiInput, setAiInput] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiModel, setAiModel] = useState('groq');
   const [liveAudience, setLiveAudience] = useState(142);
   const [contributions, setContributions] = useState([]);
 
@@ -133,6 +134,7 @@ export default function AdminDashboard() {
   const editPlace = (place) => {
     setEditingId(place._id);
     setForm({
+      from: place.from || '',
       name: place.name || '',
       description: place.description || '',
       budgetRange: place.budgetRange || 'under 5000',
@@ -146,7 +148,7 @@ export default function AdminDashboard() {
 
   const resetForm = () => {
     setEditingId(null);
-    setForm({ name: '', description: '', budgetRange: 'under 5000 rupees', days: '2 day', distance: 'under 250km' });
+    setForm({ from: '', name: '', description: '', budgetRange: 'under 5000 rupees', days: '2 day', distance: 'under 250km' });
     setNodes([]);
     setEdges([]);
   };
@@ -161,75 +163,102 @@ export default function AdminDashboard() {
   };
 
   const generateTripAI = async (overrideText) => {
-    const inputText = overrideText || aiInput;
+    // Guard: if called directly by a button click, overrideText is a SyntheticEvent — ignore it
+    const inputText = (typeof overrideText === 'string' ? overrideText : null) || aiInput;
     if (!inputText) return alert('INTEL REQUIRED: Provide raw mission context.');
     setIsAiLoading(true);
     try {
-      const prompt = `You are a Master Travel Architect. Parse the following unstructured message into a high-fidelity Mission Blueprint (JSON).
-      
-      Input text: "${inputText}"
-      
-      REQUIRED JSON STRUCTURE:
-      {
-        "name": "Creative Mission Title",
-        "description": "Engaging description",
-        "days": "1 day" | "2 day" | "3 day" | "3+ days",
-        "budgetRange": "under 1000 rupees" | "under 2000 rupees" | "under 5000 rupees" | "over 5000 rupees",
-        "distance": "under 100km" | "under 250km" | "under 500km" | "over 500km",
-        "nodes": [
-          { 
-            "id": "unique-id", 
-            "type": "cityNode|hubNode", 
-            "position": {"x": number, "y": number}, 
-            "data": {
-              "label": "City Name", 
-              "markerDay": "Day 1|Day 2...", 
-              "arrivalTime": "00:00", 
-              "departureTime": "00:00", 
-              "rooms": "Hotel", 
-              "food": "Food", 
-              "activity": "Activity", 
-              "color": "#1b4332"
-            } 
-          }
-        ],
-        "edges": [
-          { "id": "unique-id", "source": "node-id", "target": "node-id", "type": "customEdge", "data": {"transport": "FLIGHT|BUS|TRAIN|CAB", "color": "#000"} }
-        ]
+      const prompt = `You are a Master Travel Architect. Parse the following traveler's message into a high-fidelity Mission Blueprint (JSON).
+
+Input text: "${inputText}"
+
+REQUIRED JSON STRUCTURE (fill all fields with real extracted data from the input above):
+{
+  "from": "Origin city where the journey starts",
+  "name": "Main destination city of the trip",
+  "description": "2-3 sentence description with specific real details from the input",
+  "days": "1 day" | "2 day" | "3 day" | "3+ days",
+  "budgetRange": "under 1000 rupees" | "under 2000 rupees" | "under 5000 rupees" | "over 5000 rupees",
+  "distance": "under 100km" | "under 250km" | "under 500km" | "over 500km",
+  "nodes": [
+    {
+      "id": "unique-id",
+      "type": "cityNode",
+      "position": {"x": 100, "y": 150},
+      "data": {
+        "label": "Actual city or stop name from the text",
+        "markerDay": "Day 1",
+        "arrivalTime": "actual arrival time from text in HH:MM",
+        "departureTime": "actual departure time from text in HH:MM",
+        "rooms": "exact accommodation name from text",
+        "food": "exact food items or restaurant names from text",
+        "activity": "exact activities mentioned in text for this stop",
+        "color": "#1b4332"
       }
+    }
+  ],
+  "edges": [
+    { "id": "unique-id", "source": "node-id", "target": "node-id", "type": "customEdge", "data": {"transport": "BUS|TRAIN|CAB|FLIGHT", "color": "#1b4332"} }
+  ]
+}
 
-      NOTE: Arrange nodes spatially (x: 200-800, y: 100-500).
-      Return ONLY raw JSON.`;
+CRITICAL RULES:
+- Create one node per major city or stop (e.g. Bangalore, Madurai, Munnar = 3 nodes)
+- Extract REAL names from the text — no generic words like "Budget Hotel", "Local cuisine", or "Sightseeing"
+- Node positions: x starts at 100 and increases by 850 per node; y alternates 150 and 400
+- The "from" = starting city, "name" = main/final destination
+- For "days": count the Day 1, Day 2, Day 3 mentions and use "3+ days" if 3 or more
+- For "budgetRange": add all costs mentioned and pick the closest bracket
+- For edges "transport": pick BUS, TRAIN, CAB, or FLIGHT based on what the text says
+- Return ONLY raw JSON with no markdown or explanation.`;
 
-      const response = await axios.post('/api/ai/generate', { prompt });
-      const rawText = response.data.candidates[0].content.parts[0].text;
-      const parsed = JSON.parse(rawText.replace(/```json/g, '').replace(/```/g, ''));
-      
+      const response = await axios.post('/api/ai/generate', { prompt, model: aiModel });
+      let rawText = response.data.candidates[0].content.parts[0].text;
+
+      // Strip any markdown fences the model may have added
+      rawText = rawText
+        .replace(/```json\s*/gi, '')
+        .replace(/```\s*/g, '')
+        .trim();
+
+      // Extract first complete JSON object (handles stray text before/after)
+      const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('No JSON found in response. Raw: ' + rawText.slice(0, 200));
+      const parsed = JSON.parse(jsonMatch[0]);
+
+      // Flexible key mapping — model sometimes uses different names
+      const fromVal     = parsed.from        || parsed.origin       || parsed.start        || parsed.from_city     || '';
+      const nameVal     = parsed.name        || parsed.destination  || parsed.to           || parsed.dest          || parsed.destination_city || 'UNNAMED_EXPEDITION';
+      const descVal     = parsed.description || parsed.summary      || parsed.overview     || '';
+      const daysVal     = parsed.days        || parsed.duration     || '2 day';
+      const budgetVal   = parsed.budgetRange || parsed.budget       || parsed.budget_range || 'under 5000 rupees';
+      const distanceVal = parsed.distance    || parsed.radius       || parsed.distance_range || 'under 500km';
+
       setForm({
-        name: parsed.name || 'UNNAMED_EXPEDITION',
-        description: parsed.description || '',
-        days: parsed.days || '2 day',
-        budgetRange: parsed.budgetRange || 'under 2000',
-        distance: parsed.distance || 'under 250km'
+        from: fromVal,
+        name: nameVal,
+        description: descVal,
+        days: daysVal,
+        budgetRange: budgetVal,
+        distance: distanceVal
       });
-      
-      if(parsed.nodes) {
-        // Automatically stagger nodes with High-Fidelity Expansion (850px gap)
+
+      if (parsed.nodes && parsed.nodes.length > 0) {
         const staggeredNodes = parsed.nodes.map((n, idx) => ({
           ...n,
-          position: { 
-            x: 100 + idx * 850, 
+          position: {
+            x: 100 + idx * 850,
             y: 150 + (idx % 2 === 0 ? 0 : 250)
           }
         }));
         setNodes(staggeredNodes);
       }
-      if(parsed.edges) setEdges(parsed.edges);
+      if (parsed.edges) setEdges(parsed.edges);
 
       alert('SYNTHESIS COMPLETE: Neural Forge has blueprinted the mission.');
-    } catch(err) { 
-      console.error(err);
-      alert('SYNTHESIS ERROR: Neural Forge failed to blueprint. Check terminal logs.'); 
+    } catch(err) {
+      console.error('AI Synthesis Error:', err);
+      alert('SYNTHESIS ERROR: ' + err.message + '\n\nCheck browser console for the raw AI response.');
     }
     setIsAiLoading(false);
   };
@@ -326,6 +355,7 @@ export default function AdminDashboard() {
 
         <style>{`
            @keyframes rotating { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+           @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         `}</style>
       </div>
     );
@@ -536,7 +566,10 @@ export default function AdminDashboard() {
                   {places.map(place => (
                     <div key={place._id} className="premium-card" style={{ padding: '24px' }}>
                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-                          <h3 style={{ fontSize: '1.4rem', margin: 0, fontWeight: 900, color: '#081c15', letterSpacing: '1px', textTransform: 'uppercase' }}>{place.name}</h3>
+                          <div>
+                            {place.from && <div style={{ fontSize: '0.55rem', fontWeight: 900, color: '#2d6a4f', letterSpacing: '1px', marginBottom: '4px' }}>{place.from.toUpperCase()} → {place.name.toUpperCase()}</div>}
+                            <h3 style={{ fontSize: '1.4rem', margin: 0, fontWeight: 900, color: '#081c15', letterSpacing: '1px', textTransform: 'uppercase' }}>{place.name}</h3>
+                          </div>
                           <div style={{ display: 'flex', gap: '8px' }}>
                              <button onClick={() => editPlace(place)} style={{ color: 'var(--primary-green)', background: 'none', border: 'none' }}><Edit2 size={18} /></button>
                              <button onClick={() => deletePlace(place._id)} style={{ color: '#ae2012', background: 'none', border: 'none' }}><Trash2 size={18} /></button>
@@ -563,27 +596,55 @@ export default function AdminDashboard() {
                 
                 {/* AI INTEL TERMINAL HEADER */}
                 <div style={{ background: '#081c15', padding: '40px', color: 'white' }}>
-                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                          <Zap color="#ffb703" size={24} />
                          <h3 className="title" style={{ fontSize: '1.2rem', margin: 0, letterSpacing: '2px' }}>AI_INTEL_PROCESSOR</h3>
                       </div>
                       <span style={{ fontSize: '0.6rem', fontWeight: 900, color: 'rgba(255,255,255,0.4)', letterSpacing: '3px' }}>STATUS: READY_FOR_TELEMETRY</span>
                    </div>
-                   
-                   <textarea 
-                      placeholder="PASTE RAW MISSION CONTEXT HERE (e.g. 'I want a 3 day luxury escape to Coorg with estate walks...')"
+
+                   {/* Model Selector */}
+                   <div style={{ marginBottom: '20px' }}>
+                      <div style={{ fontSize: '0.55rem', fontWeight: 900, color: 'rgba(255,255,255,0.4)', letterSpacing: '2px', marginBottom: '10px' }}>AI_ENGINE_SELECT</div>
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                         {[
+                           { id: 'groq',   label: 'GROQ',   sub: 'Llama-3.3 · Fast' },
+                           { id: 'gemini', label: 'GEMINI', sub: 'Flash 2.5 · Accurate' },
+                         ].map(m => (
+                           <button
+                             key={m.id}
+                             onClick={() => setAiModel(m.id)}
+                             style={{
+                               flex: 1, padding: '12px 16px', borderRadius: '12px', cursor: 'pointer',
+                               background: aiModel === m.id ? (m.id === 'gemini' ? 'rgba(66,133,244,0.25)' : 'rgba(255,183,3,0.2)') : 'rgba(255,255,255,0.04)',
+                               border: aiModel === m.id ? `1.5px solid ${m.id === 'gemini' ? '#4285f4' : '#ffb703'}` : '1.5px solid rgba(255,255,255,0.08)',
+                               display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px',
+                               transition: 'all 0.2s ease',
+                             }}
+                           >
+                             <span style={{ fontSize: '0.75rem', fontWeight: 900, color: aiModel === m.id ? (m.id === 'gemini' ? '#4285f4' : '#ffb703') : 'rgba(255,255,255,0.5)', letterSpacing: '1px' }}>{m.label}</span>
+                             <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)', fontFamily: "'DM Sans', sans-serif" }}>{m.sub}</span>
+                           </button>
+                         ))}
+                      </div>
+                   </div>
+
+                   <textarea
+                      placeholder="PASTE RAW MISSION CONTEXT HERE (e.g. 'Trip from Bangalore to Munnar via Madurai, 3 days...')"
                       value={aiInput}
                       onChange={(e) => setAiInput(e.target.value)}
-                      style={{ width: '100%', height: '100px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '15px', padding: '20px', color: 'white', fontSize: '0.9rem', outline: 'none', fontFamily: 'monospace', resize: 'none' }}
+                      style={{ width: '100%', height: '100px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '15px', padding: '20px', color: 'white', fontSize: '0.9rem', outline: 'none', fontFamily: 'monospace', resize: 'none', boxSizing: 'border-box' }}
                    />
-                   
-                   <button 
-                      onClick={generateTripAI}
+
+                   <button
+                      onClick={() => generateTripAI()}
                       disabled={isAiLoading}
-                      style={{ width: '100%', marginTop: '20px', padding: '18px', background: '#ffb703', border: 'none', borderRadius: '14px', color: '#081c15', fontWeight: 900, letterSpacing: '2px', cursor: 'pointer', opacity: isAiLoading ? 0.6 : 1 }}
+                      style={{ width: '100%', marginTop: '16px', padding: '18px', background: isAiLoading ? 'rgba(255,183,3,0.5)' : '#ffb703', border: 'none', borderRadius: '14px', color: '#081c15', fontWeight: 900, letterSpacing: '2px', cursor: isAiLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
                    >
-                      {isAiLoading ? 'BRIDGE_SYNCHRONIZING...' : 'INITIALIZE AI SYNTHESIS'}
+                      {isAiLoading
+                        ? <><span style={{ display: 'inline-block', width: '14px', height: '14px', border: '2px solid #081c15', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> SYNTHESIZING VIA {aiModel.toUpperCase()}...</>
+                        : <><Zap size={16} /> INITIALIZE AI SYNTHESIS ({aiModel.toUpperCase()})</>}
                    </button>
                 </div>
 
@@ -594,17 +655,21 @@ export default function AdminDashboard() {
                    </div>
 
                    <form onSubmit={handleAddPlace} style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '30px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
                          <div style={{ position: 'relative' }}>
-                            <span style={{ fontSize: '0.55rem', fontWeight: 900, color: '#1b4332', letterSpacing: '1px', marginLeft: '10px' }}>CAMPAIGN_NAME</span>
-                            <input className="modern-input" placeholder="e.g. MISSION_OVAL_OFFICE" value={form.name} onChange={e => setForm({...form, name: e.target.value})} required style={{ marginTop: '5px', padding: '18px' }} />
+                            <span style={{ fontSize: '0.55rem', fontWeight: 900, color: '#1b4332', letterSpacing: '1px', marginLeft: '10px' }}>FROM (ORIGIN)</span>
+                            <input className="modern-input" placeholder="e.g. Bangalore" value={form.from} onChange={e => setForm({...form, from: e.target.value})} style={{ marginTop: '5px', padding: '18px' }} />
                          </div>
                          <div style={{ position: 'relative' }}>
-                            <span style={{ fontSize: '0.55rem', fontWeight: 900, color: '#1b4332', letterSpacing: '1px', marginLeft: '10px' }}>MISSION_DURATION</span>
-                            <select className="modern-input" value={form.days} onChange={e => setForm({...form, days: e.target.value})} style={{ marginTop: '5px', padding: '18px' }}>
-                               <option>1 day</option><option>2 day</option><option>3 day</option><option>3+ days</option>
-                            </select>
+                            <span style={{ fontSize: '0.55rem', fontWeight: 900, color: '#1b4332', letterSpacing: '1px', marginLeft: '10px' }}>TO (DESTINATION)</span>
+                            <input className="modern-input" placeholder="e.g. Coorg" value={form.name} onChange={e => setForm({...form, name: e.target.value})} required style={{ marginTop: '5px', padding: '18px' }} />
                          </div>
+                      </div>
+                      <div style={{ position: 'relative' }}>
+                         <span style={{ fontSize: '0.55rem', fontWeight: 900, color: '#1b4332', letterSpacing: '1px', marginLeft: '10px' }}>MISSION_DURATION</span>
+                         <select className="modern-input" value={form.days} onChange={e => setForm({...form, days: e.target.value})} style={{ marginTop: '5px', padding: '18px' }}>
+                            <option>1 day</option><option>2 day</option><option>3 day</option><option>3+ days</option>
+                         </select>
                       </div>
 
                       <div style={{ position: 'relative' }}>

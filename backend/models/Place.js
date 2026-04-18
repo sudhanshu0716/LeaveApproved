@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const placeSchema = new mongoose.Schema({
   name: { type: String, required: true },
+  from: { type: String },
   description: { type: String },
   budgetRange: { type: String }, // e.g., '2500'
   days: { type: String }, // e.g., '2'

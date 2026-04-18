@@ -533,7 +533,7 @@ export default function Dashboard() {
                       borderRadius: '50px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
                       fontFamily: "'DM Sans', sans-serif", fontWeight: 700, letterSpacing: '1px',
                       alignSelf: isMobile ? 'flex-start' : undefined }}>
-                    <SettingsIcon size={14} /> CHANGE FILTERS
+                    ← BACK
                   </button>
                 </div>
 
@@ -542,7 +542,7 @@ export default function Dashboard() {
                     <div style={{ fontSize: isMobile ? '3rem' : '4.5rem', fontFamily: "'Bebas Neue', cursive", marginBottom: '16px', letterSpacing: '3px', color: 'rgba(255,255,255,0.15)' }}>NO TRIPS FOUND</div>
                     <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '0.9rem', color: 'rgba(255,255,255,0.35)', lineHeight: 1.6 }}>No destinations match those filters.<br/>Try a different budget or distance range.</p>
                     <button onClick={() => setStep(1)} className="btn-gold" style={{ margin: '24px auto 0', width: 'fit-content', padding: '14px 28px', fontSize: '0.8rem' }}>
-                      CHANGE FILTERS
+                      ← BACK
                     </button>
                   </div>
                 ) : (

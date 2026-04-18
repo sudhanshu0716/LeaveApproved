@@ -319,31 +319,34 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
     return (
       <div style={{ position: 'relative' }}>
       <ToastUI />
-      <div style={{ width: '100%', maxWidth: '900px', borderRadius: '28px', overflow: 'hidden',
+      <div style={{ width: '100%', maxWidth: '900px', borderRadius: isMobile ? '20px' : '28px', overflow: 'hidden',
         background: 'rgba(8, 20, 14, 0.92)', backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)',
-        border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 24px 60px rgba(0,0,0,0.6)' }}>
+        border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 24px 60px rgba(0,0,0,0.6)',
+        display: 'flex', flexDirection: 'column',
+        height: isMobile ? 'calc(100svh - 140px)' : 'auto' }}>
 
         {/* ── Header ── */}
-        <div style={{ padding: '20px 28px 18px', background: 'rgba(255,183,3,0.06)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+        <div style={{ padding: isMobile ? '14px 16px 12px' : '20px 28px 18px', background: 'rgba(255,183,3,0.06)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
           {/* Top row: label + actions */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'linear-gradient(135deg, #ffb703 0%, #fb8500 100%)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', flexShrink: 0 }}>✈️</div>
-              <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.6rem', fontWeight: 800, letterSpacing: '2.5px', fontFamily: "'DM Sans', sans-serif" }}>GROUP CHAT</span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+              <div style={{ width: '22px', height: '22px', borderRadius: '6px', background: 'linear-gradient(135deg, #ffb703 0%, #fb8500 100%)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', flexShrink: 0 }}>✈️</div>
+              <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.55rem', fontWeight: 800, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap' }}>GROUP CHAT</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,183,3,0.12)',
-                border: '1px solid rgba(255,183,3,0.25)', borderRadius: '50px', padding: '5px 14px' }}>
-                <Users size={13} color="#ffb703" />
-                <span style={{ color: '#ffb703', fontSize: '0.7rem', fontWeight: 800, fontFamily: "'DM Sans', sans-serif" }}>
-                  {1 + (activeChat.matches?.filter(m => m.status === 'accepted').length || 0)} members
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(255,183,3,0.12)',
+                border: '1px solid rgba(255,183,3,0.25)', borderRadius: '50px', padding: isMobile ? '4px 8px' : '5px 14px' }}>
+                <Users size={11} color="#ffb703" />
+                <span style={{ color: '#ffb703', fontSize: '0.65rem', fontWeight: 800, fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap' }}>
+                  {1 + (activeChat.matches?.filter(m => m.status === 'accepted').length || 0)}
+                  {!isMobile && ' members'}
                 </span>
               </div>
               <button onClick={() => setActiveChat(null)} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
-                borderRadius: '50px', padding: '6px 16px', color: 'rgba(255,255,255,0.7)', cursor: 'pointer',
-                fontSize: '0.65rem', fontWeight: 800, fontFamily: "'DM Sans', sans-serif", letterSpacing: '1px',
-                display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
+                borderRadius: '50px', padding: isMobile ? '5px 10px' : '6px 16px', color: 'rgba(255,255,255,0.7)', cursor: 'pointer',
+                fontSize: '0.62rem', fontWeight: 800, fontFamily: "'DM Sans', sans-serif", letterSpacing: '0.5px',
+                display: 'flex', alignItems: 'center', gap: '4px', transition: 'all 0.2s', whiteSpace: 'nowrap' }}
                 onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.12)'}
                 onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.07)'}>
                 ← BACK
@@ -351,13 +354,13 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
             </div>
           </div>
           {/* Bottom row: big route title */}
-          <div style={{ color: 'white', fontSize: '2rem', fontWeight: 900, fontFamily: "'Bebas Neue', cursive", letterSpacing: '2px', lineHeight: 1 }}>
+          <div style={{ color: 'white', fontSize: isMobile ? '1.5rem' : '2rem', fontWeight: 900, fontFamily: "'Bebas Neue', cursive", letterSpacing: '2px', lineHeight: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {activeChat.origin} <span style={{ color: '#ffb703' }}>→</span> {activeChat.destination}
           </div>
         </div>
 
         {/* ── Messages ── */}
-        <div ref={chatContainerRef} style={{ height: '480px', padding: '20px 28px', overflowY: 'auto',
+        <div ref={chatContainerRef} style={{ flex: 1, minHeight: 0, padding: isMobile ? '16px' : '20px 28px', overflowY: 'auto',
           display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div style={{ alignSelf: 'center', background: 'rgba(255,183,3,0.08)', color: 'rgba(255,183,3,0.7)',
             padding: '6px 16px', borderRadius: '50px', fontSize: '0.6rem', fontWeight: 700,
@@ -428,8 +431,8 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
         )}
 
         {/* ── Input ── */}
-        <div style={{ padding: '14px 28px 16px', borderTop: '1px solid rgba(255,255,255,0.07)',
-          display: 'flex', gap: '10px', alignItems: 'center', background: 'rgba(0,0,0,0.2)' }}>
+        <div style={{ padding: isMobile ? '10px 12px' : '14px 28px 16px', borderTop: '1px solid rgba(255,255,255,0.07)',
+          display: 'flex', gap: '8px', alignItems: 'center', background: 'rgba(0,0,0,0.2)', flexShrink: 0 }}>
           <input
             value={chatMessage}
             onChange={(e) => handleTyping(e.target.value)}
@@ -485,7 +488,7 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
       </div>}
 
       <AnimatePresence mode="wait">
-        <motion.div key={view} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.25 }}>
+        <motion.div key={view} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
           
           {view === 'list' && (
             <form onSubmit={handleListTrip} style={{ margin: '0 auto', maxWidth: '800px', display: 'flex', flexDirection: isMobile ? 'column' : 'row', background: 'rgba(255,255,255,0.95)', borderRadius: '25px', overflow: 'hidden', boxShadow: '0 25px 50px rgba(0,0,0,0.5)' }}>

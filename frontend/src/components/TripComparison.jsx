@@ -1,7 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import { ArrowRight, Plane, Loader, MapPin, ChefHat, AlertTriangle, Bus, Landmark, UserCheck, ShoppingBag, CheckCircle, Moon, Mountain, Wallet, CloudSun } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+
+function useToast() {
+  const [toast, setToast] = useState(null);
+  const timerRef = useRef(null);
+  const show = (msg, type = 'success') => {
+    clearTimeout(timerRef.current);
+    setToast({ msg, type });
+    timerRef.current = setTimeout(() => setToast(null), 3500);
+  };
+  return { toast, show };
+}
 
 export default function TripComparison() {
   const [origin, setOrigin] = useState('');
@@ -9,10 +20,11 @@ export default function TripComparison() {
   const [dest2, setDest2] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const { toast, show: showToast } = useToast();
 
   const handleCompare = async (e) => {
     e.preventDefault();
-    if (!origin || !dest1 || !dest2) return alert("Please fill all fields");
+    if (!origin || !dest1 || !dest2) { showToast('Please fill all fields', 'error'); return; }
 
     setLoading(true);
     try {
@@ -48,7 +60,7 @@ Return ONLY a valid JSON object with no markdown formatting. The JSON must exact
 
     } catch (err) {
       console.error(err);
-      alert("Failed to generate AI comparison. Please try again.");
+      showToast('Failed to generate AI comparison. Try again.', 'error');
     } finally {
       setLoading(false);
     }
@@ -95,8 +107,21 @@ Return ONLY a valid JSON object with no markdown formatting. The JSON must exact
     transition: 'all 0.25s ease',
   };
 
+  const ToastUI = () => toast ? (
+    <AnimatePresence>
+      <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }}
+        style={{ position: 'fixed', bottom: '32px', left: '50%', transform: 'translateX(-50%)', zIndex: 99999,
+          padding: '14px 24px', borderRadius: '16px', fontWeight: 800, fontSize: '0.9rem',
+          background: toast.type === 'error' ? '#e63946' : '#1b4332',
+          color: 'white', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', whiteSpace: 'nowrap' }}>
+        {toast.type === 'error' ? '✕ ' : '✓ '}{toast.msg}
+      </motion.div>
+    </AnimatePresence>
+  ) : null;
+
   return (
     <div style={{ width: '100%', maxWidth: '860px', padding: '0 20px 20px' }}>
+      <ToastUI />
 
       {/* HUD Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '14px', marginBottom: '28px' }}>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -12,6 +12,17 @@ import {
 import FlowBuilder from './FlowBuilder';
 
 const BAD_WORDS = ['spam', 'fake', 'bad', 'scam', 'toxic', 'fuck', 'shit'];
+
+function useToast() {
+  const [toast, setToast] = useState(null);
+  const timerRef = useRef(null);
+  const show = (msg, type = 'success') => {
+    clearTimeout(timerRef.current);
+    setToast({ msg, type });
+    timerRef.current = setTimeout(() => setToast(null), 3500);
+  };
+  return { toast, show };
+}
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('analytics');
@@ -38,6 +49,7 @@ export default function AdminDashboard() {
   const [liveVisitors, setLiveVisitors] = useState(0);
   const [uptime, setUptime] = useState(null);
   const [uptimeLoading, setUptimeLoading] = useState(true);
+  const { toast, show: showToast } = useToast();
 
   // Poll live visitor count every 30s when authenticated
   useEffect(() => {
@@ -128,7 +140,7 @@ export default function AdminDashboard() {
         setIsAuthenticated(true);
       }
     } catch (err) {
-      alert(err.response?.data?.message || 'Invalid credentials');
+      showToast(err.response?.data?.message || 'Invalid credentials', 'error');
     }
   };
 
@@ -144,7 +156,7 @@ export default function AdminDashboard() {
       resetForm();
       fetchPlaces();
       setActiveTab('places');
-    } catch (err) { alert('Save failed. Please try again.'); }
+    } catch (err) { showToast('Save failed. Please try again.', 'error'); }
   };
 
   const deletePlace = async (id) => {
@@ -188,7 +200,7 @@ export default function AdminDashboard() {
 
   const generateTripAI = async (overrideText) => {
     const inputText = (typeof overrideText === 'string' ? overrideText : null) || aiInput;
-    if (!inputText) return alert('Please enter a trip description first.');
+    if (!inputText) { showToast('Please enter a trip description first.', 'error'); return; }
     setIsAiLoading(true);
     try {
       const prompt = `You are a Master Travel Architect. Parse the following traveler's message into a high-fidelity Mission Blueprint (JSON).
@@ -259,10 +271,10 @@ CRITICAL RULES:
         setNodes(staggeredNodes);
       }
       if (parsed.edges) setEdges(parsed.edges);
-      alert('AI synthesis complete! Review the generated details below.');
+      showToast('AI synthesis complete! Review the generated details below.', 'success');
     } catch (err) {
       console.error('AI Synthesis Error:', err);
-      alert('AI synthesis failed: ' + err.message + '\n\nCheck browser console for details.');
+      showToast('AI synthesis failed. Check console for details.', 'error');
     }
     setIsAiLoading(false);
   };
@@ -271,6 +283,7 @@ CRITICAL RULES:
   if (!isAuthenticated) {
     return (
       <div style={{ width: '100%', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', background: '#081c15', position: 'relative', overflow: 'hidden' }}>
+        <ToastUI />
         <div style={{ position: 'fixed', inset: 0, zIndex: 0 }}>
           <video src="/MUNNAR.mp4" autoPlay loop muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.3, filter: 'grayscale(1) brightness(0.5)' }} />
           <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at center, transparent, rgba(8,28,21,1))' }} />
@@ -341,9 +354,22 @@ CRITICAL RULES:
     setMobileMenuOpen(false);
   };
 
+  const ToastUI = () => toast ? (
+    <AnimatePresence>
+      <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }}
+        style={{ position: 'fixed', bottom: '32px', left: '50%', transform: 'translateX(-50%)', zIndex: 99999,
+          padding: '14px 24px', borderRadius: '16px', fontWeight: 800, fontSize: '0.9rem',
+          background: toast.type === 'error' ? '#e63946' : '#1b4332',
+          color: 'white', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', whiteSpace: 'nowrap' }}>
+        {toast.type === 'error' ? '✕ ' : '✓ '}{toast.msg}
+      </motion.div>
+    </AnimatePresence>
+  ) : null;
+
   // ─── MAIN DASHBOARD ───────────────────────────────────────────────────────────
   return (
     <div style={{ width: '100%', minHeight: '100vh', background: '#f0f4f2', position: 'relative' }}>
+      <ToastUI />
       <div className="app-bg" />
       <div className="video-bg">
         <video autoPlay loop muted playsInline><source src="/MUNNAR.mp4" type="video/mp4" /></video>
@@ -844,11 +870,10 @@ CRITICAL RULES:
                   <button
                     onClick={async () => {
                       const flagged = moderationReviews.filter(r => BAD_WORDS.some(w => r.text?.toLowerCase().includes(w)));
-                      if (flagged.length === 0) return alert('No flagged reviews found.');
-                      if (window.confirm(`Delete all ${flagged.length} flagged reviews?`)) {
-                        for (const rev of flagged) await axios.delete(`/api/admin/reviews/${rev.placeId}/${rev._id}`, { headers: adminAuthHeader() });
-                        fetchModerationReviews();
-                      }
+                      if (flagged.length === 0) { showToast('No flagged reviews found.', 'error'); return; }
+                      for (const rev of flagged) await axios.delete(`/api/admin/reviews/${rev.placeId}/${rev._id}`, { headers: adminAuthHeader() });
+                      fetchModerationReviews();
+                      showToast(`Deleted ${flagged.length} flagged reviews`, 'success');
                     }}
                     style={{ padding: '10px 18px', background: '#ae2012', color: 'white', border: 'none', fontWeight: 800, borderRadius: '12px', cursor: 'pointer', fontSize: '0.8rem' }}
                   >

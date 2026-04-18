@@ -3,11 +3,13 @@ const router = express.Router();
 const TripListing = require('../models/TripListing');
 const Contribution = require('../models/Contribution');
 const UserEntry = require('../models/UserEntry');
+const { verifyToken } = require('../middleware/auth');
 
-// List a new trip
-router.post('/trips', async (req, res) => {
+// List a new trip (authenticated)
+router.post('/trips', verifyToken, async (req, res) => {
   try {
-    const { creatorUid, creatorName, creatorCompany, origin, destination, budget, days, date } = req.body;
+    const { creatorName, creatorCompany, origin, destination, budget, days, date } = req.body;
+    const creatorUid = req.user.uid; // use token uid, not body uid
     const newTrip = new TripListing({ creatorUid, creatorName, creatorCompany, origin, destination, budget, days, date });
     await UserEntry.findOneAndUpdate({ uid: creatorUid }, { $inc: { xp: 5 } });
     await newTrip.save();
@@ -33,10 +35,11 @@ router.get('/trips', async (req, res) => {
   }
 });
 
-// Request a match
-router.post('/trips/:id/match', async (req, res) => {
+// Request a match (authenticated)
+router.post('/trips/:id/match', verifyToken, async (req, res) => {
   try {
-    const { requesterUid, requesterName, requesterCompany } = req.body;
+    const { requesterName, requesterCompany } = req.body;
+    const requesterUid = req.user.uid;
     const trip = await TripListing.findById(req.params.id);
     if (!trip) return res.status(404).json({ error: 'Trip not found' });
     if (trip.matches.some(m => m.requesterUid === requesterUid))
@@ -49,8 +52,8 @@ router.post('/trips/:id/match', async (req, res) => {
   }
 });
 
-// Accept a match
-router.post('/trips/:id/accept-match', async (req, res) => {
+// Accept a match (authenticated)
+router.post('/trips/:id/accept-match', verifyToken, async (req, res) => {
   try {
     const { acceptedUid } = req.body;
     const trip = await TripListing.findById(req.params.id);
@@ -78,13 +81,12 @@ router.get('/my-trips', async (req, res) => {
   }
 });
 
-// Delete a trip
-router.delete('/trips/:id', async (req, res) => {
+// Delete a trip (authenticated, owner only)
+router.delete('/trips/:id', verifyToken, async (req, res) => {
   try {
-    const { uid } = req.body;
     const trip = await TripListing.findById(req.params.id);
     if (!trip) return res.status(404).json({ error: 'Trip not found' });
-    if (trip.creatorUid !== uid) return res.status(403).json({ error: 'Not authorized' });
+    if (trip.creatorUid !== req.user.uid) return res.status(403).json({ error: 'Not authorized' });
     await TripListing.findByIdAndDelete(req.params.id);
     res.json({ success: true });
   } catch (err) {
@@ -92,8 +94,8 @@ router.delete('/trips/:id', async (req, res) => {
   }
 });
 
-// Chat: send message
-router.post('/trips/:id/chat', async (req, res) => {
+// Chat: send message (authenticated)
+router.post('/trips/:id/chat', verifyToken, async (req, res) => {
   try {
     const { senderUid, senderName, text } = req.body;
     const trip = await TripListing.findById(req.params.id);
@@ -117,8 +119,8 @@ router.get('/trips/:id/chat', async (req, res) => {
   }
 });
 
-// Submit a contribution
-router.post('/contribute', async (req, res) => {
+// Submit a contribution (authenticated)
+router.post('/contribute', verifyToken, async (req, res) => {
   try {
     const { userName, text } = req.body;
     if (!userName || !text) return res.status(400).json({ error: 'Name and itinerary text are required.' });

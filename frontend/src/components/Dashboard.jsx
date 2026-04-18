@@ -8,6 +8,7 @@ import {
   Users, ArrowRightLeft, Info, FileText
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { getUserAuthHeader } from '../utils/auth';
 import ItineraryFlow from './ItineraryFlow';
 import TravelBuddy from './TravelBuddy';
 import TripComparison from './TripComparison';
@@ -106,12 +107,11 @@ export default function Dashboard() {
     if (!user.email || isUpdatingEmail) return;
     setIsUpdatingEmail(true);
     try {
-      const res = await axios.put(`/api/visitors/${user.uid}`, { email: user.email });
+      const res = await axios.put(`/api/visitors/${user.uid}`, { email: user.email }, { headers: getUserAuthHeader() });
       const u2 = { ...user, email: res.data.email };
       setUser(u2);
       localStorage.setItem('travel_user', JSON.stringify(u2));
-      alert('Email updated successfully.');
-    } catch { alert('Error saving email.'); }
+    } catch { console.error('Error saving email'); }
     finally { setIsUpdatingEmail(false); }
   };
 

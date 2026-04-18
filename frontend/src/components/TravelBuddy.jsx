@@ -1,13 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PlaneTakeoff, MapPin, Calendar, Briefcase, PlusCircle, Search, Users, CheckCircle, XCircle, Send, MessageSquare, Compass, ArrowRight, Ticket, Plane, Globe, Trash2, Mic, MicOff, FileText } from 'lucide-react';
+import { getUserAuthHeader } from '../utils/auth';
+
+function useToast() {
+  const [toast, setToast] = useState(null);
+  const timerRef = useRef(null);
+  const show = (msg, type = 'success') => {
+    clearTimeout(timerRef.current);
+    setToast({ msg, type });
+    timerRef.current = setTimeout(() => setToast(null), 3500);
+  };
+  return { toast, show };
+}
 
 export default function TravelBuddy({ user, onXpGain, initialView }) {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [view, setView] = useState(initialView || 'feed'); // 'feed', 'list', 'my_trips', 'contribute'
   const [trips, setTrips] = useState([]);
   const [myTrips, setMyTrips] = useState({ created: [], requested: [] });
+  const { toast, show: showToast } = useToast();
 
   // Contribution state
   const [itineraryText, setItineraryText] = useState('');
@@ -70,9 +83,9 @@ export default function TravelBuddy({ user, onXpGain, initialView }) {
     setChatMessage('');
     
     try {
-      await axios.post(`/api/buddy/trips/${activeChat._id}/chat`, newMsg);
+      await axios.post(`/api/buddy/trips/${activeChat._id}/chat`, newMsg, { headers: getUserAuthHeader() });
     } catch (err) {
-      alert("Failed to send message: " + err.message);
+      showToast('Failed to send message', 'error');
     }
   };
 
@@ -83,14 +96,14 @@ export default function TravelBuddy({ user, onXpGain, initialView }) {
     try {
       const res = await axios.get(`/api/buddy/trips?uid=${user.uid || ''}${searchOrigin ? `&origin=${encodeURIComponent(searchOrigin)}` : ''}`);
       setTrips(res.data);
-    } catch (err) { }
+    } catch (err) {}
   };
 
   const fetchMyTrips = async () => {
     try {
-      const res = await axios.get(`/api/buddy/my-trips?uid=${user.uid || ''}`);
+      const res = await axios.get(`/api/buddy/my-trips?uid=${user.uid || ''}`, { headers: getUserAuthHeader() });
       setMyTrips(res.data);
-    } catch (err) { }
+    } catch (err) {}
   };
 
   useEffect(() => {
@@ -102,48 +115,46 @@ export default function TravelBuddy({ user, onXpGain, initialView }) {
     e.preventDefault();
     try {
       await axios.post('/api/buddy/trips', {
-        creatorUid: user.uid || 'anon',
         creatorName: user.name,
         creatorCompany: user.company,
         origin, destination, budget, days, date
-      });
-      alert('Trip listed successfully!');
-      if (onXpGain) onXpGain(5); // Reward 5 XP for listing
+      }, { headers: getUserAuthHeader() });
+      showToast('Trip listed! +5 XP earned', 'success');
+      if (onXpGain) onXpGain(5);
       setView('feed');
     } catch (err) {
-      alert('Error listing trip');
+      showToast(err.response?.data?.error || 'Error listing trip', 'error');
     }
   };
 
   const handleRequestMatch = async (tripId) => {
     try {
       await axios.post(`/api/buddy/trips/${tripId}/match`, {
-        requesterUid: user.uid || 'anon',
         requesterName: user.name,
         requesterCompany: user.company
-      });
-      alert('Request Sent!');
+      }, { headers: getUserAuthHeader() });
+      showToast('Match request sent!', 'success');
       fetchTrips();
     } catch (err) {
-      alert('Error sending request: ' + (err.response?.data?.error || err.message));
+      showToast(err.response?.data?.error || 'Error sending request', 'error');
     }
   };
 
   const handleAcceptMatch = async (tripId, acceptedUid) => {
     try {
-      await axios.post(`/api/buddy/trips/${tripId}/accept-match`, { acceptedUid });
-      alert('Trip Started! Both parties gained 15 XP.');
+      await axios.post(`/api/buddy/trips/${tripId}/accept-match`, { acceptedUid }, { headers: getUserAuthHeader() });
+      showToast('Trip started! Both parties gained +15 XP 🎉', 'success');
       if (onXpGain) onXpGain(15);
       fetchMyTrips();
     } catch (err) {
-      alert('Error accepting match: ' + (err.response?.data?.error || err.message));
+      showToast(err.response?.data?.error || 'Error accepting match', 'error');
     }
   };
 
   const startListening = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert('Voice input is not supported in your browser. Please type your itinerary.');
+      showToast('Voice input not supported in this browser', 'error');
       return;
     }
     const recognition = new SpeechRecognition();
@@ -162,31 +173,46 @@ export default function TravelBuddy({ user, onXpGain, initialView }) {
   };
 
   const handleContributionSubmit = async () => {
-    if (!itineraryText.trim()) { alert('Please describe your trip first.'); return; }
+    if (!itineraryText.trim()) { showToast('Please describe your trip first', 'error'); return; }
     setIsSubmittingContrib(true);
     try {
-      await axios.post('/api/buddy/contribute', { userName: user.name, text: itineraryText });
+      await axios.post('/api/buddy/contribute', { userName: user.name, text: itineraryText }, { headers: getUserAuthHeader() });
       setItineraryText('');
-      alert('CONTRIBUTION RECEIVED! Our team will review and synthesize your blueprint.');
+      showToast('Contribution received! Our team will review your blueprint.', 'success');
     } catch (err) {
-      alert('Failed to submit: ' + (err.response?.data?.error || err.message));
+      showToast(err.response?.data?.error || 'Failed to submit', 'error');
     }
     setIsSubmittingContrib(false);
   };
 
   const handleDeleteTrip = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this trip request?")) return;
+    if (!window.confirm('Are you sure you want to delete this trip request?')) return;
     try {
-      await axios.delete(`/api/buddy/trips/${id}`, { data: { uid: user.uid } });
+      await axios.delete(`/api/buddy/trips/${id}`, { headers: getUserAuthHeader() });
+      showToast('Trip deleted', 'success');
       await fetchTrips();
       await fetchMyTrips();
     } catch (err) {
-      alert("Error deleting trip: " + (err.response?.data?.error || err.message));
+      showToast(err.response?.data?.error || 'Error deleting trip', 'error');
     }
   };
 
+  const ToastUI = () => toast ? (
+    <AnimatePresence>
+      <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }}
+        style={{ position: 'fixed', bottom: '32px', left: '50%', transform: 'translateX(-50%)', zIndex: 99999,
+          padding: '14px 24px', borderRadius: '16px', fontWeight: 800, fontSize: '0.9rem',
+          background: toast.type === 'error' ? '#e63946' : '#1b4332',
+          color: 'white', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', whiteSpace: 'nowrap' }}>
+        {toast.type === 'error' ? '✕ ' : '✓ '}{toast.msg}
+      </motion.div>
+    </AnimatePresence>
+  ) : null;
+
   if (activeChat) {
     return (
+      <div style={{ position: 'relative' }}>
+      <ToastUI />
       <div className="glass-panel" style={{ width: '100%', maxWidth: '800px', padding: '30px', borderRadius: '30px', background: 'rgba(20, 35, 30, 0.6)', border: '1px solid rgba(255,255,255,0.1)' }}>
         <button className="glass-btn" onClick={() => setActiveChat(null)} style={{ padding: '8px 16px', marginBottom: '20px', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }}>
           ← CLOSE CHAT
@@ -238,11 +264,13 @@ export default function TravelBuddy({ user, onXpGain, initialView }) {
           </button>
         </div>
       </div>
+      </div>
     );
   }
 
   return (
     <div style={{ width: '100%', maxWidth: '1000px', padding: '20px' }}>
+      <ToastUI />
       {/* Navigation Headers */}
       <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginBottom: '40px', flexWrap: 'wrap' }}>
         {[

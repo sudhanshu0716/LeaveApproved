@@ -7,6 +7,7 @@ import { CityNode, NoteNode, StickerNode, HubNode } from './CustomNodes';
 import CustomEdge from './CustomEdge';
 import { Heart, ZoomIn, ZoomOut, Maximize, Minimize, Send, Trash2, MapPin, Calendar, Wallet, Navigation } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { getUserAuthHeader } from '../utils/auth';
 
 function FlowContent({ place }) {
   const { zoomIn, zoomOut, fitView } = useReactFlow();
@@ -71,13 +72,10 @@ function FlowContent({ place }) {
 
   const handleLike = async () => {
     const currentUser = JSON.parse(localStorage.getItem('travel_user') || '{}');
-    if (isLiking || !currentUser.name) {
-      if (!currentUser.name) alert('Profile missing. Please enter your name on the home page first!');
-      return;
-    }
+    if (isLiking || !currentUser.name) return;
     setIsLiking(true);
     try {
-      const res = await axios.post(`/api/places/${place._id}/like`, { user: currentUser.name });
+      const res = await axios.post(`/api/places/${place._id}/like`, { user: currentUser.name }, { headers: getUserAuthHeader() });
       const newLikedBy = Array.isArray(res.data.likedBy) ? res.data.likedBy : [];
       if (newLikedBy.includes(currentUser.name) && !likedBy.includes(currentUser.name)) {
         confetti({
@@ -99,16 +97,15 @@ function FlowContent({ place }) {
       const res = await axios.post(`/api/places/${place._id}/comment`, {
         user: savedUser.name || 'Anonymous Traveler',
         text: newComment
-      });
+      }, { headers: getUserAuthHeader() });
       setComments(res.data);
       setNewComment('');
     } catch (err) { console.error(err); }
   };
 
   const handleDeleteComment = async (commentId) => {
-    if (!window.confirm('Remove your review?')) return;
     try {
-      const res = await axios.delete(`/api/places/${place._id}/comment/${commentId}`);
+      const res = await axios.delete(`/api/places/${place._id}/comment/${commentId}`, { headers: getUserAuthHeader() });
       setComments(res.data);
     } catch (err) { console.error(err); }
   };

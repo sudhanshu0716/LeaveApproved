@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Place = require('../models/Place');
-const { verifyAdmin } = require('../middleware/auth');
+const { verifyAdmin, verifyToken } = require('../middleware/auth');
 
 // Get places (with optional filters)
 router.get('/places', async (req, res) => {
@@ -26,8 +26,8 @@ router.get('/places', async (req, res) => {
   }
 });
 
-// Like / Unlike toggle
-router.post('/places/:id/like', async (req, res) => {
+// Like / Unlike toggle (authenticated)
+router.post('/places/:id/like', verifyToken, async (req, res) => {
   try {
     const { user } = req.body;
     if (!user) return res.status(400).json({ error: 'User required' });
@@ -43,8 +43,8 @@ router.post('/places/:id/like', async (req, res) => {
   }
 });
 
-// Add comment
-router.post('/places/:id/comment', async (req, res) => {
+// Add comment (authenticated)
+router.post('/places/:id/comment', verifyToken, async (req, res) => {
   try {
     const { user, text } = req.body;
     const place = await Place.findById(req.params.id);
@@ -56,8 +56,8 @@ router.post('/places/:id/comment', async (req, res) => {
   }
 });
 
-// Delete own comment
-router.delete('/places/:id/comment/:commentId', async (req, res) => {
+// Delete own comment (authenticated)
+router.delete('/places/:id/comment/:commentId', verifyToken, async (req, res) => {
   try {
     const place = await Place.findById(req.params.id);
     place.comments = place.comments.filter(c => c._id.toString() !== req.params.commentId);

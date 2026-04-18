@@ -39,6 +39,13 @@ function App() {
           <Route path="/" element={<LoginPage />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="*" element={
+            <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#050e09', color: 'white', fontFamily: "'DM Sans', sans-serif" }}>
+              <div style={{ fontSize: '8rem', fontWeight: 900, fontFamily: "'Bebas Neue', cursive", color: '#ffb703', lineHeight: 1 }}>404</div>
+              <div style={{ fontSize: '1.2rem', opacity: 0.6, marginBottom: '32px' }}>This destination doesn't exist.</div>
+              <a href="/" style={{ padding: '14px 36px', background: 'linear-gradient(135deg, #ffb703, #ff8c00)', color: '#081c15', borderRadius: '50px', fontWeight: 900, textDecoration: 'none', letterSpacing: '1px' }}>← GO HOME</a>
+            </div>
+          } />
         </Routes>
       </div>
     </Router>

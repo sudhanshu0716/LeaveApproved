@@ -13,7 +13,7 @@ const chatMessageSchema = new mongoose.Schema({
   senderName: { type: String, required: true },
   text: { type: String, required: true },
   timestamp: { type: Date, default: Date.now }
-}, { _id: false });
+}, { _id: true });
 
 const tripListingSchema = new mongoose.Schema({
   creatorUid: { type: String, required: true },
@@ -23,7 +23,8 @@ const tripListingSchema = new mongoose.Schema({
   destination: { type: String, required: true },
   budget: { type: String, required: true },
   days: { type: String, required: true },
-  date: { type: Date, required: true, expires: 1209600 }, // Auto-delete exactly 14 days after the trip start date
+  date: { type: Date, required: true, expires: 1209600 },
+  maxBuddies: { type: Number, default: 3, min: 1, max: 20 },
   status: { type: String, enum: ['listed', 'started'], default: 'listed' },
   matches: [matchRequestSchema],
   messages: [chatMessageSchema],

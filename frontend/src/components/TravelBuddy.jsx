@@ -49,6 +49,27 @@ function useToast() {
   return { toast, show };
 }
 
+// ── Avatar helper ─────────────────────────────────────────────────
+function getAvatar(name) {
+  if (!name) return { initials: '?', bg: '#555' };
+  const initials = name.trim().split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+  const palette = ['#e63946','#2a9d8f','#e76f51','#6a4c93','#1982c4','#f4a261','#43aa8b','#c77dff'];
+  const idx = name.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % palette.length;
+  return { initials, bg: palette[idx] };
+}
+
+// ── Countdown helper ──────────────────────────────────────────────
+function getDaysUntil(dateStr) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const trip = new Date(dateStr); trip.setHours(0,0,0,0);
+  const diff = Math.round((trip - today) / 86400000);
+  if (diff < 0)  return { label: 'DEPARTED', color: 'rgba(8,28,21,0.3)', urgent: false };
+  if (diff === 0) return { label: 'TODAY!',   color: '#22c55e', urgent: true };
+  if (diff === 1) return { label: 'TOMORROW', color: '#84cc16', urgent: true };
+  if (diff <= 7)  return { label: `${diff}D TO GO`, color: '#ffb703', urgent: true };
+  return           { label: `${diff} DAYS`,   color: 'rgba(8,28,21,0.35)', urgent: false };
+}
+
 export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMatchAccepted }) {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [view, setView] = useState(initialView || 'feed'); // 'feed', 'list', 'my_trips', 'contribute'
@@ -67,13 +88,16 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
   const [budget, setBudget] = useState('under 2000 rupees');
   const [days, setDays] = useState('2 day');
   const [date, setDate] = useState('');
-  
+  const [maxBuddies, setMaxBuddies] = useState(3);
+
   const [activeChat, setActiveChat] = useState(null);
   const [chatMessage, setChatMessage] = useState('');
   const [messages, setMessages] = useState([]);
+  const [typingUsers, setTypingUsers] = useState([]);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const chatContainerRef = React.useRef(null);
   const socketRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 768);
@@ -99,10 +123,8 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
 
     socket.on('new-message', (msg) => {
       setMessages(prev => {
-        // Avoid duplicates from optimistic update
         const alreadyExists = prev.some(m => m._id && m._id === msg._id);
         if (alreadyExists) return prev;
-        // Replace optimistic placeholder (no _id) from same sender with real message
         const optimisticIdx = prev.findLastIndex(m => !m._id && m.senderUid === msg.senderUid && m.text === msg.text);
         if (optimisticIdx !== -1) {
           const next = [...prev];
@@ -111,12 +133,23 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
         }
         return [...prev, msg];
       });
+      // Clear typing indicator for sender when message arrives
+      setTypingUsers(prev => prev.filter(n => n !== msg.senderName));
+    });
+
+    socket.on('user-typing', ({ name }) => {
+      setTypingUsers(prev => prev.includes(name) ? prev : [...prev, name]);
+    });
+
+    socket.on('user-stop-typing', ({ name }) => {
+      setTypingUsers(prev => prev.filter(n => n !== name));
     });
 
     return () => {
       socket.emit('leave-room', activeChat._id);
       socket.disconnect();
       socketRef.current = null;
+      setTypingUsers([]);
     };
   }, [activeChat]);
 
@@ -131,6 +164,9 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
     if (!chatMessage.trim() || !activeChat || !socketRef.current) return;
     const text = chatMessage.trim();
     setChatMessage('');
+    // Stop typing indicator
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    socketRef.current.emit('stop-typing', { tripId: activeChat._id, name: user.name });
     // Optimistic update
     setMessages(prev => [...prev, { senderUid: user.uid, senderName: user.name, text, timestamp: new Date() }]);
     // Emit via socket — server saves + broadcasts back
@@ -140,6 +176,16 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
       senderName: user.name,
       text,
     });
+  };
+
+  const handleTyping = (val) => {
+    setChatMessage(val);
+    if (!socketRef.current || !activeChat) return;
+    socketRef.current.emit('typing', { tripId: activeChat._id, name: user.name });
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      socketRef.current?.emit('stop-typing', { tripId: activeChat._id, name: user.name });
+    }, 2000);
   };
 
   // Feed Search State
@@ -170,7 +216,7 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
       await axios.post('/api/buddy/trips', {
         creatorName: user.name,
         creatorCompany: user.company,
-        origin, destination, budget, days, date
+        origin, destination, budget, days, date, maxBuddies
       }, { headers: getUserAuthHeader() });
       showToast('Trip listed! +5 XP earned', 'success');
       if (onXpGain) onXpGain(5);
@@ -322,29 +368,43 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
           {messages.map((msg, idx) => {
             const isMe = msg.senderUid === user.uid;
             const prevMsg = messages[idx - 1];
-            const showName = !isMe && (!prevMsg || prevMsg.senderUid !== msg.senderUid);
+            const showAvatar = !isMe && (!prevMsg || prevMsg.senderUid !== msg.senderUid);
+            const av = getAvatar(msg.senderName);
             return (
               <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
-                {showName && (
-                  <div style={{ fontSize: '0.6rem', color: '#ffb703', fontWeight: 800, letterSpacing: '1px',
-                    fontFamily: "'DM Sans', sans-serif", marginBottom: '4px', marginLeft: '4px' }}>
-                    {msg.senderName?.toUpperCase()}
-                  </div>
-                )}
-                <div style={{
-                  background: isMe ? 'linear-gradient(135deg, #ffb703 0%, #fb8500 100%)' : 'rgba(255,255,255,0.07)',
-                  color: isMe ? '#081c15' : 'rgba(255,255,255,0.9)',
-                  padding: '10px 14px',
-                  borderRadius: '18px',
-                  borderBottomRightRadius: isMe ? '4px' : '18px',
-                  borderBottomLeftRadius: isMe ? '18px' : '4px',
-                  maxWidth: '72%',
-                  border: isMe ? 'none' : '1px solid rgba(255,255,255,0.08)',
-                  boxShadow: isMe ? '0 4px 16px rgba(255,183,3,0.25)' : 'none',
-                }}>
-                  <div style={{ fontSize: '0.88rem', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.45 }}>{msg.text}</div>
-                  <div style={{ fontSize: '0.55rem', opacity: 0.55, marginTop: '4px', textAlign: 'right', fontFamily: "'DM Sans', sans-serif" }}>
-                    {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : msg.time}
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', flexDirection: isMe ? 'row-reverse' : 'row' }}>
+                  {/* Avatar for other users */}
+                  {!isMe && (
+                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: av.bg, flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem',
+                      fontWeight: 900, color: 'white', fontFamily: "'DM Sans', sans-serif",
+                      visibility: showAvatar ? 'visible' : 'hidden' }}>
+                      {av.initials}
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
+                    {showAvatar && (
+                      <div style={{ fontSize: '0.58rem', color: av.bg, fontWeight: 800, letterSpacing: '0.8px',
+                        fontFamily: "'DM Sans', sans-serif", marginBottom: '3px' }}>
+                        {msg.senderName?.toUpperCase()}
+                      </div>
+                    )}
+                    <div style={{
+                      background: isMe ? 'linear-gradient(135deg, #ffb703 0%, #fb8500 100%)' : 'rgba(255,255,255,0.07)',
+                      color: isMe ? '#081c15' : 'rgba(255,255,255,0.9)',
+                      padding: '10px 14px',
+                      borderRadius: '18px',
+                      borderBottomRightRadius: isMe ? '4px' : '18px',
+                      borderBottomLeftRadius: isMe ? '18px' : '4px',
+                      maxWidth: '320px',
+                      border: isMe ? 'none' : '1px solid rgba(255,255,255,0.08)',
+                      boxShadow: isMe ? '0 4px 16px rgba(255,183,3,0.25)' : 'none',
+                    }}>
+                      <div style={{ fontSize: '0.88rem', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.45 }}>{msg.text}</div>
+                      <div style={{ fontSize: '0.55rem', opacity: 0.55, marginTop: '4px', textAlign: 'right', fontFamily: "'DM Sans', sans-serif" }}>
+                        {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : msg.time}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -352,12 +412,27 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
           })}
         </div>
 
+        {/* ── Typing indicator ── */}
+        {typingUsers.length > 0 && (
+          <div style={{ padding: '4px 28px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
+              {[0,1,2].map(i => (
+                <div key={i} style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#ffb703',
+                  animation: `bounce 1s ease ${i * 0.15}s infinite` }} />
+              ))}
+            </div>
+            <span style={{ color: 'rgba(255,183,3,0.7)', fontSize: '0.65rem', fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
+              {typingUsers.join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...
+            </span>
+          </div>
+        )}
+
         {/* ── Input ── */}
-        <div style={{ padding: '16px 28px', borderTop: '1px solid rgba(255,255,255,0.07)',
+        <div style={{ padding: '14px 28px 16px', borderTop: '1px solid rgba(255,255,255,0.07)',
           display: 'flex', gap: '10px', alignItems: 'center', background: 'rgba(0,0,0,0.2)' }}>
           <input
             value={chatMessage}
-            onChange={(e) => setChatMessage(e.target.value)}
+            onChange={(e) => handleTyping(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
             placeholder="Type a message..."
             style={{ flex: 1, padding: '12px 18px', borderRadius: '50px',
@@ -450,10 +525,31 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
                       <option>1 day</option><option>2 day</option><option>3 day</option><option>3+ days</option>
                     </select>
                   </div>
-                  {/* gridColumn span 2 only on desktop — on mobile it would force an implicit 2nd column */}
-                  <div style={{ gridColumn: isMobile ? 'auto' : 'span 2' }}>
+                  <div>
                     <label style={{ display: 'block', color: '#081c15', fontSize: '0.7rem', fontWeight: 900, marginBottom: '8px', letterSpacing: '1px', fontFamily: "'DM Sans', sans-serif" }}>TRIP DATE</label>
                     <input type="date" required value={date} onChange={e => setDate(e.target.value)} style={{ width: '100%', padding: '12px 0', border: 'none', borderBottom: '2px solid rgba(8,28,21,0.1)', background: 'transparent', color: '#081c15', fontSize: '1rem', fontWeight: 900, outline: 'none', fontFamily: "'DM Sans', sans-serif" }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', color: '#081c15', fontSize: '0.7rem', fontWeight: 900, marginBottom: '8px', letterSpacing: '1px', fontFamily: "'DM Sans', sans-serif" }}>MAX BUDDIES</label>
+                    <div style={{ paddingBottom: '12px', borderBottom: '2px solid rgba(8,28,21,0.1)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <button type="button" onClick={() => setMaxBuddies(m => Math.max(1, m - 1))}
+                          style={{ width: '32px', height: '32px', borderRadius: '50%', border: 'none', background: 'rgba(8,28,21,0.08)', color: '#081c15', fontSize: '1.2rem', fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
+                        <input
+                          type="number" min={1} max={20} value={maxBuddies}
+                          onChange={e => { const v = Math.min(20, Math.max(1, parseInt(e.target.value) || 1)); setMaxBuddies(v); }}
+                          style={{ width: '52px', textAlign: 'center', padding: '6px 0', border: 'none', borderBottom: '2px solid rgba(8,28,21,0.2)', background: 'transparent', color: '#081c15', fontSize: '1.2rem', fontWeight: 900, outline: 'none', fontFamily: "'DM Sans', sans-serif" }}
+                        />
+                        <button type="button" onClick={() => setMaxBuddies(m => Math.min(20, m + 1))}
+                          style={{ width: '32px', height: '32px', borderRadius: '50%', border: 'none', background: 'rgba(8,28,21,0.08)', color: '#081c15', fontSize: '1.2rem', fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+                        <span style={{ fontSize: '0.65rem', color: 'rgba(8,28,21,0.45)', fontFamily: "'DM Sans', sans-serif" }}>buddies max</span>
+                      </div>
+                      {maxBuddies > 10 && (
+                        <div style={{ marginTop: '6px', fontSize: '0.6rem', color: '#e76f51', fontWeight: 700, fontFamily: "'DM Sans', sans-serif" }}>
+                          ⚠️ Large groups can be hard to coordinate
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
                 
@@ -489,18 +585,40 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
                 const accepted = myMatch?.status === 'accepted';
                 const shortOrig = trip.origin.substring(0,3).toUpperCase();
                 const shortDest = trip.destination.substring(0,3).toUpperCase();
+                const countdown = getDaysUntil(trip.date);
+                const acceptedCount = trip.matches?.filter(m => m.status === 'accepted').length || 0;
+                const maxSlots = trip.maxBuddies || 3;
+                const isFull = acceptedCount >= maxSlots;
+                const creatorAv = getAvatar(trip.creatorName);
+
+
                 return (
                 <div key={trip._id} className="ticket-card" style={{ display: 'flex', background: 'rgba(255,255,255,0.95)', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.3)', transition: 'transform 0.2s', position: 'relative', width: '100%', maxWidth: '100%', boxSizing: 'border-box', minWidth: 0 }}>
+                  {/* Countdown badge */}
+                  {countdown.urgent && (
+                    <div style={{ position: 'absolute', top: '10px', left: '10px', background: countdown.color, color: countdown.color === '#22c55e' ? 'white' : '#081c15',
+                      padding: '3px 10px', borderRadius: '50px', fontSize: '0.55rem', fontWeight: 900, letterSpacing: '1px',
+                      fontFamily: "'DM Sans', sans-serif", zIndex: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
+                      {countdown.label}
+                    </div>
+                  )}
                   {/* Left Main Ticket Panel */}
                   <div style={{ flex: 1, padding: isMobile ? '18px 16px' : '25px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minWidth: 0 }}>
                      <div>
-                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                           <div style={{ color: '#081c15', fontWeight: 900, letterSpacing: '2px', fontSize: '0.7rem', fontFamily: "'DM Sans', sans-serif" }}>POSTED BY</div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#ffb703', fontWeight: 900, background: 'rgba(255,183,3,0.1)', padding: '4px 10px', borderRadius: '50px', fontSize: '0.65rem' }}>
                             <CheckCircle size={12}/> VERIFIED
                           </div>
                        </div>
-                       <div style={{ fontSize: '1.1rem', color: '#081c15', fontWeight: 900, marginBottom: '25px', fontFamily: "'DM Sans', sans-serif" }}>{trip.creatorName.toUpperCase()}</div>
+                       {/* Creator row with avatar */}
+                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+                         <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: creatorAv.bg, flexShrink: 0,
+                           display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 900, color: 'white', fontFamily: "'DM Sans', sans-serif" }}>
+                           {creatorAv.initials}
+                         </div>
+                         <div style={{ fontSize: '1rem', color: '#081c15', fontWeight: 900, fontFamily: "'DM Sans', sans-serif" }}>{trip.creatorName.toUpperCase()}</div>
+                       </div>
                        
                        {/* Trip Route UI */}
                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '25px' }}>
@@ -537,21 +655,35 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
                   
                   {/* Right Stub Buttons */}
                   <div style={{ width: isMobile ? '72px' : '120px', background: '#ffb703', padding: isMobile ? '10px 8px' : '20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '10px', alignItems: 'center', overflow: 'hidden' }}>
-                     {!isMobile && <div style={{ transform: 'rotate(-90deg)', whiteSpace: 'nowrap', fontSize: '0.7rem', fontWeight: 900, letterSpacing: '4px', color: 'rgba(8,28,21,0.5)', marginBottom: '40px' }}>TRIP</div>}
+                     {!isMobile && <div style={{ transform: 'rotate(-90deg)', whiteSpace: 'nowrap', fontSize: '0.7rem', fontWeight: 900, letterSpacing: '4px', color: 'rgba(8,28,21,0.5)', marginBottom: '30px' }}>TRIP</div>}
                      <button
-                        onClick={() => handleRequestMatch(trip._id)}
-                        disabled={requested}
+                        onClick={() => !requested && !isFull && handleRequestMatch(trip._id)}
+                        disabled={requested || isFull}
                         style={{ width: isMobile ? '42px' : '50px', height: isMobile ? '42px' : '50px', borderRadius: '50%',
-                          background: accepted ? '#1b4332' : requested ? 'rgba(8,28,21,0.1)' : '#081c15',
-                          color: accepted ? '#d8f3dc' : requested ? '#081c15' : '#ffb703',
-                          border: 'none', cursor: requested ? 'default' : 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center',
-                          boxShadow: requested ? 'none' : '0 10px 15px rgba(0,0,0,0.2)', transition: 'all 0.2s', flexShrink: 0 }}
+                          background: accepted ? '#1b4332' : isFull ? 'rgba(8,28,21,0.2)' : requested ? 'rgba(8,28,21,0.1)' : '#081c15',
+                          color: accepted ? '#d8f3dc' : isFull ? 'rgba(8,28,21,0.4)' : requested ? '#081c15' : '#ffb703',
+                          border: 'none', cursor: requested || isFull ? 'default' : 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center',
+                          boxShadow: requested || isFull ? 'none' : '0 10px 15px rgba(0,0,0,0.2)', transition: 'all 0.2s', flexShrink: 0 }}
                      >
-                        {accepted ? <CheckCircle size={isMobile ? 20 : 24}/> : requested ? <CheckCircle size={isMobile ? 20 : 24}/> : <PlusCircle size={isMobile ? 20 : 24}/>}
+                        {accepted ? <CheckCircle size={isMobile ? 20 : 24}/> : isFull ? <XCircle size={isMobile ? 20 : 24}/> : requested ? <CheckCircle size={isMobile ? 20 : 24}/> : <PlusCircle size={isMobile ? 20 : 24}/>}
                      </button>
                      <div style={{ fontSize: isMobile ? '0.5rem' : '0.6rem', fontWeight: 900, textAlign: 'center', color: '#081c15', letterSpacing: isMobile ? '0' : '1px' }}>
-                       {accepted ? 'IN GROUP' : requested ? 'PENDING' : 'JOIN'}
+                       {accepted ? 'IN GROUP' : isFull ? 'FULL' : requested ? 'PENDING' : 'JOIN'}
                      </div>
+                     {/* Seats progress */}
+                     {!isMobile && (
+                       <div style={{ width: '100%', marginTop: '4px' }}>
+                         <div style={{ fontSize: '0.5rem', fontWeight: 900, color: 'rgba(8,28,21,0.5)', textAlign: 'center', marginBottom: '4px', letterSpacing: '0.5px' }}>
+                           {acceptedCount}/{maxSlots} SEATS
+                         </div>
+                         <div style={{ display: 'flex', gap: '3px', justifyContent: 'center' }}>
+                           {Array.from({ length: maxSlots }).map((_, i) => (
+                             <div key={i} style={{ flex: 1, height: '4px', borderRadius: '2px',
+                               background: i < acceptedCount ? '#081c15' : 'rgba(8,28,21,0.2)' }} />
+                           ))}
+                         </div>
+                       </div>
+                     )}
                   </div>
                 </div>
               )})}

@@ -33,6 +33,7 @@ export default function LoginPage() {
   const [isCutting, setIsCutting] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [strengthDismissed, setStrengthDismissed] = useState(false);
   const navigate = useNavigate();
 
   // Sign-in fields
@@ -48,6 +49,12 @@ export default function LoginPage() {
     if (savedUser) navigate('/dashboard');
     return () => window.removeEventListener('resize', handleResize);
   }, [navigate]);
+
+  // Dismiss strength meter instantly when all rules pass
+  useEffect(() => {
+    const allMet = PWD_RULES.every(r => r.test(signUp.password));
+    setStrengthDismissed(allMet);
+  }, [signUp.password]);
 
   const handleSignIn = async (e) => {
     e.preventDefault();
@@ -123,36 +130,38 @@ export default function LoginPage() {
     if (!password) return null;
     const strength = passwordStrength(password);
     const passed = PWD_RULES.filter(r => r.test(password)).length;
+    const allMet = passed === 5;
     return (
       <div>
         {/* Bar + label row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-          <div style={{ display: 'flex', gap: '4px', flex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '3px', flex: '1 1 80px', minWidth: '60px' }}>
             {[1,2,3,4,5].map(i => (
               <div key={i} style={{ flex: 1, height: '4px', borderRadius: '3px', transition: 'background 0.3s',
                 background: i <= strength.score ? strength.color : 'rgba(255,255,255,0.2)' }} />
             ))}
           </div>
-          <span style={{ fontSize: '0.7rem', fontWeight: 800, color: strength.color,
-            fontFamily: "'DM Sans', sans-serif", letterSpacing: '0.8px', flexShrink: 0 }}>
+          <span style={{ fontSize: '0.68rem', fontWeight: 800, color: strength.color,
+            fontFamily: "'DM Sans', sans-serif", letterSpacing: '0.5px', flexShrink: 0 }}>
             {strength.label.toUpperCase()}
           </span>
-          <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)',
+          <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)',
             fontFamily: "'DM Sans', sans-serif", flexShrink: 0 }}>
-            {passed}/5 rules met
+            {passed}/5
           </span>
         </div>
-        {/* Rules checklist */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+        {/* Rules checklist — 2 cols on wider screens, 1 col on narrow */}
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '4px 12px' }}>
           {PWD_RULES.map(rule => {
             const ok = rule.test(password);
             return (
-              <div key={rule.id} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '0.75rem', color: ok ? '#22c55e' : 'rgba(255,255,255,0.3)', flexShrink: 0 }}>
+              <div key={rule.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+                <span style={{ fontSize: '0.7rem', color: ok ? '#22c55e' : 'rgba(255,255,255,0.3)', flexShrink: 0 }}>
                   {ok ? '✓' : '○'}
                 </span>
-                <span style={{ fontSize: '0.68rem', fontFamily: "'DM Sans', sans-serif",
-                  color: ok ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.35)', fontWeight: ok ? 600 : 400 }}>
+                <span style={{ fontSize: '0.62rem', fontFamily: "'DM Sans', sans-serif",
+                  color: ok ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.35)', fontWeight: ok ? 600 : 400,
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {rule.label}
                 </span>
               </div>
@@ -301,7 +310,7 @@ export default function LoginPage() {
                         {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                     </div>
-                    {signUp.password && (
+                    {signUp.password && !strengthDismissed && (
                       <div style={{ marginTop: '10px', padding: '12px 14px', background: 'rgba(0,0,0,0.3)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
                         <StrengthMeter password={signUp.password} />
                       </div>
@@ -458,7 +467,7 @@ export default function LoginPage() {
                               {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
                             </button>
                           </div>
-                          {signUp.password && (
+                          {signUp.password && !strengthDismissed && (
                             <div style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, width: '210%', zIndex: 50,
                               padding: '14px 16px', background: 'rgba(4,12,8,0.95)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
                               borderRadius: '14px', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 12px 40px rgba(0,0,0,0.7)' }}>

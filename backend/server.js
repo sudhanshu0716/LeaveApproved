@@ -113,6 +113,15 @@ io.on('connection', (socket) => {
   socket.on('leave-room', (tripId) => {
     socket.leave(tripId);
   });
+
+  // Typing indicator — broadcast to room except sender
+  socket.on('typing', ({ tripId, name }) => {
+    socket.to(tripId).emit('user-typing', { name });
+  });
+
+  socket.on('stop-typing', ({ tripId, name }) => {
+    socket.to(tripId).emit('user-stop-typing', { name });
+  });
 });
 
 server.listen(PORT, () => {

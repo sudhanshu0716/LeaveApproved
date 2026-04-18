@@ -8,9 +8,9 @@ const { verifyToken } = require('../middleware/auth');
 // List a new trip (authenticated)
 router.post('/trips', verifyToken, async (req, res) => {
   try {
-    const { creatorName, creatorCompany, origin, destination, budget, days, date } = req.body;
-    const creatorUid = req.user.uid; // use token uid, not body uid
-    const newTrip = new TripListing({ creatorUid, creatorName, creatorCompany, origin, destination, budget, days, date });
+    const { creatorName, creatorCompany, origin, destination, budget, days, date, maxBuddies } = req.body;
+    const creatorUid = req.user.uid;
+    const newTrip = new TripListing({ creatorUid, creatorName, creatorCompany, origin, destination, budget, days, date, maxBuddies: maxBuddies || 3 });
     await UserEntry.findOneAndUpdate({ uid: creatorUid }, { $inc: { xp: 5 } });
     await newTrip.save();
     res.status(201).json(newTrip);
@@ -44,6 +44,9 @@ router.post('/trips/:id/match', verifyToken, async (req, res) => {
     if (!trip) return res.status(404).json({ error: 'Trip not found' });
     if (trip.matches.some(m => m.requesterUid === requesterUid))
       return res.status(400).json({ error: 'Match sequence already initiated' });
+    const acceptedCount = trip.matches.filter(m => m.status === 'accepted').length;
+    if (acceptedCount >= (trip.maxBuddies || 3))
+      return res.status(400).json({ error: 'Trip is full' });
     trip.matches.push({ requesterUid, requesterName, requesterCompany, status: 'pending' });
     await trip.save();
     res.json(trip);

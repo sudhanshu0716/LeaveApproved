@@ -516,3 +516,8 @@ button { transition: all 0.25s cubic-bezier(0.23,1,0.32,1); }
 
 /* Prevent tap highlight on mobile */
 * { -webkit-tap-highlight-color: transparent; }
+
+@keyframes bounce {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-5px); }
+}

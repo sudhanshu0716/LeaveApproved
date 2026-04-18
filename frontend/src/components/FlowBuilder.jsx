@@ -82,11 +82,9 @@ function FlowContent({ nodes, setNodes, edges, setEdges, isFullscreen, setIsFull
 
   const clearCanvas = () => {
     if (nodes.length === 0 && edges.length === 0) return;
-    if (window.confirm('Clear all nodes and routes from the canvas?')) {
-      setNodes([]);
-      setEdges([]);
-      setSelectedElement(null);
-    }
+    setNodes([]);
+    setEdges([]);
+    setSelectedElement(null);
   };
 
   const exportJSON = () => {

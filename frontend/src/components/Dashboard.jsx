@@ -101,7 +101,7 @@ export default function Dashboard() {
     setStep(2);
   };
 
-  const logout = () => { localStorage.removeItem('travel_user'); navigate('/'); };
+  const logout = () => { localStorage.removeItem('travel_user'); localStorage.removeItem('travel_token'); navigate('/'); };
 
   const handleEmailUpdate = async () => {
     if (!user.email || isUpdatingEmail) return;

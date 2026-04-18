@@ -50,6 +50,7 @@ export default function AdminDashboard() {
   const [uptime, setUptime] = useState(null);
   const [uptimeLoading, setUptimeLoading] = useState(true);
   const { toast, show: showToast } = useToast();
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
   // Poll live visitor count every 30s when authenticated
   useEffect(() => {
@@ -160,10 +161,10 @@ export default function AdminDashboard() {
   };
 
   const deletePlace = async (id) => {
-    if (window.confirm('Delete this trip? This cannot be undone.')) {
-      await axios.delete(`/api/admin/places/${id}`, { headers: adminAuthHeader() });
-      fetchPlaces();
-    }
+    await axios.delete(`/api/admin/places/${id}`, { headers: adminAuthHeader() });
+    setConfirmDeleteId(null);
+    showToast('Trip deleted', 'success');
+    fetchPlaces();
   };
 
   const editPlace = (place) => {
@@ -190,12 +191,11 @@ export default function AdminDashboard() {
   };
 
   const deleteReview = async (placeId, reviewId) => {
-    if (window.confirm('Delete this review?')) {
-      try {
-        await axios.delete(`/api/admin/reviews/${placeId}/${reviewId}`, { headers: adminAuthHeader() });
-        fetchModerationReviews();
-      } catch (err) {}
-    }
+    try {
+      await axios.delete(`/api/admin/reviews/${placeId}/${reviewId}`, { headers: adminAuthHeader() });
+      showToast('Review deleted', 'success');
+      fetchModerationReviews();
+    } catch (err) {}
   };
 
   const generateTripAI = async (overrideText) => {
@@ -279,6 +279,18 @@ CRITICAL RULES:
     setIsAiLoading(false);
   };
 
+  const ToastUI = () => toast ? (
+    <AnimatePresence>
+      <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }}
+        style={{ position: 'fixed', bottom: '32px', left: '50%', transform: 'translateX(-50%)', zIndex: 99999,
+          padding: '14px 24px', borderRadius: '16px', fontWeight: 800, fontSize: '0.9rem',
+          background: toast.type === 'error' ? '#e63946' : '#1b4332',
+          color: 'white', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', whiteSpace: 'nowrap' }}>
+        {toast.type === 'error' ? '✕ ' : '✓ '}{toast.msg}
+      </motion.div>
+    </AnimatePresence>
+  ) : null;
+
   // ─── LOGIN SCREEN ────────────────────────────────────────────────────────────
   if (!isAuthenticated) {
     return (
@@ -353,18 +365,6 @@ CRITICAL RULES:
     if (id !== 'addPlace') resetForm();
     setMobileMenuOpen(false);
   };
-
-  const ToastUI = () => toast ? (
-    <AnimatePresence>
-      <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }}
-        style={{ position: 'fixed', bottom: '32px', left: '50%', transform: 'translateX(-50%)', zIndex: 99999,
-          padding: '14px 24px', borderRadius: '16px', fontWeight: 800, fontSize: '0.9rem',
-          background: toast.type === 'error' ? '#e63946' : '#1b4332',
-          color: 'white', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', whiteSpace: 'nowrap' }}>
-        {toast.type === 'error' ? '✕ ' : '✓ '}{toast.msg}
-      </motion.div>
-    </AnimatePresence>
-  ) : null;
 
   // ─── MAIN DASHBOARD ───────────────────────────────────────────────────────────
   return (
@@ -679,9 +679,16 @@ CRITICAL RULES:
                           </div>
                         )}
                         <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: 'white', margin: 0, lineHeight: 1.1 }}>{place.name}</h3>
-                        <div style={{ position: 'absolute', top: '16px', right: '16px', display: 'flex', gap: '6px' }}>
+                        <div style={{ position: 'absolute', top: '16px', right: '16px', display: 'flex', gap: '6px', alignItems: 'center' }}>
                           <button onClick={() => editPlace(place)} style={{ width: '34px', height: '34px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '10px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}><Edit2 size={15} /></button>
-                          <button onClick={() => deletePlace(place._id)} style={{ width: '34px', height: '34px', background: 'rgba(174,32,18,0.2)', border: 'none', borderRadius: '10px', color: '#ff6b6b', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}><Trash2 size={15} /></button>
+                          {confirmDeleteId === place._id ? (
+                            <>
+                              <button onClick={() => deletePlace(place._id)} style={{ height: '34px', padding: '0 10px', background: '#9e2a2b', border: 'none', borderRadius: '10px', color: 'white', cursor: 'pointer', fontSize: '0.6rem', fontWeight: 900, letterSpacing: '1px' }}>CONFIRM</button>
+                              <button onClick={() => setConfirmDeleteId(null)} style={{ height: '34px', padding: '0 10px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '10px', color: 'white', cursor: 'pointer', fontSize: '0.6rem', fontWeight: 900 }}>CANCEL</button>
+                            </>
+                          ) : (
+                            <button onClick={() => setConfirmDeleteId(place._id)} style={{ width: '34px', height: '34px', background: 'rgba(174,32,18,0.2)', border: 'none', borderRadius: '10px', color: '#ff6b6b', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}><Trash2 size={15} /></button>
+                          )}
                         </div>
                       </div>
 

@@ -37,6 +37,7 @@ export default function TravelBuddy({ user, onXpGain, initialView }) {
   const [activeChat, setActiveChat] = useState(null);
   const [chatMessage, setChatMessage] = useState('');
   const [messages, setMessages] = useState([]);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const chatContainerRef = React.useRef(null);
 
   useEffect(() => {
@@ -186,14 +187,15 @@ export default function TravelBuddy({ user, onXpGain, initialView }) {
   };
 
   const handleDeleteTrip = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this trip request?')) return;
     try {
       await axios.delete(`/api/buddy/trips/${id}`, { headers: getUserAuthHeader() });
       showToast('Trip deleted', 'success');
+      setConfirmDeleteId(null);
       await fetchTrips();
       await fetchMyTrips();
     } catch (err) {
       showToast(err.response?.data?.error || 'Error deleting trip', 'error');
+      setConfirmDeleteId(null);
     }
   };
 
@@ -456,9 +458,16 @@ export default function TravelBuddy({ user, onXpGain, initialView }) {
                        
                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                          <div style={{ fontSize: '1.4rem', color: '#081c15', fontWeight: 900 }}>{trip.origin} <ArrowRight size={14} style={{ margin: '0 5px' }}/> {trip.destination}</div>
-                         <button title="Delete Trip" onClick={() => handleDeleteTrip(trip._id)} style={{ background: 'transparent', border: 'none', color: '#9e2a2b', cursor: 'pointer', padding: '5px' }}>
-                           <Trash2 size={20} />
-                         </button>
+                         {confirmDeleteId === trip._id ? (
+                           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                             <button onClick={() => handleDeleteTrip(trip._id)} style={{ background: '#9e2a2b', color: 'white', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '0.65rem', fontWeight: 900, cursor: 'pointer', letterSpacing: '1px' }}>DELETE</button>
+                             <button onClick={() => setConfirmDeleteId(null)} style={{ background: 'rgba(8,28,21,0.08)', color: '#081c15', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '0.65rem', fontWeight: 900, cursor: 'pointer' }}>CANCEL</button>
+                           </div>
+                         ) : (
+                           <button title="Delete Trip" onClick={() => setConfirmDeleteId(trip._id)} style={{ background: 'transparent', border: 'none', color: '#9e2a2b', cursor: 'pointer', padding: '5px' }}>
+                             <Trash2 size={20} />
+                           </button>
+                         )}
                        </div>
                        <div style={{ fontSize: '0.7rem', color: hasAccepted ? '#ffb703' : 'rgba(8,28,21,0.5)', fontWeight: 900, marginBottom: '20px', padding: '4px 10px', background: hasAccepted ? 'rgba(255,183,3,0.1)' : 'rgba(8,28,21,0.05)', borderRadius: '50px', display: 'inline-block', marginTop: '10px' }}>{hasAccepted ? 'TRIP STARTED' : 'TRIP LISTED'}</div>
                        

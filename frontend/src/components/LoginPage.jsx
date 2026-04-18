@@ -67,6 +67,7 @@ export default function LoginPage() {
         xp: res.data.xp || 45
       };
       localStorage.setItem('travel_user', JSON.stringify(userData));
+      if (res.data.token) localStorage.setItem('travel_token', res.data.token);
       setIsCutting(true);
       setTimeout(() => {
         setLoading(false);
@@ -98,6 +99,7 @@ export default function LoginPage() {
         xp: res.data.xp || 45
       };
       localStorage.setItem('travel_user', JSON.stringify(userData));
+      if (res.data.token) localStorage.setItem('travel_token', res.data.token);
       setIsCutting(true);
       setTimeout(() => {
         setLoading(false);

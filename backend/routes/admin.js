@@ -3,6 +3,7 @@ const router = express.Router();
 const https = require('https');
 const UserEntry = require('../models/UserEntry');
 const Contribution = require('../models/Contribution');
+const { verifyAdmin } = require('../middleware/auth');
 
 // ── Live Visitor Tracking (in-memory) ────────────────────────────
 const activeSessions = new Map();
@@ -24,7 +25,7 @@ router.get('/active-users', (req, res) => {
 });
 
 // ── Analytics ────────────────────────────────────────────────────
-router.get('/analytics', async (req, res) => {
+router.get('/analytics', verifyAdmin, async (req, res) => {
   try {
     res.json(await UserEntry.find().sort({ createdAt: -1 }));
   } catch (err) {
@@ -33,7 +34,7 @@ router.get('/analytics', async (req, res) => {
 });
 
 // ── UptimeRobot Status ───────────────────────────────────────────
-router.get('/admin/uptime', async (req, res) => {
+router.get('/admin/uptime', verifyAdmin, async (req, res) => {
   const apiKey = process.env.UPTIMEROBOT_API_KEY;
   const monitorId = process.env.UPTIMEROBOT_MONITOR_ID || '802847392';
   if (!apiKey) return res.status(503).json({ error: 'UPTIMEROBOT_API_KEY not set' });
@@ -88,7 +89,7 @@ router.get('/admin/uptime', async (req, res) => {
 });
 
 // ── Contributions ─────────────────────────────────────────────────
-router.get('/admin/contributions', async (req, res) => {
+router.get('/admin/contributions', verifyAdmin, async (req, res) => {
   try {
     res.json(await Contribution.find().sort({ createdAt: -1 }));
   } catch (err) {
@@ -96,7 +97,7 @@ router.get('/admin/contributions', async (req, res) => {
   }
 });
 
-router.put('/admin/contributions/:id', async (req, res) => {
+router.put('/admin/contributions/:id', verifyAdmin, async (req, res) => {
   try {
     const updated = await Contribution.findByIdAndUpdate(req.params.id, { status: 'processed' }, { new: true });
     res.json(updated);
@@ -105,7 +106,7 @@ router.put('/admin/contributions/:id', async (req, res) => {
   }
 });
 
-router.delete('/admin/contributions/:id', async (req, res) => {
+router.delete('/admin/contributions/:id', verifyAdmin, async (req, res) => {
   try {
     await Contribution.findByIdAndDelete(req.params.id);
     res.json({ ok: true });

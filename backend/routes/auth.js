@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const UserEntry = require('../models/UserEntry');
+const { signToken, verifyToken } = require('../middleware/auth');
 
 function validatePassword(password) {
   const checks = [
@@ -38,7 +39,9 @@ router.post('/auth/register', async (req, res) => {
     const uid = `VOY-${Math.random().toString(36).substr(2, 4).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
     const user = new UserEntry({ username, email: email.toLowerCase(), password: hashed, company, uid });
     await user.save();
-    res.status(201).json({ uid: user.uid, username: user.username, company: user.company, xp: user.xp });
+
+    const token = signToken({ uid: user.uid, username: user.username, role: 'user' });
+    res.status(201).json({ token, uid: user.uid, username: user.username, company: user.company, xp: user.xp });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -57,7 +60,8 @@ router.post('/auth/login', async (req, res) => {
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json({ error: 'Incorrect password.' });
 
-    res.json({ uid: user.uid, username: user.username, name: user.username, company: user.company, xp: user.xp });
+    const token = signToken({ uid: user.uid, username: user.username, role: 'user' });
+    res.json({ token, uid: user.uid, username: user.username, name: user.username, company: user.company, xp: user.xp });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -69,14 +73,15 @@ router.post('/admin/login', (req, res) => {
   const validUser = process.env.ADMIN_USER || 'sudh';
   const validPass = process.env.ADMIN_PASS || 'su';
   if (username === validUser && password === validPass) {
-    res.json({ success: true, message: 'Access Granted' });
+    const token = signToken({ username, role: 'admin' }, '1d');
+    res.json({ success: true, token, message: 'Access Granted' });
   } else {
     res.status(401).json({ success: false, message: 'Invalid Credentials' });
   }
 });
 
-// Get user profile by uid
-router.get('/visitors/:uid', async (req, res) => {
+// Get user profile (protected)
+router.get('/visitors/:uid', verifyToken, async (req, res) => {
   try {
     const user = await UserEntry.findOne({ uid: req.params.uid }, '-password');
     if (!user) return res.status(404).json({ error: 'User not found.' });
@@ -86,8 +91,8 @@ router.get('/visitors/:uid', async (req, res) => {
   }
 });
 
-// Update user profile email by uid
-router.put('/visitors/:uid', async (req, res) => {
+// Update user profile email (protected)
+router.put('/visitors/:uid', verifyToken, async (req, res) => {
   try {
     const { email } = req.body;
     const updated = await UserEntry.findOneAndUpdate(

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Place = require('../models/Place');
+const { verifyAdmin } = require('../middleware/auth');
 
 // Get places (with optional filters)
 router.get('/places', async (req, res) => {
@@ -68,7 +69,7 @@ router.delete('/places/:id/comment/:commentId', async (req, res) => {
 });
 
 // ── Admin: Places CRUD ────────────────────────────────────────────
-router.get('/admin/places', async (req, res) => {
+router.get('/admin/places', verifyAdmin, async (req, res) => {
   try {
     res.json(await Place.find());
   } catch (err) {
@@ -76,7 +77,7 @@ router.get('/admin/places', async (req, res) => {
   }
 });
 
-router.post('/admin/places', async (req, res) => {
+router.post('/admin/places', verifyAdmin, async (req, res) => {
   try {
     const place = new Place(req.body);
     await place.save();
@@ -86,7 +87,7 @@ router.post('/admin/places', async (req, res) => {
   }
 });
 
-router.put('/admin/places/:id', async (req, res) => {
+router.put('/admin/places/:id', verifyAdmin, async (req, res) => {
   try {
     const updated = await Place.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true });
     res.json(updated);
@@ -95,7 +96,7 @@ router.put('/admin/places/:id', async (req, res) => {
   }
 });
 
-router.delete('/admin/places/:id', async (req, res) => {
+router.delete('/admin/places/:id', verifyAdmin, async (req, res) => {
   try {
     await Place.findByIdAndDelete(req.params.id);
     res.json({ message: 'Deleted successfully' });
@@ -105,7 +106,7 @@ router.delete('/admin/places/:id', async (req, res) => {
 });
 
 // ── Admin: Reviews ────────────────────────────────────────────────
-router.get('/admin/all-reviews', async (req, res) => {
+router.get('/admin/all-reviews', verifyAdmin, async (req, res) => {
   try {
     const places = await Place.find();
     const allReviews = [];
@@ -120,7 +121,7 @@ router.get('/admin/all-reviews', async (req, res) => {
   }
 });
 
-router.delete('/admin/reviews/:id/:commentId', async (req, res) => {
+router.delete('/admin/reviews/:id/:commentId', verifyAdmin, async (req, res) => {
   try {
     const place = await Place.findById(req.params.id);
     if (!place) return res.status(404).json({ error: 'Place not found' });
@@ -133,7 +134,7 @@ router.delete('/admin/reviews/:id/:commentId', async (req, res) => {
 });
 
 // Admin: Social stats
-router.get('/admin/social-stats', async (req, res) => {
+router.get('/admin/social-stats', verifyAdmin, async (req, res) => {
   try {
     const places = await Place.find();
     const bestPlaces = [...places]

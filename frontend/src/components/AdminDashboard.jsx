@@ -25,7 +25,7 @@ export default function AdminDashboard() {
     from: '', name: '', description: '', budgetRange: 'under 5000 rupees', days: '2 day', distance: 'under 250km'
   });
   const [editingId, setEditingId] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => !!localStorage.getItem('admin_token'));
   const [credentials, setCredentials] = useState({ username: '', password: '' });
   const [socialStats, setSocialStats] = useState({ bestPlaces: [], latestReviews: [] });
 
@@ -53,7 +53,7 @@ export default function AdminDashboard() {
     if (!isAuthenticated) return;
     const fetchUptime = () => {
       setUptimeLoading(true);
-      axios.get('/api/admin/uptime')
+      axios.get('/api/admin/uptime', { headers: adminAuthHeader() })
         .then(r => {
           if (r.data.error) { setUptime({ error: r.data.error }); }
           else { setUptime(r.data); }
@@ -77,36 +77,36 @@ export default function AdminDashboard() {
   }, [isAuthenticated]);
 
   const fetchAnalytics = async () => {
-    try { const res = await axios.get('/api/analytics'); setAnalytics(res.data); }
+    try { const res = await axios.get('/api/analytics', { headers: adminAuthHeader() }); setAnalytics(res.data); }
     catch (err) { console.error(err); }
   };
   const fetchPlaces = async () => {
-    try { const res = await axios.get('/api/admin/places'); setPlaces(res.data); }
+    try { const res = await axios.get('/api/admin/places', { headers: adminAuthHeader() }); setPlaces(res.data); }
     catch (err) { console.error(err); }
   };
   const fetchSocialStats = async () => {
-    try { const res = await axios.get('/api/admin/social-stats'); setSocialStats(res.data); }
+    try { const res = await axios.get('/api/admin/social-stats', { headers: adminAuthHeader() }); setSocialStats(res.data); }
     catch (err) { console.error(err); }
   };
   const fetchModerationReviews = async () => {
-    try { const res = await axios.get('/api/admin/all-reviews'); setModerationReviews(res.data); }
+    try { const res = await axios.get('/api/admin/all-reviews', { headers: adminAuthHeader() }); setModerationReviews(res.data); }
     catch (err) { console.error(err); }
   };
   const fetchContributions = async () => {
-    try { const res = await axios.get('/api/admin/contributions'); setContributions(res.data); }
+    try { const res = await axios.get('/api/admin/contributions', { headers: adminAuthHeader() }); setContributions(res.data); }
     catch (err) { console.error(err); }
   };
 
   const deleteContribution = async (id) => {
     try {
-      await axios.delete(`/api/admin/contributions/${id}`);
+      await axios.delete(`/api/admin/contributions/${id}`, { headers: adminAuthHeader() });
       fetchContributions();
     } catch (err) { console.error(err); }
   };
 
   const synthesizeContribution = async (contribution) => {
     try {
-      await axios.put(`/api/admin/contributions/${contribution._id}`);
+      await axios.put(`/api/admin/contributions/${contribution._id}`, {}, { headers: adminAuthHeader() });
       fetchContributions();
     } catch (err) { console.error(err); }
     setAiInput(contribution.text);
@@ -114,11 +114,19 @@ export default function AdminDashboard() {
     generateTripAI(contribution.text);
   };
 
+  const adminAuthHeader = () => {
+    const token = localStorage.getItem('admin_token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
       const res = await axios.post('/api/admin/login', credentials);
-      if (res.data.success) setIsAuthenticated(true);
+      if (res.data.success) {
+        if (res.data.token) localStorage.setItem('admin_token', res.data.token);
+        setIsAuthenticated(true);
+      }
     } catch (err) {
       alert(err.response?.data?.message || 'Invalid credentials');
     }
@@ -129,9 +137,9 @@ export default function AdminDashboard() {
     const payload = { ...form, nodes, edges };
     try {
       if (editingId) {
-        await axios.put(`/api/admin/places/${editingId}`, payload);
+        await axios.put(`/api/admin/places/${editingId}`, payload, { headers: adminAuthHeader() });
       } else {
-        await axios.post('/api/admin/places', payload);
+        await axios.post('/api/admin/places', payload, { headers: adminAuthHeader() });
       }
       resetForm();
       fetchPlaces();
@@ -141,7 +149,7 @@ export default function AdminDashboard() {
 
   const deletePlace = async (id) => {
     if (window.confirm('Delete this trip? This cannot be undone.')) {
-      await axios.delete(`/api/admin/places/${id}`);
+      await axios.delete(`/api/admin/places/${id}`, { headers: adminAuthHeader() });
       fetchPlaces();
     }
   };
@@ -172,7 +180,7 @@ export default function AdminDashboard() {
   const deleteReview = async (placeId, reviewId) => {
     if (window.confirm('Delete this review?')) {
       try {
-        await axios.delete(`/api/admin/reviews/${placeId}/${reviewId}`);
+        await axios.delete(`/api/admin/reviews/${placeId}/${reviewId}`, { headers: adminAuthHeader() });
         fetchModerationReviews();
       } catch (err) {}
     }
@@ -366,7 +374,7 @@ CRITICAL RULES:
           ))}
           <div style={{ width: '1px', height: '24px', background: 'rgba(0,0,0,0.1)', margin: '0 4px' }} />
           <button
-            onClick={() => setIsAuthenticated(false)}
+            onClick={() => { localStorage.removeItem('admin_token'); setIsAuthenticated(false); }}
             style={{ padding: '9px 16px', fontSize: '0.78rem', fontWeight: 700, borderRadius: '12px', border: '1.5px solid rgba(174,32,18,0.2)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', color: '#ae2012', transition: 'all 0.2s' }}
           >
             <Lock size={15} /> Logout
@@ -389,7 +397,7 @@ CRITICAL RULES:
               </button>
             ))}
             <div style={{ height: '1px', background: '#f0f0f0', margin: '4px 0' }} />
-            <button onClick={() => { setIsAuthenticated(false); setMobileMenuOpen(false); }} style={{ padding: '14px 16px', fontSize: '0.9rem', fontWeight: 700, borderRadius: '12px', border: '1.5px solid rgba(174,32,18,0.15)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', background: '#fff5f5', color: '#ae2012', textAlign: 'left' }}>
+            <button onClick={() => { localStorage.removeItem('admin_token'); setIsAuthenticated(false); setMobileMenuOpen(false); }} style={{ padding: '14px 16px', fontSize: '0.9rem', fontWeight: 700, borderRadius: '12px', border: '1.5px solid rgba(174,32,18,0.15)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', background: '#fff5f5', color: '#ae2012', textAlign: 'left' }}>
               <Lock size={17} /> Logout
             </button>
           </motion.div>
@@ -838,7 +846,7 @@ CRITICAL RULES:
                       const flagged = moderationReviews.filter(r => BAD_WORDS.some(w => r.text?.toLowerCase().includes(w)));
                       if (flagged.length === 0) return alert('No flagged reviews found.');
                       if (window.confirm(`Delete all ${flagged.length} flagged reviews?`)) {
-                        for (const rev of flagged) await axios.delete(`/api/admin/reviews/${rev.placeId}/${rev._id}`);
+                        for (const rev of flagged) await axios.delete(`/api/admin/reviews/${rev.placeId}/${rev._id}`, { headers: adminAuthHeader() });
                         fetchModerationReviews();
                       }
                     }}

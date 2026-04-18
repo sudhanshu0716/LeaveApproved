@@ -78,6 +78,7 @@ export default function Dashboard() {
   const [placesTotal, setPlacesTotal] = useState(0);
   const [lastFilter, setLastFilter] = useState({ type: '', value: '' });
   const [buddyNotif, setBuddyNotif] = useState(0); // pending match requests count
+  const [buddyInitView, setBuddyInitView] = useState('feed'); // used to deep-link into MY TRIPS
   const navigate = useNavigate();
 
   // ── Activity helpers ──────────────────────────────
@@ -196,19 +197,20 @@ export default function Dashboard() {
   }, [showProfile, user.uid]);
 
   // Poll for pending buddy match notifications every 30s
+  const refreshBuddyNotif = () => {
+    if (!user.uid) return;
+    axios.get(`/api/buddy/my-trips?uid=${user.uid}`, { headers: getUserAuthHeader() })
+      .then(r => {
+        const pending = (r.data.created || []).reduce((acc, t) =>
+          acc + (t.matches || []).filter(m => m.status === 'pending').length, 0);
+        setBuddyNotif(pending);
+      })
+      .catch(() => {});
+  };
   useEffect(() => {
     if (!user.uid) return;
-    const checkNotifs = () => {
-      axios.get(`/api/buddy/my-trips?uid=${user.uid}`, { headers: getUserAuthHeader() })
-        .then(r => {
-          const pending = (r.data.created || []).reduce((acc, t) =>
-            acc + (t.matches || []).filter(m => m.status === 'pending').length, 0);
-          setBuddyNotif(pending);
-        })
-        .catch(() => {});
-    };
-    checkNotifs();
-    const iv = setInterval(checkNotifs, 30000);
+    refreshBuddyNotif();
+    const iv = setInterval(refreshBuddyNotif, 30000);
     return () => clearInterval(iv);
   }, [user.uid]);
 
@@ -455,7 +457,12 @@ export default function Dashboard() {
             border: '1px solid rgba(255,255,255,0.1)',
             boxShadow: `0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px ${currentTheme.accentGlow} inset` }}>
             {tabs.map(tab => (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+              <button key={tab.id} onClick={() => {
+                if (tab.id === 'buddy' && buddyNotif > 0) setBuddyInitView('my_trips');
+                else if (tab.id === 'buddy') setBuddyInitView('feed');
+                setActiveTab(tab.id);
+                if (tab.id === 'itineraries') setStep(1);
+              }}
                 style={{ padding: '9px 18px', borderRadius: '40px', border: 'none',
                   background: activeTab === tab.id
                     ? `${currentTheme.accent}22`
@@ -541,7 +548,12 @@ export default function Dashboard() {
           {tabs.map(tab => {
             const isActive = activeTab === tab.id;
             return (
-              <button key={tab.id} onClick={() => { setActiveTab(tab.id); if (tab.id === 'itineraries') setStep(1); }}
+              <button key={tab.id} onClick={() => {
+                  if (tab.id === 'buddy' && buddyNotif > 0) setBuddyInitView('my_trips');
+                  else if (tab.id === 'buddy') setBuddyInitView('feed');
+                  setActiveTab(tab.id);
+                  if (tab.id === 'itineraries') setStep(1);
+                }}
                 style={{ background: isActive ? 'rgba(255,183,3,0.1)' : 'none',
                   border: isActive ? '1px solid rgba(255,183,3,0.2)' : '1px solid transparent',
                   borderRadius: '14px', cursor: 'pointer', position: 'relative',
@@ -967,7 +979,7 @@ export default function Dashboard() {
               <motion.div key={activeTab} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.22 }}
                 style={{ width: '100%', display: 'flex', justifyContent: 'center', zIndex: 100, overflow: 'hidden' }}>
-                {activeTab === 'buddy'        ? <TravelBuddy user={user} onXpGain={handleXpGain} />
+                {activeTab === 'buddy'        ? <TravelBuddy key={buddyInitView} user={user} onXpGain={handleXpGain} initialView={buddyInitView} onMatchAccepted={refreshBuddyNotif} />
                   : activeTab === 'contribute'  ? <TravelBuddy user={user} onXpGain={handleXpGain} initialView="contribute" hideNav />
                   : activeTab === 'comparison'  ? <TripComparison />
                   : activeTab === 'about'        ? <About />

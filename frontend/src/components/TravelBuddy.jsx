@@ -48,7 +48,7 @@ function useToast() {
   return { toast, show };
 }
 
-export default function TravelBuddy({ user, onXpGain, initialView, hideNav }) {
+export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMatchAccepted }) {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [view, setView] = useState(initialView || 'feed'); // 'feed', 'list', 'my_trips', 'contribute'
   const [trips, setTrips] = useState([]);
@@ -179,6 +179,7 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav }) {
       await axios.post(`/api/buddy/trips/${tripId}/accept-match`, { acceptedUid }, { headers: getUserAuthHeader() });
       showToast('Trip started! Both parties gained +15 XP 🎉', 'success');
       if (onXpGain) onXpGain(15);
+      if (onMatchAccepted) onMatchAccepted(); // immediately clear notification badge
       fetchMyTrips();
     } catch (err) {
       showToast(err.response?.data?.error || 'Error accepting match', 'error');
@@ -317,7 +318,6 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav }) {
           { id: 'feed',       label: 'EXPLORE TRIPS',   icon: <Globe size={18} />,    info: 'Browse trips posted by fellow travelers and request to join them' },
           { id: 'list',       label: 'LIST A TRIP',     icon: <Ticket size={18} />,   info: 'Post your upcoming trip and find travel buddies heading the same way' },
           { id: 'my_trips',   label: 'MY TRIPS',        icon: <Compass size={18} />,  info: 'View all trips you have listed or joined as a buddy' },
-          { id: 'contribute', label: 'CONTRIBUTE TRIP', icon: <FileText size={18} />, info: 'Describe your trip in plain text — AI converts it into a full interactive itinerary' },
         ].map(tab => (
           <button key={tab.id} onClick={() => setView(tab.id)}
             style={{

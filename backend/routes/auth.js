@@ -15,7 +15,7 @@ function validatePassword(password) {
 }
 
 // Register
-router.post('/register', async (req, res) => {
+router.post('/auth/register', async (req, res) => {
   try {
     const { username, email, password, company } = req.body;
     if (!username || !email || !password || !company)
@@ -45,7 +45,7 @@ router.post('/register', async (req, res) => {
 });
 
 // Login
-router.post('/login', async (req, res) => {
+router.post('/auth/login', async (req, res) => {
   try {
     const { login, password } = req.body;
     if (!login || !password)

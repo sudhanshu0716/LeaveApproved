@@ -122,34 +122,37 @@ export default function LoginPage() {
   const StrengthMeter = ({ password }) => {
     if (!password) return null;
     const strength = passwordStrength(password);
+    const passed = PWD_RULES.filter(r => r.test(password)).length;
     return (
-      <div style={{ marginTop: '-4px', marginBottom: '4px' }}>
-        {/* Bar */}
-        <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
-          {[1,2,3,4,5].map(i => (
-            <div key={i} style={{ flex: 1, height: '3px', borderRadius: '2px', transition: 'background 0.3s',
-              background: i <= strength.score ? strength.color : 'rgba(255,255,255,0.1)' }} />
-          ))}
-        </div>
-        {/* Label */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-          <span style={{ fontSize: '0.65rem', fontWeight: 700, color: strength.color, fontFamily: "'DM Sans', sans-serif", letterSpacing: '1px' }}>
+      <div>
+        {/* Bar + label row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+          <div style={{ display: 'flex', gap: '4px', flex: 1 }}>
+            {[1,2,3,4,5].map(i => (
+              <div key={i} style={{ flex: 1, height: '4px', borderRadius: '3px', transition: 'background 0.3s',
+                background: i <= strength.score ? strength.color : 'rgba(255,255,255,0.2)' }} />
+            ))}
+          </div>
+          <span style={{ fontSize: '0.7rem', fontWeight: 800, color: strength.color,
+            fontFamily: "'DM Sans', sans-serif", letterSpacing: '0.8px', flexShrink: 0 }}>
             {strength.label.toUpperCase()}
           </span>
-          <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.35)', fontFamily: "'DM Sans', sans-serif" }}>
-            {strength.score}/5 rules met
+          <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)',
+            fontFamily: "'DM Sans', sans-serif", flexShrink: 0 }}>
+            {passed}/5 rules met
           </span>
         </div>
         {/* Rules checklist */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
           {PWD_RULES.map(rule => {
             const ok = rule.test(password);
             return (
-              <div key={rule.id} style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-                {ok
-                  ? <CheckCircle2 size={12} color="#22c55e" />
-                  : <Circle size={12} color="rgba(255,255,255,0.2)" />}
-                <span style={{ fontSize: '0.65rem', fontFamily: "'DM Sans', sans-serif", color: ok ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.3)', transition: 'color 0.2s' }}>
+              <div key={rule.id} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '0.75rem', color: ok ? '#22c55e' : 'rgba(255,255,255,0.3)', flexShrink: 0 }}>
+                  {ok ? '✓' : '○'}
+                </span>
+                <span style={{ fontSize: '0.68rem', fontFamily: "'DM Sans', sans-serif",
+                  color: ok ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.35)', fontWeight: ok ? 600 : 400 }}>
                   {rule.label}
                 </span>
               </div>
@@ -447,7 +450,7 @@ export default function LoginPage() {
                           <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.55)', fontWeight: 800, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif" }}>COMPANY</span>
                           <input className="modern-input" style={desktopUnderlineInput} placeholder="Company Name" value={signUp.company} onChange={e => setSignUp({ ...signUp, company: e.target.value })} required />
                         </div>
-                        <div style={{ paddingBottom: '8px' }}>
+                        <div style={{ paddingBottom: '8px', position: 'relative' }}>
                           <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.55)', fontWeight: 800, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif" }}>PASSWORD</span>
                           <div style={{ display: 'flex', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.2)', paddingBottom: '8px' }}>
                             <input className="modern-input" type={showPass ? 'text' : 'password'} style={{ ...desktopUnderlineInput, flex: 1 }} placeholder="strong password" value={signUp.password} onChange={e => setSignUp({ ...signUp, password: e.target.value })} required />
@@ -456,7 +459,9 @@ export default function LoginPage() {
                             </button>
                           </div>
                           {signUp.password && (
-                            <div style={{ marginTop: '10px', padding: '10px 12px', background: 'rgba(0,0,0,0.25)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                            <div style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, width: '210%', zIndex: 50,
+                              padding: '14px 16px', background: 'rgba(4,12,8,0.95)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+                              borderRadius: '14px', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 12px 40px rgba(0,0,0,0.7)' }}>
                               <StrengthMeter password={signUp.password} />
                             </div>
                           )}

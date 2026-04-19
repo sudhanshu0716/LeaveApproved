@@ -5,7 +5,7 @@ import 'reactflow/dist/style.css';
 import { motion } from 'framer-motion';
 import { CityNode, NoteNode, StickerNode, HubNode } from './CustomNodes';
 import CustomEdge from './CustomEdge';
-import { Heart, ZoomIn, ZoomOut, Maximize, Minimize, Send, Trash2, MapPin, Calendar, Wallet, Navigation, Download } from 'lucide-react';
+import { Heart, ZoomIn, ZoomOut, Maximize, Minimize, Send, Trash2, MapPin, Calendar, Wallet, Navigation, Download, RotateCw, Crosshair } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { getUserAuthHeader } from '../utils/auth';
 
@@ -21,24 +21,26 @@ function FlowContent({ place }) {
   const [newComment, setNewComment] = useState('');
   const [isLiking, setIsLiking] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isRotated, setIsRotated] = useState(false);
   const isMobile = window.innerWidth < 768;
 
-  // Re-fit when toggling fullscreen — wait for CSS transition to finish
+  // Re-fit when toggling fullscreen or rotating — wait for layout to settle
   useEffect(() => {
     if (flowInstanceRef.current) {
       const timer = setTimeout(() => {
         flowInstanceRef.current.fitView({ padding: 0.2, duration: 300 });
-      }, 250);
+      }, 300);
       return () => clearTimeout(timer);
     }
-  }, [isExpanded]);
+  }, [isExpanded, isRotated]);
 
-  // Lock body scroll when expanded
+  // Lock body scroll when expanded; reset rotation on collapse
   useEffect(() => {
     if (isExpanded) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
+      setIsRotated(false);
     }
     return () => { document.body.style.overflow = ''; };
   }, [isExpanded]);
@@ -164,19 +166,9 @@ function FlowContent({ place }) {
     }, 250);
   };
 
-  const flowHeight = isExpanded
-    ? '100%'
-    : isMobile ? '55vw' : '520px';
+  const flowHeight = isMobile ? '55vw' : '520px';
 
-  const containerStyle = isExpanded ? {
-    position: 'fixed',
-    inset: 0,
-    zIndex: 9999,
-    background: '#fff',
-    display: 'flex',
-    flexDirection: 'column',
-    overflow: 'hidden',
-  } : {
+  const containerStyle = {
     width: '100%',
     position: 'relative',
     background: '#fff',
@@ -188,23 +180,6 @@ function FlowContent({ place }) {
 
   return (
     <div ref={containerRef} style={containerStyle}>
-      {/* Floating collapse button — always visible when expanded */}
-      {isExpanded && (
-        <button
-          className="pdf-hide"
-          onClick={() => setIsExpanded(false)}
-          style={{
-            position: 'fixed', top: '80px', right: '24px', zIndex: 10001,
-            background: 'rgba(8,28,21,0.9)', backdropFilter: 'blur(12px)',
-            border: '1px solid rgba(255,255,255,0.2)',
-            padding: '9px 18px', borderRadius: '50px', color: 'white',
-            fontSize: '0.68rem', fontWeight: 700, letterSpacing: '1px',
-            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '7px',
-            fontFamily: "'DM Sans', sans-serif", boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
-          }}>
-          <Minimize size={12} /> COLLAPSE
-        </button>
-      )}
       {/* ── HEADER ── */}
       <div style={{
         background: 'linear-gradient(135deg, #081c15 0%, #1b4332 60%, #2d6a4f 100%)',
@@ -252,7 +227,7 @@ function FlowContent({ place }) {
             )}
           </div>
 
-          <div className="pdf-hide" style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+          <div className="pdf-hide" style={{ display: 'flex', gap: isMobile ? '6px' : '8px', alignItems: 'center', flexShrink: 0 }}>
             {/* PDF Download */}
             <button
               onClick={handleDownloadPDF}
@@ -261,9 +236,9 @@ function FlowContent({ place }) {
                 background: isDownloading ? 'rgba(255,183,3,0.15)' : 'rgba(255,183,3,0.2)',
                 backdropFilter: 'blur(10px)',
                 border: '1px solid rgba(255,183,3,0.45)',
-                padding: isMobile ? '8px 14px' : '10px 20px',
-                borderRadius: '50px', color: '#ffb703',
-                fontSize: isMobile ? '0.6rem' : '0.7rem',
+                padding: isMobile ? '9px' : '10px 20px',
+                borderRadius: isMobile ? '12px' : '50px', color: '#ffb703',
+                fontSize: '0.7rem',
                 fontWeight: 700, letterSpacing: '1px',
                 cursor: isDownloading ? 'default' : 'pointer',
                 display: 'flex', alignItems: 'center', gap: '7px',
@@ -272,66 +247,74 @@ function FlowContent({ place }) {
                 opacity: isDownloading ? 0.7 : 1,
               }}>
               {isDownloading
-                ? <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ animation: 'spin 1s linear infinite' }}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> OPENING…</>
-                : <><Download size={12} /> SAVE</>}
+                ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ animation: 'spin 1s linear infinite' }}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                : isMobile ? <Download size={14} /> : <><Download size={12} /> SAVE</>}
             </button>
             {/* Expand */}
             <button
-              onClick={() => setIsExpanded(e => !e)}
+              onClick={() => setIsExpanded(true)}
               style={{
                 background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)',
                 border: '1px solid rgba(255,255,255,0.2)',
-                padding: isMobile ? '8px 14px' : '10px 20px',
-                borderRadius: '50px', color: 'white',
-                fontSize: isMobile ? '0.6rem' : '0.7rem',
+                padding: isMobile ? '9px' : '10px 20px',
+                borderRadius: isMobile ? '12px' : '50px', color: 'white',
+                fontSize: '0.7rem',
                 fontWeight: 700, letterSpacing: '1px', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', gap: '7px',
                 fontFamily: "'DM Sans', sans-serif",
               }}>
-              {isExpanded
-                ? <><Minimize size={12} /> EXIT</>
-                : <><Maximize size={12} /> EXPAND</>}
+              {isMobile ? <Maximize size={14} /> : <><Maximize size={12} /> EXPAND</>}
             </button>
           </div>
         </div>
 
         {/* Trip meta badges */}
         <div style={{
-          padding: isMobile ? '0 18px 16px' : '0 40px 24px',
-          display: 'flex', gap: '10px', flexWrap: 'wrap',
+          padding: isMobile ? '0 14px 14px' : '0 40px 24px',
+          display: 'flex', gap: isMobile ? '6px' : '10px', flexWrap: 'wrap',
           position: 'relative', zIndex: 2,
         }}>
           {place.days && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', padding: '6px 14px', borderRadius: '50px' }}>
-              <Calendar size={11} color="#ffb703" />
-              <span style={{ fontSize: '0.62rem', fontWeight: 700, color: 'rgba(255,255,255,0.8)', letterSpacing: '1px', fontFamily: "'DM Sans', sans-serif" }}>{place.days.toUpperCase()}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', padding: isMobile ? '5px 10px' : '6px 14px', borderRadius: '50px' }}>
+              <Calendar size={10} color="#ffb703" />
+              <span style={{ fontSize: isMobile ? '0.58rem' : '0.62rem', fontWeight: 700, color: 'rgba(255,255,255,0.8)', letterSpacing: '1px', fontFamily: "'DM Sans', sans-serif" }}>{place.days.toUpperCase()}</span>
             </div>
           )}
           {place.budgetRange && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', padding: '6px 14px', borderRadius: '50px' }}>
-              <Wallet size={11} color="#ffb703" />
-              <span style={{ fontSize: '0.62rem', fontWeight: 700, color: 'rgba(255,255,255,0.8)', letterSpacing: '1px', fontFamily: "'DM Sans', sans-serif" }}>{place.budgetRange.toUpperCase()}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', padding: isMobile ? '5px 10px' : '6px 14px', borderRadius: '50px' }}>
+              <Wallet size={10} color="#ffb703" />
+              <span style={{ fontSize: isMobile ? '0.58rem' : '0.62rem', fontWeight: 700, color: 'rgba(255,255,255,0.8)', letterSpacing: '1px', fontFamily: "'DM Sans', sans-serif" }}>{place.budgetRange.toUpperCase()}</span>
             </div>
           )}
           {place.distance && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', padding: '6px 14px', borderRadius: '50px' }}>
-              <MapPin size={11} color="#ffb703" />
-              <span style={{ fontSize: '0.62rem', fontWeight: 700, color: 'rgba(255,255,255,0.8)', letterSpacing: '1px', fontFamily: "'DM Sans', sans-serif" }}>{place.distance.toUpperCase()}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', padding: isMobile ? '5px 10px' : '6px 14px', borderRadius: '50px' }}>
+              <MapPin size={10} color="#ffb703" />
+              <span style={{ fontSize: isMobile ? '0.58rem' : '0.62rem', fontWeight: 700, color: 'rgba(255,255,255,0.8)', letterSpacing: '1px', fontFamily: "'DM Sans', sans-serif" }}>{place.distance.toUpperCase()}</span>
             </div>
           )}
           {place.nodes?.length > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,183,3,0.15)', border: '1px solid rgba(255,183,3,0.3)', padding: '6px 14px', borderRadius: '50px' }}>
-              <span style={{ fontSize: '0.62rem', fontWeight: 700, color: '#ffb703', letterSpacing: '1px', fontFamily: "'DM Sans', sans-serif" }}>{place.nodes.length} STOPS</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(255,183,3,0.15)', border: '1px solid rgba(255,183,3,0.3)', padding: isMobile ? '5px 10px' : '6px 14px', borderRadius: '50px' }}>
+              <span style={{ fontSize: isMobile ? '0.58rem' : '0.62rem', fontWeight: 700, color: '#ffb703', letterSpacing: '1px', fontFamily: "'DM Sans', sans-serif" }}>{place.nodes.length} STOPS</span>
             </div>
           )}
         </div>
       </div>
 
       {/* ── FLOW CANVAS ── */}
-      <div ref={flowCanvasRef} style={{
+      <div ref={flowCanvasRef} style={isExpanded ? (isRotated ? {
+        position: 'fixed',
+        width: '100vh', height: '100vw',
+        top: '50%', left: '50%',
+        transform: 'translate(-50%, -50%) rotate(90deg)',
+        zIndex: 9999, overflow: 'visible',
+        background: 'linear-gradient(135deg, #f0f7f2 0%, #f7faf8 100%)',
+      } : {
+        position: 'fixed', inset: 0, zIndex: 9999,
+        width: '100vw', height: '100vh', overflow: 'hidden',
+        background: 'linear-gradient(135deg, #f0f7f2 0%, #f7faf8 100%)',
+      }) : {
         height: flowHeight,
-        minHeight: isExpanded ? 0 : (isMobile ? '240px' : '400px'),
-        flex: isExpanded ? 1 : undefined,
+        minHeight: isMobile ? '240px' : '400px',
         width: '100%', overflow: 'hidden', position: 'relative',
         background: 'linear-gradient(135deg, #f0f7f2 0%, #f7faf8 100%)',
       }}>
@@ -352,17 +335,6 @@ function FlowContent({ place }) {
             maxZoom={3}
           >
             <Background color="#c8ddd0" gap={40} size={1} />
-            <div style={{ position: 'absolute', bottom: '20px', left: '20px', zIndex: 10, display: 'flex', gap: '8px' }}>
-              <button onClick={() => zoomIn()} style={{ background: '#fff', border: '1px solid rgba(27,67,50,0.12)', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', padding: '10px', borderRadius: '12px', color: '#1b4332', cursor: 'pointer', display: 'flex' }}>
-                <ZoomIn size={16} />
-              </button>
-              <button onClick={() => zoomOut()} style={{ background: '#fff', border: '1px solid rgba(27,67,50,0.12)', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', padding: '10px', borderRadius: '12px', color: '#1b4332', cursor: 'pointer', display: 'flex' }}>
-                <ZoomOut size={16} />
-              </button>
-              <button onClick={() => flowInstanceRef.current?.fitView({ padding: 0.25, duration: 400 })} style={{ background: '#1b4332', border: 'none', boxShadow: '0 4px 12px rgba(27,67,50,0.3)', padding: '10px', borderRadius: '12px', color: '#fff', cursor: 'pointer', display: 'flex' }}>
-                <Maximize size={16} />
-              </button>
-            </div>
           </ReactFlow>
         ) : (
           <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px' }}>
@@ -373,6 +345,54 @@ function FlowContent({ place }) {
               <div style={{ fontSize: '0.75rem', fontWeight: 900, color: '#1b4332', opacity: 0.3, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif" }}>NO ITINERARY NODES YET</div>
               <div style={{ fontSize: '0.65rem', color: '#999', marginTop: '6px', fontFamily: "'DM Sans', sans-serif" }}>This trip hasn't been mapped yet.</div>
             </div>
+          </div>
+        )}
+
+        {/* ── CONTROLS ── */}
+        {isExpanded ? (
+          /* Fullscreen: all buttons together, centered at bottom */
+          <div className="pdf-hide" style={{
+            position: 'absolute', bottom: '90px', left: '50%',
+            transform: 'translateX(-50%)', zIndex: 10,
+            display: 'flex', gap: '8px', alignItems: 'center',
+            background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)',
+            borderRadius: '20px', padding: '8px 12px',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+            border: '1px solid rgba(27,67,50,0.1)',
+          }}>
+            <button onClick={() => zoomIn()} style={{ background: 'transparent', border: 'none', padding: '8px', borderRadius: '10px', color: '#1b4332', cursor: 'pointer', display: 'flex' }}>
+              <ZoomIn size={18} />
+            </button>
+            <button onClick={() => zoomOut()} style={{ background: 'transparent', border: 'none', padding: '8px', borderRadius: '10px', color: '#1b4332', cursor: 'pointer', display: 'flex' }}>
+              <ZoomOut size={18} />
+            </button>
+            <button onClick={() => flowInstanceRef.current?.fitView({ padding: 0.25, duration: 400 })} style={{ background: '#1b4332', border: 'none', padding: '8px', borderRadius: '10px', color: '#fff', cursor: 'pointer', display: 'flex' }}>
+              <Crosshair size={18} />
+            </button>
+            <div style={{ width: '1px', height: '24px', background: 'rgba(27,67,50,0.15)', margin: '0 2px' }} />
+            <button
+              onClick={() => setIsRotated(r => !r)}
+              style={{ background: 'transparent', border: 'none', padding: '8px', borderRadius: '10px', color: '#ffb703', cursor: 'pointer', display: 'flex' }}>
+              <RotateCw size={18} />
+            </button>
+            <button
+              onClick={() => setIsExpanded(false)}
+              style={{ background: '#081c15', border: 'none', padding: '8px 14px', borderRadius: '10px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.65rem', fontWeight: 700, letterSpacing: '1px', fontFamily: "'DM Sans', sans-serif" }}>
+              <Minimize size={14} /> EXIT
+            </button>
+          </div>
+        ) : (
+          /* Normal card: just zoom controls, bottom-left */
+          <div className="pdf-hide" style={{ position: 'absolute', bottom: '20px', left: '20px', zIndex: 10, display: 'flex', gap: '8px' }}>
+            <button onClick={() => zoomIn()} style={{ background: '#fff', border: '1px solid rgba(27,67,50,0.12)', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', padding: '10px', borderRadius: '12px', color: '#1b4332', cursor: 'pointer', display: 'flex' }}>
+              <ZoomIn size={16} />
+            </button>
+            <button onClick={() => zoomOut()} style={{ background: '#fff', border: '1px solid rgba(27,67,50,0.12)', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', padding: '10px', borderRadius: '12px', color: '#1b4332', cursor: 'pointer', display: 'flex' }}>
+              <ZoomOut size={16} />
+            </button>
+            <button onClick={() => flowInstanceRef.current?.fitView({ padding: 0.25, duration: 400 })} style={{ background: '#1b4332', border: 'none', boxShadow: '0 4px 12px rgba(27,67,50,0.3)', padding: '10px', borderRadius: '12px', color: '#fff', cursor: 'pointer', display: 'flex' }}>
+              <Crosshair size={16} />
+            </button>
           </div>
         )}
       </div>
@@ -404,8 +424,6 @@ function FlowContent({ place }) {
       <div style={{
         padding: isMobile ? '20px' : '32px 36px',
         background: '#fcfdfc', borderTop: '1px solid #edf5ee',
-        maxHeight: isExpanded ? (isMobile ? '40vh' : '35vh') : undefined,
-        overflowY: isExpanded ? 'auto' : undefined,
         flexShrink: 0,
       }}>
         <form onSubmit={handleComment} style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>

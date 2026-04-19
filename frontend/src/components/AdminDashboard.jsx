@@ -289,7 +289,12 @@ CRITICAL RULES:
 - Return ONLY raw JSON with no markdown or explanation.`;
 
       const response = await axios.post('/api/ai/generate', { prompt, model: aiModel });
-      let rawText = response.data.candidates[0].content.parts[0].text;
+      const candidate = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!candidate) {
+        const apiErr = response.data?.error?.message || response.data?.error || JSON.stringify(response.data).slice(0, 200);
+        throw new Error(`Gemini API error: ${apiErr}`);
+      }
+      let rawText = candidate;
       rawText = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
       const jsonMatch = rawText.match(/\{[\s\S]*\}/);
       if (!jsonMatch) throw new Error('No JSON found in response. Raw: ' + rawText.slice(0, 200));

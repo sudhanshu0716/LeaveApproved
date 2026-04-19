@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import axios from 'axios';
+import CityAutocomplete from './CityAutocomplete';
 import { ArrowRight, Plane, Loader, MapPin, ChefHat, AlertTriangle, Bus, Landmark, UserCheck, ShoppingBag, CheckCircle, Moon, Mountain, Wallet, CloudSun } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -19,6 +20,9 @@ export default function TripComparison() {
   const [origin, setOrigin] = useState('');
   const [dest1, setDest1] = useState('');
   const [dest2, setDest2] = useState('');
+  const [originValid, setOriginValid] = useState(false);
+  const [dest1Valid, setDest1Valid] = useState(false);
+  const [dest2Valid, setDest2Valid] = useState(false);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -34,6 +38,9 @@ export default function TripComparison() {
   const handleCompare = async (e) => {
     e.preventDefault();
     if (!origin || !dest1 || !dest2) { showToast('Please fill all fields', 'error'); return; }
+    if (!originValid) { showToast('Please select origin from the dropdown', 'error'); return; }
+    if (!dest1Valid) { showToast('Please select Destination 1 from the dropdown', 'error'); return; }
+    if (!dest2Valid) { showToast('Please select Destination 2 from the dropdown', 'error'); return; }
 
     setLoading(true);
     try {
@@ -200,9 +207,9 @@ Return ONLY a valid JSON object with no markdown formatting. The JSON must exact
             <label style={{ color: '#ffb703', fontSize: '0.62rem', fontWeight: 900, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif", display: 'block', textAlign: isMobile ? 'left' : 'center', marginBottom: '10px' }}>
               YOUR STARTING POINT
             </label>
-            <input value={origin} onChange={e => setOrigin(e.target.value)} required
+            <CityAutocomplete value={origin} onChange={v => { setOrigin(v); setOriginValid(false); }} onValidChange={setOriginValid}
               placeholder="Origin city (e.g. Bangalore)"
-              style={inputStyle}
+              inputStyle={inputStyle} accentColor="#ffb703"
               onFocus={e => { e.target.style.borderColor = 'rgba(255,183,3,0.45)'; e.target.style.boxShadow = '0 0 0 3px rgba(255,183,3,0.08)'; }}
               onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; e.target.style.boxShadow = 'none'; }} />
           </div>
@@ -211,9 +218,9 @@ Return ONLY a valid JSON object with no markdown formatting. The JSON must exact
           <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '12px', alignItems: isMobile ? 'stretch' : 'end', marginBottom: '24px' }}>
             <div style={{ flex: 1 }}>
               <label style={{ color: '#4cc9f0', fontSize: '0.62rem', fontWeight: 900, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif", display: 'block', textAlign: isMobile ? 'left' : 'center', marginBottom: '10px' }}>DESTINATION 1</label>
-              <input value={dest1} onChange={e => setDest1(e.target.value)} required
+              <CityAutocomplete value={dest1} onChange={v => { setDest1(v); setDest1Valid(false); }} onValidChange={setDest1Valid}
                 placeholder="e.g. Goa"
-                style={{ ...inputStyle, borderColor: 'rgba(76,201,240,0.2)' }}
+                inputStyle={{ ...inputStyle, borderColor: 'rgba(76,201,240,0.2)' }} accentColor="#4cc9f0"
                 onFocus={e => { e.target.style.borderColor = 'rgba(76,201,240,0.5)'; e.target.style.boxShadow = '0 0 0 3px rgba(76,201,240,0.08)'; }}
                 onBlur={e => { e.target.style.borderColor = 'rgba(76,201,240,0.2)'; e.target.style.boxShadow = 'none'; }} />
             </div>
@@ -226,9 +233,9 @@ Return ONLY a valid JSON object with no markdown formatting. The JSON must exact
               fontFamily: "'DM Sans', sans-serif", alignSelf: isMobile ? 'center' : 'flex-end', marginBottom: isMobile ? 0 : '10px' }}>VS</div>
             <div style={{ flex: 1 }}>
               <label style={{ color: '#4cc9f0', fontSize: '0.62rem', fontWeight: 900, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif", display: 'block', textAlign: isMobile ? 'left' : 'center', marginBottom: '10px' }}>DESTINATION 2</label>
-              <input value={dest2} onChange={e => setDest2(e.target.value)} required
+              <CityAutocomplete value={dest2} onChange={v => { setDest2(v); setDest2Valid(false); }} onValidChange={setDest2Valid}
                 placeholder="e.g. Manali"
-                style={{ ...inputStyle, borderColor: 'rgba(76,201,240,0.2)' }}
+                inputStyle={{ ...inputStyle, borderColor: 'rgba(76,201,240,0.2)' }} accentColor="#4cc9f0"
                 onFocus={e => { e.target.style.borderColor = 'rgba(76,201,240,0.5)'; e.target.style.boxShadow = '0 0 0 3px rgba(76,201,240,0.08)'; }}
                 onBlur={e => { e.target.style.borderColor = 'rgba(76,201,240,0.2)'; e.target.style.boxShadow = 'none'; }} />
             </div>

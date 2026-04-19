@@ -102,6 +102,10 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [pendingFilter, setPendingFilter] = useState({ type: '', value: '' });
   const [locationFrom, setLocationFrom] = useState('');
+  const [locationSuggestions, setLocationSuggestions] = useState([]);
+  const [locationSugLoading, setLocationSugLoading] = useState(false);
+  const [locationSelected, setLocationSelected] = useState(false);
+  const [locationError, setLocationError] = useState('');
   const [activeOrigin, setActiveOrigin] = useState('');
   const navigate = useNavigate();
 
@@ -282,8 +286,9 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
     if (!user.uid) return;
     axios.get(`/api/buddy/my-trips?uid=${user.uid}`, { headers: getUserAuthHeader() })
       .then(r => {
+        const notifRead = (() => { try { return JSON.parse(localStorage.getItem('la_notif_read') || '{}'); } catch { return {}; } })();
         const pending = (r.data.created || []).reduce((acc, t) =>
-          acc + (t.matches || []).filter(m => m.status === 'pending').length, 0);
+          acc + (t.matches || []).filter(m => m.status === 'pending' && !notifRead[`pending_${t._id}_${m._id}`]).length, 0);
         setBuddyNotif(pending);
       })
       .catch(() => {});
@@ -343,19 +348,31 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
     // Show location picker before fetching
     setPendingFilter({ type, value });
     setLocationFrom('');
+    setLocationSelected(false);
+    setLocationError('');
+    setLocationSuggestions([]);
     setShowLocationPicker(true);
   };
 
-  const confirmLocationAndFetch = async () => {
+  const confirmLocationAndFetch = async (overrideOrigin) => {
+    const origin = overrideOrigin !== undefined ? overrideOrigin : locationFrom;
+    // Validate — must select from suggestions or pass explicit override
+    if (overrideOrigin === undefined) {
+      if (!origin.length) { setLocationError('Please search and select a city to continue.'); return; }
+      if (!locationSelected) { setLocationError('Please select a city from the dropdown suggestions.'); return; }
+    }
+    setLocationError('');
     const { type, value } = pendingFilter;
     handleXpGain(15);
     setLastFilter({ type, value });
-    setActiveOrigin(locationFrom);
+    setActiveOrigin(origin);
+    setLocationFrom(origin);
     setSearchQuery('');
     setSortBy('newest');
     setShowLocationPicker(false);
+    setLocationSuggestions([]);
     setTransitionLoading(true);
-    await fetchPlaces(type, value, '', 'newest', locationFrom, '');
+    await fetchPlaces(type, value, '', 'newest', origin, '');
     setSearchParams({ filter: type, value }, { replace: false });
     setTransitionLoading(false);
   };
@@ -610,31 +627,6 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
         </div>
       )}
 
-      {/* ── FILTER NAV BAR — desktop step 1 only ── */}
-      {!isMobile && activeTab === 'itineraries' && step === 1 && (
-        <div style={{ position: 'fixed', top: '130px', left: '50%', transform: 'translateX(-50%)',
-          display: 'flex', gap: '8px', zIndex: 1150,
-          background: 'rgba(4,12,8,0.85)', backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(255,255,255,0.12)', borderRadius: '50px',
-          padding: '6px 8px' }}>
-          {[
-            { idx: 0, icon: '💰', label: 'Budget' },
-            { idx: 1, icon: '🕐', label: 'Duration' },
-            { idx: 2, icon: '📍', label: 'Distance' },
-          ].map(({ idx, icon, label }) => (
-            <button key={idx} onClick={() => setCurrentCard(idx)}
-              style={{ padding: '8px 20px', borderRadius: '50px', border: 'none',
-                cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
-                fontWeight: 700, fontSize: '0.78rem', letterSpacing: '0.5px',
-                display: 'flex', alignItems: 'center', gap: '7px',
-                transition: 'all 0.25s ease',
-                background: currentCard === idx ? '#ffb703' : 'transparent',
-                color: currentCard === idx ? '#081c15' : 'rgba(255,255,255,0.55)' }}>
-              <span>{icon}</span> {label}
-            </button>
-          ))}
-        </div>
-      )}
 
       {/* ── DESKTOP LOGO for non-itinerary tabs ── */}
       {!isMobile && !(activeTab === 'itineraries' && step === 1) && (
@@ -790,8 +782,9 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
             {/* DESKTOP STEP 1 */}
             {step === 1 && !isMobile && (
               <motion.div key="step1-desktop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  position: 'relative', padding: '120px 0 40px' }}>
+                style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  position: 'relative', padding: '80px 0 30px', gap: '16px' }}>
+                {/* Left/Right arrows — stay viewport-anchored */}
                 {currentCard > 0 && (
                   <button onClick={() => setCurrentCard(c => c - 1)}
                     style={{ position: 'fixed', left: '32px', top: '50%', transform: 'translateY(-50%)',
@@ -816,23 +809,137 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
                     </svg>
                   </button>
                 )}
-                <div style={{ position: 'fixed', bottom: '40px', left: '50%', transform: 'translateX(-50%)',
-                  display: 'flex', gap: '8px', zIndex: 500 }}>
-                  {cards.map((_, i) => (
-                    <div key={i} onClick={() => setCurrentCard(i)}
-                      style={{ width: i === currentCard ? '24px' : '8px', height: '8px',
-                        borderRadius: '4px', cursor: 'pointer', transition: 'all 0.3s',
-                        background: i === currentCard ? '#ffb703' : 'rgba(255,255,255,0.25)' }} />
+
+                {/* Filter pills — in flow, above the card */}
+                <div style={{ display: 'inline-flex', gap: '5px',
+                  background: 'rgba(4,12,8,0.85)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(255,255,255,0.12)', borderRadius: '50px', padding: '6px 8px', flexShrink: 0 }}>
+                  {[
+                    { idx: 0, icon: '💰', label: 'Budget' },
+                    { idx: 1, icon: '🕐', label: 'Duration' },
+                    { idx: 2, icon: '📍', label: 'Distance' },
+                  ].map(({ idx, icon, label }) => (
+                    <button key={idx} onClick={() => setCurrentCard(idx)}
+                      style={{ padding: '8px 20px', borderRadius: '50px', border: 'none',
+                        cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
+                        fontWeight: 700, fontSize: '0.78rem', letterSpacing: '0.5px',
+                        display: 'flex', alignItems: 'center', gap: '7px',
+                        transition: 'all 0.25s ease',
+                        background: currentCard === idx ? '#ffb703' : 'transparent',
+                        color: currentCard === idx ? '#081c15' : 'rgba(255,255,255,0.55)' }}>
+                      <span>{icon}</span> {label}
+                    </button>
                   ))}
                 </div>
+
                 <AnimatePresence mode="wait">
+                  {/* Location picker — inline card replacement for step 1 */}
+                  {showLocationPicker ? (
+                  <motion.div key="loc-picker"
+                    initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.2 }}
+                    style={{ width: '80vw', maxWidth: '720px' }}>
+                    <div style={{ position: 'relative', borderRadius: '24px', overflow: 'hidden', width: '100%', boxShadow: '0 50px 120px rgba(0,0,0,0.75)' }}>
+                      {/* Same background image as the card */}
+                      <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${cards[currentCard].img})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'brightness(0.35) saturate(0.8)' }} />
+                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(160deg, rgba(4,12,8,0.5) 0%, rgba(4,12,8,0.92) 50%)' }} />
+                      <div style={{ position: 'relative', zIndex: 1, padding: '36px 44px 36px' }}>
+                        {/* Top row: filter badge + × */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '5px 14px', background: 'rgba(255,183,3,0.12)', border: '1px solid rgba(255,183,3,0.3)', borderRadius: '50px' }}>
+                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#ffb703" strokeWidth="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                            <span style={{ fontSize: '0.52rem', color: '#ffb703', fontWeight: 900, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif" }}>{pendingFilter.type.toUpperCase()} · {pendingFilter.value.replace(' rupees','').replace('km','').toUpperCase()}</span>
+                          </div>
+                          <button onClick={() => setShowLocationPicker(false)}
+                            style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'rgba(255,255,255,0.6)', fontSize: '1.1rem', lineHeight: 1, transition: 'all 0.2s', flexShrink: 0 }}
+                            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; e.currentTarget.style.color = 'white'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; }}>
+                            ×
+                          </button>
+                        </div>
+
+                        <div style={{ fontSize: '2.8rem', color: 'white', fontFamily: "'Bebas Neue', cursive", lineHeight: 1, marginBottom: '8px', letterSpacing: '2px' }}>WHERE ARE YOU<br/>STARTING FROM?</div>
+                        <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.35)', fontFamily: "'DM Sans', sans-serif", marginBottom: '28px', lineHeight: 1.5 }}>
+                          Search your city or skip to browse all matching itineraries.
+                        </div>
+
+                        {/* Autocomplete input */}
+                        <div style={{ marginBottom: '20px', position: 'relative' }}>
+                          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                            <svg style={{ position: 'absolute', left: '16px', zIndex: 2, flexShrink: 0 }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={locationSelected ? '#4cc9f0' : 'rgba(255,255,255,0.35)'} strokeWidth="2"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 1 8 8c0 5-8 13-8 13S4 15 4 10a8 8 0 0 1 8-8z"/></svg>
+                            <input value={locationFrom}
+                              onChange={e => {
+                                const val = e.target.value;
+                                setLocationFrom(val); setLocationSelected(false); setLocationError('');
+                                if (val.length < 2) { setLocationSuggestions([]); return; }
+                                setLocationSugLoading(true);
+                                clearTimeout(window._arcgisSugTimer);
+                                window._arcgisSugTimer = setTimeout(async () => {
+                                  try {
+                                    const r = await axios.get(`https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/suggest?text=${encodeURIComponent(val)}&f=json&maxSuggestions=8&countryCode=IND&category=City`);
+                                    if (r.data.suggestions) {
+                                      const seen = new Set();
+                                      r.data.suggestions = r.data.suggestions
+                                        .filter(s => s.text.split(',').length <= 3)
+                                        .filter(s => { const key = s.text.split(',')[0].normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(); if (seen.has(key)) return false; seen.add(key); return true; });
+                                    }
+                                    setLocationSuggestions(r.data.suggestions || []);
+                                  } catch { setLocationSuggestions([]); }
+                                  setLocationSugLoading(false);
+                                }, 280);
+                              }}
+                              placeholder="Search city or region..."
+                              autoFocus
+                              style={{ width: '100%', boxSizing: 'border-box', padding: '15px 44px 15px 46px', background: 'rgba(255,255,255,0.07)', border: `1.5px solid ${locationSelected ? 'rgba(76,201,240,0.5)' : 'rgba(255,255,255,0.12)'}`, borderRadius: locationSuggestions.length > 0 ? '14px 14px 0 0' : '14px', color: 'white', fontSize: '0.88rem', fontFamily: "'DM Sans', sans-serif", outline: 'none' }} />
+                            {locationSugLoading && <div style={{ position: 'absolute', right: '14px', width: '14px', height: '14px', border: '2px solid rgba(76,201,240,0.3)', borderTopColor: '#4cc9f0', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />}
+                            {locationSelected && !locationSugLoading && <svg style={{ position: 'absolute', right: '14px' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4cc9f0" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>}
+                            {locationFrom && !locationSelected && !locationSugLoading && <button onClick={() => { setLocationFrom(''); setLocationSuggestions([]); setLocationSelected(false); }} style={{ position: 'absolute', right: '12px', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', fontSize: '1rem', padding: '4px', lineHeight: 1 }}>×</button>}
+                          </div>
+                          {locationSuggestions.length > 0 && (
+                            <div style={{ background: 'rgba(8,20,14,0.98)', border: '1.5px solid rgba(255,255,255,0.1)', borderTop: 'none', borderRadius: '0 0 14px 14px', overflow: 'hidden' }}>
+                              {locationSuggestions.map((sug, i) => (
+                                <button key={i} onClick={() => { setLocationFrom(sug.text.split(',')[0].trim()); setLocationSuggestions([]); setLocationSelected(true); }}
+                                  style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '11px 16px', background: 'transparent', border: 'none', borderBottom: i < locationSuggestions.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none', cursor: 'pointer', textAlign: 'left' }}
+                                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(76,201,240,0.08)'}
+                                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(76,201,240,0.5)" strokeWidth="2" style={{ flexShrink: 0 }}><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 1 8 8c0 5-8 13-8 13S4 15 4 10a8 8 0 0 1 8-8z"/></svg>
+                                  <div style={{ minWidth: 0 }}>
+                                    <div style={{ fontSize: '0.82rem', color: 'white', fontFamily: "'DM Sans', sans-serif", fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sug.text.split(',')[0]}</div>
+                                    <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)', fontFamily: "'DM Sans', sans-serif", marginTop: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sug.text.split(',').slice(1).join(',').trim()}</div>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {locationError && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '10px 14px', background: 'rgba(247,37,133,0.08)', border: '1px solid rgba(247,37,133,0.25)', borderRadius: '12px', marginBottom: '16px' }}>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f72585" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            <span style={{ fontSize: '0.65rem', color: '#f72585', fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>{locationError}</span>
+                          </div>
+                        )}
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '10px' }}>
+                          <button onClick={() => confirmLocationAndFetch()}
+                            style={{ padding: '15px', background: 'linear-gradient(135deg,#4cc9f0 0%,#7209b7 100%)', border: 'none', borderRadius: '14px', color: 'white', fontSize: '0.7rem', fontWeight: 900, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer', transition: 'all 0.2s' }}>
+                            {locationFrom && locationSelected ? `FIND FROM ${locationFrom.toUpperCase()} →` : 'FIND ITINERARIES →'}
+                          </button>
+                          <button onClick={() => confirmLocationAndFetch('')}
+                            style={{ padding: '15px 20px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', color: 'rgba(255,255,255,0.35)', fontSize: '0.6rem', fontWeight: 700, letterSpacing: '1.5px', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                            SKIP ALL
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                  ) : (
                   <motion.div key={currentCard}
-                    initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -40 }} transition={{ duration: 0.25 }}
+                    initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.2 }}
                     style={{ width: '80vw', maxWidth: '720px' }}>
                     {(() => {
                       const cat = cards[currentCard];
-                      const cardIcons = { budget: '💳', days: '🕐', distance: '🗺️' };
                       const subtitles = {
                         budget: ['Street food & hostels','Budget explorer','Comfort traveler','Luxury experience'],
                         days:   ['Quick getaway','Weekend escape','Short vacation','Grand expedition'],
@@ -920,7 +1027,18 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
                       );
                     })()}
                   </motion.div>
+                  )}
                 </AnimatePresence>
+
+                {/* Dot indicators — in flow, below the card */}
+                <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                  {cards.map((_, i) => (
+                    <div key={i} onClick={() => setCurrentCard(i)}
+                      style={{ width: i === currentCard ? '24px' : '8px', height: '8px',
+                        borderRadius: '4px', cursor: 'pointer', transition: 'all 0.3s',
+                        background: i === currentCard ? '#ffb703' : 'rgba(255,255,255,0.25)' }} />
+                  ))}
+                </div>
               </motion.div>
             )}
 
@@ -953,16 +1071,18 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
                 {/* Location filter pill */}
                 {activeOrigin && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', background: 'rgba(76,201,240,0.08)', border: '1px solid rgba(76,201,240,0.25)', borderRadius: '50px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 10px 6px 14px', background: 'rgba(76,201,240,0.08)', border: '1px solid rgba(76,201,240,0.25)', borderRadius: '50px' }}>
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#4cc9f0" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 1 8 8c0 5-8 13-8 13S4 15 4 10a8 8 0 0 1 8-8z"/></svg>
                       <span style={{ fontSize: '0.6rem', color: '#4cc9f0', fontWeight: 700, fontFamily: "'DM Sans', sans-serif", letterSpacing: '0.5px' }}>
                         <span style={{ opacity: 0.6 }}>FROM </span>{activeOrigin.toUpperCase()}
                       </span>
+                      <button
+                        onClick={() => { setActiveOrigin(''); setLocationFrom(''); fetchPlaces(lastFilter.type, lastFilter.value, searchQuery, sortBy, '', ''); }}
+                        title="Clear location filter"
+                        style={{ marginLeft: '2px', background: 'rgba(76,201,240,0.15)', border: '1px solid rgba(76,201,240,0.3)', borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#4cc9f0', fontSize: '0.7rem', lineHeight: 1, padding: 0, flexShrink: 0 }}>
+                        ×
+                      </button>
                     </div>
-                    <button onClick={() => { setActiveOrigin(''); fetchPlaces(lastFilter.type, lastFilter.value, searchQuery, sortBy, '', ''); }}
-                      style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.35)', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '50px', padding: '5px 12px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontWeight: 700, letterSpacing: '0.5px' }}>
-                      CLEAR
-                    </button>
                   </div>
                 )}
 
@@ -1615,57 +1735,131 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
         document.body
       )}
 
-      {/* ── LOCATION PICKER MODAL ── */}
-      {showLocationPicker && createPortal(
+      {/* ── LOCATION PICKER — portal for mobile step1 + step2 location change ── */}
+      {showLocationPicker && isMobile && createPortal(
         <div style={{
           position: 'fixed', inset: 0, zIndex: 99999,
-          background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+          background: isMobile ? 'rgba(5,14,9,0.92)' : 'rgba(5,14,9,0.6)',
+          backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px',
         }}>
-          <div style={{
-            width: '100%', maxWidth: '420px',
-            background: 'linear-gradient(160deg,#0d2318 0%,#081c15 100%)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '28px', overflow: 'hidden',
-            boxShadow: '0 24px 80px rgba(0,0,0,0.8)',
-          }}>
-            {/* Top accent */}
-            <div style={{ height: '3px', background: 'linear-gradient(90deg,#4cc9f0,#7209b7,#4cc9f0)', backgroundSize: '200% 100%' }} />
-            <div style={{ padding: '28px 28px 32px' }}>
-              <div style={{ marginBottom: '6px', fontSize: '0.45rem', color: 'rgba(255,255,255,0.3)', fontWeight: 900, letterSpacing: '3px', fontFamily: "'DM Sans', sans-serif" }}>
-                {pendingFilter.type.toUpperCase()} · {pendingFilter.value.toUpperCase()}
-              </div>
-              <div style={{ fontSize: isMobile ? '1.8rem' : '2.2rem', color: 'white', fontFamily: "'Bebas Neue', cursive", lineHeight: 1, marginBottom: '6px' }}>WHERE ARE YOU GOING?</div>
-              <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', fontFamily: "'DM Sans', sans-serif", marginBottom: '28px' }}>Optional — leave blank to see all itineraries</div>
+          <div style={{ width: '100%', maxWidth: '440px', borderRadius: '32px', overflow: 'hidden', boxShadow: '0 32px 100px rgba(0,0,0,0.9)', position: 'relative' }}>
+            {/* Glowing border */}
+            <div style={{ position: 'absolute', inset: 0, borderRadius: '32px', padding: '1.5px', background: 'linear-gradient(135deg,#4cc9f0,#7209b7,#f72585)', zIndex: 0, WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)', WebkitMaskComposite: 'xor', maskComposite: 'exclude' }} />
+            <div style={{ position: 'relative', zIndex: 1, background: 'linear-gradient(160deg,#0a1f14 0%,#060f0a 100%)', borderRadius: '32px', padding: isMobile ? '28px 20px 24px' : '36px 32px 30px' }}>
 
-              {/* From input */}
-              <div style={{ marginBottom: '28px' }}>
-                <label style={{ display: 'block', fontSize: '0.48rem', color: 'rgba(255,255,255,0.4)', fontWeight: 900, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif", marginBottom: '8px' }}>STARTING FROM</label>
-                <div style={{ position: 'relative' }}>
-                  <svg style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 1 8 8c0 5-8 13-8 13S4 15 4 10a8 8 0 0 1 8-8z"/></svg>
+              {/* Top row: filter badge + × */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 12px', background: 'rgba(255,183,3,0.1)', border: '1px solid rgba(255,183,3,0.2)', borderRadius: '50px' }}>
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#ffb703" strokeWidth="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                  <span style={{ fontSize: '0.45rem', color: '#ffb703', fontWeight: 900, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif" }}>{pendingFilter.type.toUpperCase()} · {pendingFilter.value.replace(' rupees','').replace('km','').toUpperCase()}</span>
+                </div>
+                <button onClick={() => setShowLocationPicker(false)}
+                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'rgba(255,255,255,0.5)', fontSize: '1.1rem', lineHeight: 1, flexShrink: 0 }}>
+                  ×
+                </button>
+              </div>
+
+              <div style={{ fontSize: isMobile ? '2rem' : '2.6rem', color: 'white', fontFamily: "'Bebas Neue', cursive", lineHeight: 1, marginBottom: '8px', letterSpacing: '1px' }}>WHERE ARE YOU<br/>STARTING FROM?</div>
+              <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', fontFamily: "'DM Sans', sans-serif", marginBottom: '28px', lineHeight: 1.5 }}>
+                Search your city to find matching itineraries, or skip to browse all.
+              </div>
+
+              {/* Autocomplete input */}
+              <div style={{ marginBottom: '20px', position: 'relative' }}>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <svg style={{ position: 'absolute', left: '16px', zIndex: 2, flexShrink: 0 }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={locationSelected ? '#4cc9f0' : 'rgba(255,255,255,0.35)'} strokeWidth="2"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 1 8 8c0 5-8 13-8 13S4 15 4 10a8 8 0 0 1 8-8z"/></svg>
                   <input
                     value={locationFrom}
-                    onChange={e => setLocationFrom(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && confirmLocationAndFetch()}
-                    placeholder="e.g. New York, Tokyo, Mumbai..."
-                    style={{ width: '100%', boxSizing: 'border-box', padding: '14px 16px 14px 40px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', color: 'white', fontSize: '0.88rem', fontFamily: "'DM Sans', sans-serif", outline: 'none' }}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setLocationFrom(val);
+                      setLocationSelected(false);
+                      setLocationError('');
+                      if (val.length < 2) { setLocationSuggestions([]); return; }
+                      setLocationSugLoading(true);
+                      clearTimeout(window._arcgisSugTimer);
+                      window._arcgisSugTimer = setTimeout(async () => {
+                        try {
+                          const r = await axios.get(`https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/suggest?text=${encodeURIComponent(val)}&f=json&maxSuggestions=8&countryCode=IND&category=City`);
+                          // Filter to only show district/city level — skip tiny localities (more than 3 address parts)
+                          if (r.data.suggestions) {
+                            const seen = new Set();
+                            r.data.suggestions = r.data.suggestions
+                              .filter(s => s.text.split(',').length <= 3)
+                              .filter(s => {
+                                const key = s.text.split(',')[0].normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+                                if (seen.has(key)) return false;
+                                seen.add(key);
+                                return true;
+                              });
+                          }
+                          setLocationSuggestions(r.data.suggestions || []);
+                        } catch { setLocationSuggestions([]); }
+                        setLocationSugLoading(false);
+                      }, 280);
+                    }}
+                    placeholder="Search city, region or country..."
+                    autoFocus
+                    style={{ width: '100%', boxSizing: 'border-box', padding: '16px 44px 16px 46px', background: 'rgba(255,255,255,0.06)', border: `1.5px solid ${locationSelected ? 'rgba(76,201,240,0.5)' : 'rgba(255,255,255,0.1)'}`, borderRadius: locationSuggestions.length > 0 ? '16px 16px 0 0' : '16px', color: 'white', fontSize: '0.9rem', fontFamily: "'DM Sans', sans-serif", outline: 'none', transition: 'border-color 0.2s' }}
                   />
+                  {locationSugLoading && (
+                    <div style={{ position: 'absolute', right: '14px', width: '14px', height: '14px', border: '2px solid rgba(76,201,240,0.3)', borderTopColor: '#4cc9f0', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                  )}
+                  {locationSelected && !locationSugLoading && (
+                    <svg style={{ position: 'absolute', right: '14px' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4cc9f0" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  )}
+                  {locationFrom && !locationSelected && !locationSugLoading && (
+                    <button onClick={() => { setLocationFrom(''); setLocationSuggestions([]); setLocationSelected(false); }} style={{ position: 'absolute', right: '12px', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', fontSize: '1rem', padding: '4px', lineHeight: 1 }}>×</button>
+                  )}
                 </div>
+
+                {/* Suggestions dropdown */}
+                {locationSuggestions.length > 0 && (
+                  <div style={{ background: 'rgba(8,20,14,0.98)', border: '1.5px solid rgba(255,255,255,0.1)', borderTop: 'none', borderRadius: '0 0 16px 16px', overflow: 'hidden', backdropFilter: 'blur(20px)' }}>
+                    {locationSuggestions.map((sug, i) => (
+                      <button key={i} onClick={() => {
+                        // Extract just the city/place name (before first comma)
+                        const shortName = sug.text.split(',')[0].trim();
+                        setLocationFrom(shortName);
+                        setLocationSuggestions([]);
+                        setLocationSelected(true);
+                      }} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', background: 'transparent', border: 'none', borderBottom: i < locationSuggestions.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none', cursor: 'pointer', textAlign: 'left', transition: 'background 0.15s' }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(76,201,240,0.08)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(76,201,240,0.5)" strokeWidth="2" style={{ flexShrink: 0 }}><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 1 8 8c0 5-8 13-8 13S4 15 4 10a8 8 0 0 1 8-8z"/></svg>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: '0.82rem', color: 'white', fontFamily: "'DM Sans', sans-serif", fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sug.text.split(',')[0]}</div>
+                          <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)', fontFamily: "'DM Sans', sans-serif", marginTop: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sug.text.split(',').slice(1).join(',').trim()}</div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
+              {/* Validation error */}
+              {locationError && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '10px 14px', background: 'rgba(247,37,133,0.08)', border: '1px solid rgba(247,37,133,0.25)', borderRadius: '12px', marginBottom: '16px' }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f72585" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  <span style={{ fontSize: '0.65rem', color: '#f72585', fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>{locationError}</span>
+                </div>
+              )}
 
               {/* Actions */}
               <button
-                onClick={confirmLocationAndFetch}
-                style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg,#4cc9f0,#7209b7)', border: 'none', borderRadius: '14px', color: 'white', fontSize: '0.75rem', fontWeight: 900, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer', marginBottom: '10px' }}
+                onClick={() => confirmLocationAndFetch()}
+                disabled={false}
+                style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg,#4cc9f0 0%,#7209b7 100%)', border: 'none', borderRadius: '16px', color: 'white', fontSize: '0.72rem', fontWeight: 900, letterSpacing: '2.5px', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer', marginBottom: '10px', transition: 'all 0.2s' }}
               >
-                FIND ITINERARIES →
+                {locationFrom && locationSelected ? `FIND TRIPS FROM ${locationFrom.toUpperCase()} →` : 'FIND ITINERARIES →'}
               </button>
               <button
-                onClick={() => setShowLocationPicker(false)}
-                style={{ width: '100%', padding: '12px', background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', color: 'rgba(255,255,255,0.3)', fontSize: '0.65rem', fontWeight: 700, letterSpacing: '1.5px', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer' }}
+                onClick={() => confirmLocationAndFetch('')}
+                style={{ width: '100%', padding: '13px', background: 'transparent', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', color: 'rgba(255,255,255,0.25)', fontSize: '0.62rem', fontWeight: 700, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer' }}
               >
-                CANCEL
+                SKIP & BROWSE ALL
               </button>
             </div>
           </div>

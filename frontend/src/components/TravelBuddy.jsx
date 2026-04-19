@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import axios from 'axios';
+import CityAutocomplete from './CityAutocomplete';
 import { io } from 'socket.io-client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PlaneTakeoff, MapPin, Calendar, Briefcase, PlusCircle, Search, Users, CheckCircle, XCircle, Send, MessageSquare, Compass, ArrowRight, Ticket, Plane, Globe, Trash2, Mic, MicOff, FileText, Copy, Bookmark, Bell, User, Calculator, Star } from 'lucide-react';
@@ -202,6 +203,8 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
   // Feature 11: cost estimator
   const [costOrigin, setCostOrigin] = useState('');
   const [costDest, setCostDest] = useState('');
+  const [costOriginValid, setCostOriginValid] = useState(false);
+  const [costDestValid, setCostDestValid] = useState(false);
   const [costDays, setCostDays] = useState('');
   const [costStyle, setCostStyle] = useState('Comfort');
   const [costResult, setCostResult] = useState(null);
@@ -245,6 +248,7 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
   const [typingUsers, setTypingUsers] = useState([]);
   const [showMembers, setShowMembers] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [highlightTripId, setHighlightTripId] = useState(null);
   const chatContainerRef = React.useRef(null);
   const socketRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -471,6 +475,10 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
   };
 
   useEffect(() => {
+    fetchMyTrips(); // always fetch on mount for notification badge
+  }, []);
+
+  useEffect(() => {
     if (view === 'feed') fetchTrips();
     if (view === 'my_trips' || view === 'profile') fetchMyTrips();
   }, [view]);
@@ -578,6 +586,8 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
   // Feature 11: cost estimator
   const handleCostEstimate = async () => {
     if (!costOrigin.trim() || !costDest.trim() || !costDays) { showToast('Please fill all fields', 'error'); return; }
+    if (!costOriginValid) { showToast('Please select origin from the dropdown', 'error'); return; }
+    if (!costDestValid) { showToast('Please select destination from the dropdown', 'error'); return; }
     setCostLoading(true);
     setCostResult(null);
     try {
@@ -1089,7 +1099,7 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
                   borderRadius: '16px', padding: '16px', boxShadow: '0 16px 40px rgba(0,0,0,0.5)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                     <span style={{ color: '#ffb703', fontSize: '0.65rem', fontWeight: 900, letterSpacing: '2px' }}>NOTIFICATIONS</span>
-                    <button onClick={() => { const all = {}; notifications.forEach(n => { all[n.id] = true; }); setNotifRead(all); localStorage.setItem('la_notif_read', JSON.stringify(all)); }}
+                    <button onClick={() => { const all = {}; notifications.forEach(n => { all[n.id] = true; }); setNotifRead(all); localStorage.setItem('la_notif_read', JSON.stringify(all)); if (onMatchAccepted) onMatchAccepted(); }}
                       style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '0.6rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
                       Mark all read
                     </button>
@@ -1101,12 +1111,19 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
                         const updated = { ...notifRead, [n.id]: true };
                         setNotifRead(updated);
                         localStorage.setItem('la_notif_read', JSON.stringify(updated));
+                        if (onMatchAccepted) onMatchAccepted();
                         setShowNotifPanel(false);
                         if (n.action === 'open_chat' && n.tripObj) {
                           localStorage.setItem(`lastRead_${n.tripId}`, Date.now().toString());
                           setActiveChat(n.tripObj);
                         } else if (n.action === 'my_trips') {
                           setView('my_trips');
+                          setHighlightTripId(n.tripId);
+                          setTimeout(() => {
+                            const el = document.getElementById(`trip-card-${n.tripId}`);
+                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          }, 200);
+                          setTimeout(() => setHighlightTripId(null), 3000);
                         }
                       }}
                       style={{ display: 'flex', gap: '10px', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.05)',
@@ -1639,11 +1656,19 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
                   {myTrips.created.length === 0 && <div style={{ color: 'white', opacity: 0.5, marginTop: '20px' }}>You haven't posted any trips yet.</div>}
                   {myTrips.created.map(trip => {
                     const hasAccepted = trip.matches.some(m => m.status === 'accepted');
+                    const hasUnreadPendingNotif = trip.matches.some(m => m.status === 'pending' && !notifRead[`pending_${trip._id}_${m._id}`]);
+                    const isHighlighted = highlightTripId === trip._id;
                     const countdown = getDaysUntil(trip.date);
                     const acceptedMatches = trip.matches.filter(m => m.status === 'accepted');
                     return (
-                    <div key={trip._id} style={{ padding: '20px', borderRadius: '15px', marginBottom: '20px', background: 'rgba(255,255,255,0.95)', borderLeft: hasAccepted ? '8px solid #ffb703' : '8px solid #081c15', boxShadow: '0 10px 20px rgba(0,0,0,0.3)', position: 'relative', overflow: 'hidden' }}>
+                    <div key={trip._id} id={`trip-card-${trip._id}`} style={{ padding: hasUnreadPendingNotif ? '44px 20px 20px' : '20px', borderRadius: '15px', marginBottom: '20px', background: 'rgba(255,255,255,0.95)', borderLeft: hasAccepted ? '8px solid #ffb703' : hasUnreadPendingNotif ? '8px solid #ff5d73' : '8px solid #081c15', boxShadow: isHighlighted ? '0 0 0 3px #ff5d73, 0 10px 30px rgba(255,93,115,0.35)' : '0 10px 20px rgba(0,0,0,0.3)', position: 'relative', overflow: 'hidden', transition: 'box-shadow 0.3s' }}>
                        <Globe size={150} color="black" style={{ position: 'absolute', right: -30, bottom: -30, opacity: 0.03, pointerEvents: 'none' }} />
+                       {hasUnreadPendingNotif && (
+                         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, background: 'linear-gradient(90deg, #ff5d73, #ff8fa3)', padding: '6px 16px', display: 'flex', alignItems: 'center', gap: '8px', zIndex: 10 }}>
+                           <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'white', flexShrink: 0, animation: 'pulseGlow 1.2s ease-in-out infinite' }} />
+                           <span style={{ fontSize: '0.62rem', fontWeight: 900, color: 'white', letterSpacing: '1.5px', fontFamily: "'DM Sans', sans-serif" }}>NEW JOIN REQUEST</span>
+                         </div>
+                       )}
                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
                          <div style={{ fontSize: '0.65rem', color: '#081c15', fontWeight: 900, opacity: 0.5, letterSpacing: '2px' }}>TRIP INFO</div>
                          {/* Feature 2: countdown badge */}
@@ -1792,8 +1817,9 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
                   <div style={{ flex: 1 }}>
                     <label style={{ display: 'block', color: 'rgba(255,183,3,0.7)', fontSize: '0.58rem', fontWeight: 900, letterSpacing: '1.5px', marginBottom: '7px', fontFamily: "'DM Sans', sans-serif" }}>FROM</label>
-                    <input value={costOrigin} onChange={e => setCostOrigin(e.target.value)} placeholder="Origin city"
-                      style={{ width: '100%', padding: '14px 16px', borderRadius: '14px', border: '1.5px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: 'white', outline: 'none', fontFamily: "'DM Sans', sans-serif", fontSize: '16px', boxSizing: 'border-box', WebkitAppearance: 'none', WebkitTextFillColor: 'white', transition: 'border-color 0.2s' }}
+                    <CityAutocomplete value={costOrigin} onChange={v => { setCostOrigin(v); setCostOriginValid(false); }} onValidChange={setCostOriginValid} placeholder="Origin city"
+                      inputStyle={{ width: '100%', padding: '14px 16px', borderRadius: '14px', border: '1.5px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: 'white', outline: 'none', fontFamily: "'DM Sans', sans-serif", fontSize: '16px', boxSizing: 'border-box', WebkitAppearance: 'none', WebkitTextFillColor: 'white', transition: 'border-color 0.2s' }}
+                      accentColor="#ffb703"
                       onFocus={e => e.target.style.borderColor = 'rgba(255,183,3,0.5)'}
                       onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
                   </div>
@@ -1802,8 +1828,9 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
                   </div>
                   <div style={{ flex: 1 }}>
                     <label style={{ display: 'block', color: 'rgba(255,183,3,0.7)', fontSize: '0.58rem', fontWeight: 900, letterSpacing: '1.5px', marginBottom: '7px', fontFamily: "'DM Sans', sans-serif" }}>TO</label>
-                    <input value={costDest} onChange={e => setCostDest(e.target.value)} placeholder="Destination"
-                      style={{ width: '100%', padding: '14px 16px', borderRadius: '14px', border: '1.5px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: 'white', outline: 'none', fontFamily: "'DM Sans', sans-serif", fontSize: '16px', boxSizing: 'border-box', WebkitAppearance: 'none', WebkitTextFillColor: 'white', transition: 'border-color 0.2s' }}
+                    <CityAutocomplete value={costDest} onChange={v => { setCostDest(v); setCostDestValid(false); }} onValidChange={setCostDestValid} placeholder="Destination"
+                      inputStyle={{ width: '100%', padding: '14px 16px', borderRadius: '14px', border: '1.5px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: 'white', outline: 'none', fontFamily: "'DM Sans', sans-serif", fontSize: '16px', boxSizing: 'border-box', WebkitAppearance: 'none', WebkitTextFillColor: 'white', transition: 'border-color 0.2s' }}
+                      accentColor="#ffb703"
                       onFocus={e => e.target.style.borderColor = 'rgba(255,183,3,0.5)'}
                       onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
                   </div>

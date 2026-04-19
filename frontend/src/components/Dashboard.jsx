@@ -350,7 +350,7 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
 
         {/* ── TOP BAR ── */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 30,
-          padding: 'calc(env(safe-area-inset-top) + 14px) 20px 0',
+          padding: 'calc(env(safe-area-inset-top) + 28px) 20px 0',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div style={{ width: 30, height: 30, borderRadius: '9px',
@@ -379,13 +379,13 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
                 border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.75)',
                 fontSize: '0.58rem', fontWeight: 700, cursor: 'pointer', letterSpacing: '1px',
                 fontFamily: "'DM Sans', sans-serif" }}>
-              EXIT
+              LOGOUT
             </button>
           </div>
         </div>
 
         {/* ── FILTER PILL NAV ── */}
-        <div style={{ position: 'absolute', top: 'calc(env(safe-area-inset-top) + 62px)', left: 0, right: 0, zIndex: 30,
+        <div style={{ position: 'absolute', top: 'calc(env(safe-area-inset-top) + 80px)', left: 0, right: 0, zIndex: 30,
           display: 'flex', justifyContent: 'center' }}>
           <div style={{ display: 'inline-flex', gap: '5px', background: 'rgba(4,12,8,0.82)', backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '50px',
@@ -594,8 +594,8 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
         </div>
       )}
 
-      {/* ── DESKTOP USER/EXIT for non-itinerary tabs ── */}
-      {!isMobile && !(activeTab === 'itineraries' && step === 1) && (
+      {/* ── DESKTOP USER/EXIT ── */}
+      {!isMobile && (
         <div style={{ position: 'fixed', top: '20px', right: '24px', zIndex: 1200,
           padding: '8px 8px 8px 18px', borderRadius: '50px', display: 'flex', alignItems: 'center', gap: '12px',
           background: currentTheme.navBg, backdropFilter: 'blur(15px)',
@@ -619,7 +619,7 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
               border: 'none', color: 'white', fontSize: '0.62rem', fontWeight: 900, cursor: 'pointer',
               display: 'flex', alignItems: 'center', gap: '8px', letterSpacing: '1px',
               fontFamily: "'DM Sans', sans-serif" }}>
-            EXIT <LogOut size={13} />
+            LOGOUT <LogOut size={13} />
           </button>
         </div>
       )}
@@ -691,34 +691,11 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
             </div>
             <span style={{ fontSize: '0.95rem', color: 'white', letterSpacing: '-1px', fontWeight: 850 }}>LEAVE APPROVED.</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-            <div>
-              <span style={{ fontSize: '0.6rem', fontWeight: 900, color: '#d8f3dc', opacity: 0.6, letterSpacing: '4px' }}>DASHBOARD</span>
-              <div className="title" style={{ fontSize: '1.4rem', color: 'white', letterSpacing: '1px' }}>MY PLANNER</div>
-              <div style={{ color: '#ffb703', fontSize: '0.65rem', fontWeight: 900, marginTop: '4px', letterSpacing: '1px', opacity: 0.8 }}>
-                PLAN YOUR PERFECT TRIP
-              </div>
-            </div>
-            <div style={{ padding: '8px 8px 8px 18px', borderRadius: '50px', display: 'flex', alignItems: 'center', gap: '12px',
-              background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(15px)', border: '1px solid rgba(255,255,255,0.15)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
-                onClick={() => { setBuddyInitView('profile'); setBuddyNavKey(k => k + 1); setActiveTab('buddy'); }}>
-                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #ffb703, #ff8c00)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 900, color: '#081c15', flexShrink: 0, overflow: 'hidden' }}>
-                  {(() => { const av = user?.uid ? localStorage.getItem(`la_avatar_url_${user.uid}`) : null; return av ? <img src={av} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (user.name?.[0] || 'U').toUpperCase(); })()}
-                </div>
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontSize: '0.45rem', fontWeight: 900, color: '#d8f3dc', opacity: 0.5, textAlign: 'center', letterSpacing: '1.5px' }}>LOGGED IN</div>
-                  <div style={{ fontSize: '0.8rem', fontWeight: 900, color: 'white', letterSpacing: '1px' }}>
-                    {user.name?.split(' ')[0].toUpperCase() || 'VOID'}
-                  </div>
-                </div>
-              </div>
-              <button onClick={logout}
-                style={{ padding: '12px 24px', borderRadius: '50px', background: 'rgba(255,255,255,0.1)',
-                  border: 'none', color: 'white', fontSize: '0.65rem', fontWeight: 900, cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', gap: '8px' }}>
-                EXIT <LogOut size={14} />
-              </button>
+          <div>
+            <span style={{ fontSize: '0.6rem', fontWeight: 900, color: '#d8f3dc', opacity: 0.6, letterSpacing: '4px' }}>DASHBOARD</span>
+            <div className="title" style={{ fontSize: '1.4rem', color: 'white', letterSpacing: '1px' }}>MY PLANNER</div>
+            <div style={{ color: '#ffb703', fontSize: '0.65rem', fontWeight: 900, marginTop: '4px', letterSpacing: '1px', opacity: 0.8 }}>
+              PLAN YOUR PERFECT TRIP
             </div>
           </div>
         </div>

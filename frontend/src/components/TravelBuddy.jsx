@@ -1211,8 +1211,8 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
 
           {view === 'feed' && (
             <div style={{ display: 'flex', flexDirection: 'column', height: isMobile ? 'auto' : 'calc(100vh - 290px)' }}>
-              {/* Feature 5: Tag filters */}
-              {(() => {
+              {/* Feature 5: Tag filters — desktop only above search */}
+              {!isMobile && (() => {
                 const allTags = ['All', ...Array.from(new Set(trips.flatMap(t => t.tags || [])))];
                 return allTags.length > 1 ? (
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
@@ -1254,6 +1254,24 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
                   📍 MAP VIEW
                 </button>
               </div>
+
+              {/* Feature 5: Tag filters — mobile only, below MAP VIEW */}
+              {isMobile && (() => {
+                const allTags = ['All', ...Array.from(new Set(trips.flatMap(t => t.tags || [])))];
+                return allTags.length > 1 ? (
+                  <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', padding: '10px 0 4px', marginBottom: '4px' }}>
+                    {allTags.map(tag => (
+                      <button key={tag} onClick={() => setActiveTagFilter(tag)}
+                        style={{ padding: '6px 14px', borderRadius: '50px', border: 'none', cursor: 'pointer', fontSize: '0.68rem', fontWeight: 700,
+                          fontFamily: "'DM Sans', sans-serif", transition: 'all 0.2s', flexShrink: 0,
+                          background: activeTagFilter === tag ? '#ffb703' : 'rgba(255,255,255,0.07)',
+                          color: activeTagFilter === tag ? '#081c15' : 'rgba(255,255,255,0.6)' }}>
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                ) : null;
+              })()}
 
               {/* Scrollable cards area — desktop only */}
               <div style={{

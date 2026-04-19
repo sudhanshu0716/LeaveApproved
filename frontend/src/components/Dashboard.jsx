@@ -1136,7 +1136,7 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
 
         ) : (
           <div style={{ minHeight: !isMobile ? 'unset' : '100vh', height: !isMobile ? '100vh' : 'auto', display: 'flex', alignItems: 'flex-start',
-            justifyContent: 'center', paddingTop: isMobile ? '20px' : '80px',
+            justifyContent: 'center', paddingTop: isMobile ? '20px' : '110px',
             paddingBottom: isMobile ? '90px' : '20px', overflowX: 'hidden', overflowY: !isMobile ? 'auto' : 'visible', width: '100%', boxSizing: 'border-box' }}>
             <AnimatePresence mode="wait">
               <motion.div key={activeTab} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}

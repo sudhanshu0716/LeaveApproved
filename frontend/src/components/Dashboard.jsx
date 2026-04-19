@@ -364,6 +364,14 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button onClick={() => { setBuddyInitView('profile'); setBuddyNavKey(k => k + 1); setActiveTab('buddy'); }}
+              style={{ width: '32px', height: '32px', borderRadius: '50%', padding: 0, flexShrink: 0,
+                background: 'linear-gradient(135deg, #ffb703, #ff8c00)',
+                border: '2px solid rgba(255,183,3,0.6)', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '0.75rem', fontWeight: 900, color: '#081c15', overflow: 'hidden' }}>
+              {(() => { const av = user?.uid ? localStorage.getItem(`la_avatar_url_${user.uid}`) : null; return av ? <img src={av} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (user.name?.[0] || 'U').toUpperCase(); })()}
+            </button>
             <button onClick={logout}
               style={{ padding: '7px 16px', borderRadius: '50px',
                 background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)',
@@ -425,13 +433,6 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
               initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.32 }}>
 
-              {/* Code badge */}
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px',
-                marginBottom: '10px', padding: '4px 10px', borderRadius: '50px',
-                background: 'rgba(255,183,3,0.15)', border: '1px solid rgba(255,183,3,0.4)' }}>
-                <span style={{ fontSize: '0.6rem', fontWeight: 700, color: '#ffb703',
-                  letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif" }}>{cat.code}</span>
-              </div>
 
               {/* Big display title */}
               <h2 style={{ fontSize: '3.8rem', fontWeight: 400, color: 'white',
@@ -636,7 +637,7 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
             );
           })}
           {/* Profile / XP button */}
-          <button onClick={() => { setBuddyInitView('profile'); setBuddyNavKey(k => k + 1); setActiveTab('buddy'); }}
+          <button onClick={() => setShowProfile(true)}
             style={{ background: 'none', border: '1px solid transparent', borderRadius: '14px', cursor: 'pointer',
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
               padding: '7px 12px', minWidth: '48px', fontFamily: "'DM Sans', sans-serif" }}>

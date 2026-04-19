@@ -1709,11 +1709,11 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
 
           {/* Feature 6: Profile */}
           {view === 'profile' && (
-            <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-              <button onClick={() => setView('feed')} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 700, fontFamily: "'DM Sans', sans-serif", letterSpacing: '1px', marginBottom: '18px', padding: 0 }}>
+            <div style={{ maxWidth: '600px', margin: isMobile ? '0 -12px' : '0 auto' }}>
+              <button onClick={() => setView('feed')} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 700, fontFamily: "'DM Sans', sans-serif", letterSpacing: '1px', marginBottom: '14px', padding: isMobile ? '0 12px' : '0' }}>
                 ← BACK TO EXPLORE
               </button>
-              <div style={{ background: 'rgba(8,20,14,0.85)', backdropFilter: 'blur(20px)', borderRadius: '24px', padding: isMobile ? '24px 20px' : '36px', border: '1px solid rgba(255,183,3,0.15)', marginBottom: '20px' }}>
+              <div style={{ background: 'rgba(8,20,14,0.85)', backdropFilter: 'blur(20px)', borderRadius: isMobile ? '20px' : '24px', padding: isMobile ? '24px 20px' : '36px', border: '1px solid rgba(255,183,3,0.15)', marginBottom: '20px' }}>
                 {/* Avatar + name */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '28px' }}>
                   <label htmlFor="la-avatar-input" style={{ position: 'relative', marginBottom: '14px', cursor: 'pointer', display: 'block' }}>

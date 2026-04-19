@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -78,6 +79,8 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
   const [user, setUser]           = useState({ name: '', company: '' });
   const [xp, setXp]               = useState(45);
   const [showProfile, setShowProfile]   = useState(false);
+  const [showLevels, setShowLevels]     = useState(false);
+  const [showXpInfo, setShowXpInfo]     = useState(false);
   const [isUpdatingEmail, setIsUpdatingEmail] = useState(false);
   const [profileStats, setProfileStats] = useState({ created: 0, requested: 0 });
   const [currentTheme, setCurrentTheme] = useState(() => {
@@ -142,13 +145,36 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
   ];
 
   const levels = [
-    { name: 'Starter' }, { name: 'Explorer' }, { name: 'Adventurer' },
-    { name: 'Globetrotter' }, { name: 'Legend' },
+    { name: 'Rookie' },        { name: 'Day Tripper' },   { name: 'Wanderer' },
+    { name: 'Backpacker' },    { name: 'Trail Seeker' },  { name: 'Road Rider' },
+    { name: 'Map Reader' },    { name: 'Horizon Chaser' },{ name: 'Night Owl' },
+    { name: 'Compass Rose' },  { name: 'Explorer' },      { name: 'Off-Road Pro' },
+    { name: 'Pathfinder' },    { name: 'Dust Devil' },    { name: 'Sunriser' },
+    { name: 'Trekker' },       { name: 'Summit Seeker' }, { name: 'Drifter' },
+    { name: 'Nomad' },         { name: 'Village Hopper' },{ name: 'Adventurer' },
+    { name: 'Culture Vulture' },{ name: 'Tide Walker' },  { name: 'Deep Diver' },
+    { name: 'Ridge Runner' },  { name: 'Globetrotter' },  { name: 'Horizon Lord' },
+    { name: 'Trailblazer' },   { name: 'Map Maker' },     { name: 'Sky Gazer' },
+    { name: 'Summit Master' }, { name: 'Wild Card' },     { name: 'Desert Fox' },
+    { name: 'Ocean Walker' },  { name: 'Mountain Ghost' },{ name: 'Jet Setter' },
+    { name: 'Passport Pro' },  { name: 'Route Architect' },{ name: 'Epoch Traveller' },
+    { name: 'Frontier Scout' },{ name: 'Odyssey Keeper' },{ name: 'Lore Hunter' },
+    { name: 'Abyss Diver' },   { name: 'Veil Crosser' },  { name: 'Storm Rider' },
+    { name: 'Titan Roamer' },  { name: 'Myth Walker' },   { name: 'World Weaver' },
+    { name: 'Void Ranger' },   { name: 'Legend' },
   ];
-  const currentLevelIndex = Math.floor(xp / 100);
-  const currentLevel      = currentLevelIndex + 1;
-  const progressXp        = xp % 100;
-  const levelData         = levels[Math.min(currentLevelIndex, levels.length - 1)];
+  // XP needed to reach each level: starts at 50, grows by +20 each level (50,70,90,110...)
+  const xpThresholds = levels.map((_, i) => 50 + i * 20); // XP required for level i+1→i+2
+  const xpForLevel = (idx) => xpThresholds.slice(0, idx).reduce((a, b) => a + b, 0); // cumulative XP to reach level idx+1
+  let currentLevelIndex = 0;
+  for (let i = levels.length - 1; i >= 0; i--) {
+    if (xp >= xpForLevel(i)) { currentLevelIndex = i; break; }
+  }
+  const currentLevel = currentLevelIndex + 1;
+  const xpAtThisLevel = xpForLevel(currentLevelIndex);
+  const xpForNext = xpThresholds[currentLevelIndex] || xpThresholds[xpThresholds.length - 1];
+  const progressXp = xp - xpAtThisLevel;
+  const levelData = levels[Math.min(currentLevelIndex, levels.length - 1)];
 
   const cards = [
     {
@@ -1276,8 +1302,11 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
                   <div>
                     <span style={{ fontSize: '0.6rem', fontWeight: 900, color: '#ffb703', letterSpacing: '4px', fontFamily: "'DM Sans', sans-serif", opacity: 0.8 }}>USER PROFILE</span>
                     <h2 style={{ fontSize: isMobile ? '2rem' : '2.8rem', color: 'white', margin: '4px 0 0', fontFamily: "'Bebas Neue', cursive", lineHeight: 1, letterSpacing: '1px' }}>{user.name}</h2>
-                    <div style={{ marginTop: '10px' }}>
-                      <span className="badge-gold">LEVEL {currentLevel} &nbsp;·&nbsp; {levelData.name.toUpperCase()}</span>
+                    <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span className="badge-gold" onClick={() => setShowLevels(true)} style={{ cursor: 'pointer', whiteSpace: 'nowrap', fontSize: isMobile ? '0.5rem' : '0.6rem', letterSpacing: isMobile ? '1px' : '2px' }}>LEVEL {currentLevel} &nbsp;·&nbsp; {levelData.name.toUpperCase()}</span>
+                      <button onClick={() => setShowXpInfo(true)} title="How XP works" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '50%', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, padding: 0 }}>
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1370,14 +1399,14 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
                     <div style={{ fontSize: '0.58rem', color: '#ffb703', fontWeight: 900, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif" }}>
                       LEVEL {currentLevel} → {currentLevel + 1}
                     </div>
-                    <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.4)', fontWeight: 700, fontFamily: "'DM Sans', sans-serif" }}>{progressXp} / 100 XP</div>
+                    <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.4)', fontWeight: 700, fontFamily: "'DM Sans', sans-serif" }}>{progressXp} / {xpForNext} XP</div>
                   </div>
                   <div style={{ height: '6px', background: 'rgba(255,255,255,0.06)', borderRadius: '3px', overflow: 'hidden' }}>
-                    <motion.div initial={{ width: 0 }} animate={{ width: `${progressXp}%` }} transition={{ duration: 1.2, ease: 'easeOut' }}
+                    <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min((progressXp / xpForNext) * 100, 100)}%` }} transition={{ duration: 1.2, ease: 'easeOut' }}
                       style={{ height: '100%', background: currentTheme.xpGradient, borderRadius: '3px', transition: 'background 0.5s ease' }} />
                   </div>
                   <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', marginTop: '8px', fontFamily: "'DM Sans', sans-serif" }}>
-                    {100 - progressXp} XP to reach <span style={{ color: '#ffb703', fontWeight: 700 }}>{levels[Math.min(currentLevel, levels.length - 1)].name.toUpperCase()}</span>
+                    {xpForNext - progressXp} XP to reach <span style={{ color: '#ffb703', fontWeight: 700 }}>{levels[Math.min(currentLevel, levels.length - 1)].name.toUpperCase()}</span>
                   </div>
                 </div>
 
@@ -1435,6 +1464,124 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
             </motion.div>
           )}
         </AnimatePresence>
+      )}
+
+      {/* ── LEVELS MODAL (portal to escape stacking context) ── */}
+      {showLevels && createPortal(
+        <div onClick={() => setShowLevels(false)} style={{
+          position: 'fixed', inset: 0, zIndex: 99999,
+          background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px',
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            width: '100%', maxWidth: '440px',
+            background: 'linear-gradient(180deg,#0d2318 0%,#081c15 100%)',
+            border: '1px solid rgba(255,183,3,0.2)',
+            borderRadius: '24px',
+            maxHeight: '80vh', display: 'flex', flexDirection: 'column',
+            boxShadow: '0 8px 48px rgba(0,0,0,0.7)',
+          }}>
+            {/* Header */}
+            <div style={{ padding: '20px 20px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+              <div>
+                <div style={{ fontSize: '0.45rem', color: '#ffb703', fontWeight: 900, letterSpacing: '3px', fontFamily: "'DM Sans', sans-serif", marginBottom: '4px' }}>YOUR JOURNEY</div>
+                <div style={{ fontSize: '1.4rem', color: 'white', fontWeight: 900, fontFamily: "'Bebas Neue', cursive", letterSpacing: '1px', lineHeight: 1 }}>ALL 50 LEVELS</div>
+              </div>
+              <button onClick={() => setShowLevels(false)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'rgba(255,255,255,0.5)', fontSize: '1rem' }}>×</button>
+            </div>
+            {/* Level list */}
+            <div style={{ overflowY: 'auto', padding: '12px 16px 24px', flex: 1 }}>
+              {levels.map((lvl, i) => {
+                const lvlNum = i + 1;
+                const xpRequired = xpForLevel(i);
+                const isUnlocked = xp >= xpRequired;
+                const isCurrent = i === currentLevelIndex;
+                return (
+                  <div key={i} style={{
+                    display: 'flex', alignItems: 'center', gap: '12px',
+                    padding: '10px 14px', borderRadius: '14px', marginBottom: '6px',
+                    background: isCurrent ? 'rgba(255,183,3,0.12)' : isUnlocked ? 'rgba(255,255,255,0.03)' : 'transparent',
+                    border: isCurrent ? '1px solid rgba(255,183,3,0.35)' : isUnlocked ? '1px solid rgba(255,255,255,0.07)' : '1px solid rgba(255,255,255,0.03)',
+                    opacity: isUnlocked ? 1 : 0.35,
+                    transition: 'all 0.2s',
+                  }}>
+                    <div style={{
+                      width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: isCurrent ? currentTheme.xpGradient : isUnlocked ? 'rgba(255,183,3,0.15)' : 'rgba(255,255,255,0.05)',
+                      border: isCurrent ? 'none' : `1px solid ${isUnlocked ? 'rgba(255,183,3,0.25)' : 'rgba(255,255,255,0.07)'}`,
+                    }}>
+                      <span style={{ fontSize: '0.7rem', fontWeight: 900, color: isCurrent ? '#081c15' : isUnlocked ? '#ffb703' : 'rgba(255,255,255,0.3)', fontFamily: "'DM Sans', sans-serif" }}>{lvlNum}</span>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.78rem', fontWeight: 900, color: isCurrent ? '#ffb703' : isUnlocked ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.35)', fontFamily: "'DM Sans', sans-serif" }}>{lvl.name.toUpperCase()}</span>
+                        {isCurrent && <span style={{ fontSize: '0.42rem', background: 'rgba(255,183,3,0.2)', color: '#ffb703', border: '1px solid rgba(255,183,3,0.4)', borderRadius: '50px', padding: '2px 8px', fontWeight: 900, letterSpacing: '1.5px', fontFamily: "'DM Sans', sans-serif" }}>CURRENT</span>}
+                      </div>
+                      <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.25)', fontFamily: "'DM Sans', sans-serif", marginTop: '2px', fontWeight: 700 }}>
+                        {lvlNum === 1 ? '0 XP to start' : `${xpRequired} XP total required`}
+                      </div>
+                    </div>
+                    {!isUnlocked && (
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    )}
+                    {isUnlocked && !isCurrent && (
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,183,3,0.5)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ── XP INFO MODAL ── */}
+      {showXpInfo && createPortal(
+        <div onClick={() => setShowXpInfo(false)} style={{
+          position: 'fixed', inset: 0, zIndex: 99999,
+          background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px',
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            width: '100%', maxWidth: '400px',
+            background: 'linear-gradient(180deg,#0d2318 0%,#081c15 100%)',
+            border: '1px solid rgba(255,183,3,0.2)', borderRadius: '24px',
+            boxShadow: '0 8px 48px rgba(0,0,0,0.7)', overflow: 'hidden',
+          }}>
+            <div style={{ padding: '20px 20px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontSize: '0.45rem', color: '#ffb703', fontWeight: 900, letterSpacing: '3px', fontFamily: "'DM Sans', sans-serif", marginBottom: '4px' }}>EARN XP BY</div>
+                <div style={{ fontSize: '1.4rem', color: 'white', fontWeight: 900, fontFamily: "'Bebas Neue', cursive", letterSpacing: '1px', lineHeight: 1 }}>HOW XP WORKS</div>
+              </div>
+              <button onClick={() => setShowXpInfo(false)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'rgba(255,255,255,0.5)', fontSize: '1rem' }}>×</button>
+            </div>
+            <div style={{ padding: '16px 20px 24px' }}>
+              {[
+                { xp: '+15 XP', action: 'Explore a destination', icon: '🧭' },
+                { xp: '+20 XP', action: 'List a new trip', icon: '✈️' },
+                { xp: '+10 XP', action: 'Join / request a trip', icon: '🤝' },
+                { xp: '+5 XP',  action: 'Like an itinerary', icon: '❤️' },
+                { xp: '+25 XP', action: 'Contribute an itinerary', icon: '📝' },
+                { xp: '+10 XP', action: 'Use Cost AI estimator', icon: '💰' },
+                { xp: '+10 XP', action: 'Compare trips', icon: '⚖️' },
+              ].map(({ xp, action, icon }) => (
+                <div key={action} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                  <span style={{ fontSize: '1.1rem', width: '28px', textAlign: 'center', flexShrink: 0 }}>{icon}</span>
+                  <span style={{ flex: 1, fontSize: '0.72rem', color: 'rgba(255,255,255,0.75)', fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>{action}</span>
+                  <span style={{ fontSize: '0.65rem', fontWeight: 900, color: '#ffb703', fontFamily: "'DM Sans', sans-serif", background: 'rgba(255,183,3,0.1)', border: '1px solid rgba(255,183,3,0.25)', borderRadius: '50px', padding: '3px 10px', flexShrink: 0 }}>{xp}</span>
+                </div>
+              ))}
+              <div style={{ marginTop: '14px', padding: '12px 14px', background: 'rgba(255,183,3,0.06)', borderRadius: '14px', border: '1px solid rgba(255,183,3,0.15)' }}>
+                <div style={{ fontSize: '0.55rem', color: '#ffb703', fontWeight: 900, letterSpacing: '1.5px', fontFamily: "'DM Sans', sans-serif", marginBottom: '4px' }}>LEVEL UP</div>
+                <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.4)', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>XP needed per level increases gradually — starting at 50 XP, then 70, 90, 110... making early levels quick to earn and later ones more rewarding.</div>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
 
       <style>{`

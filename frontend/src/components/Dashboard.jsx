@@ -493,7 +493,7 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
      RENDER
   ──────────────────────────────────────────────── */
   return (
-    <div className="safari-theme" style={{ width: '100%', minHeight: '100vh', background: darkMode ? currentTheme.bg : '#f8f5ee', position: 'relative', overflowX: 'hidden', color: darkMode ? 'white' : '#081c15' }}>
+    <div className="safari-theme" style={{ width: '100%', height: !isMobile ? '100vh' : 'auto', minHeight: isMobile ? '100vh' : 'unset', background: darkMode ? currentTheme.bg : '#f8f5ee', position: 'relative', overflow: !isMobile ? 'hidden' : 'visible', overflowX: 'hidden', color: darkMode ? 'white' : '#081c15' }}>
 
       {/* BG VIDEO (desktop) */}
       {!isMobile && (
@@ -728,7 +728,7 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
       {isMobile && activeTab === 'itineraries' && step === 1 && <MobileStep1 />}
 
       {/* ── MAIN CONTENT ── */}
-      <div style={{ position: 'relative', zIndex: 10, paddingBottom: isMobile ? '80px' : '0' }}>
+      <div className="main-scroll" style={{ position: 'relative', zIndex: 10, paddingBottom: isMobile ? '80px' : '0', height: !isMobile ? '100vh' : 'auto', overflowY: !isMobile ? 'auto' : 'visible', overflowX: 'hidden' }}>
         {activeTab === 'itineraries' ? (
           <AnimatePresence mode="wait">
 
@@ -1135,9 +1135,9 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
           </AnimatePresence>
 
         ) : (
-          <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'flex-start',
-            justifyContent: 'center', paddingTop: isMobile ? '20px' : '120px',
-            paddingBottom: isMobile ? '90px' : '100px', overflowX: 'hidden', width: '100%' }}>
+          <div style={{ minHeight: !isMobile ? 'unset' : '100vh', height: !isMobile ? '100vh' : 'auto', display: 'flex', alignItems: 'flex-start',
+            justifyContent: 'center', paddingTop: isMobile ? '20px' : '80px',
+            paddingBottom: isMobile ? '90px' : '20px', overflowX: 'hidden', overflowY: !isMobile ? 'auto' : 'visible', width: '100%', boxSizing: 'border-box' }}>
             <AnimatePresence mode="wait">
               <motion.div key={activeTab} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.22 }}
@@ -1456,6 +1456,11 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
         .place-card-cta:hover {
           background: rgba(255,183,3,0.2) !important;
           border-color: rgba(255,183,3,0.4) !important;
+        }
+        @media (min-width: 769px) {
+          html, body { overflow: hidden; height: 100%; }
+          .main-scroll::-webkit-scrollbar { display: none; }
+          .main-scroll { scrollbar-width: none; }
         }
       `}</style>
     </div>

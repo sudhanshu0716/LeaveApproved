@@ -588,16 +588,26 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
     const notifs = [];
     (myTrips.created || []).forEach(trip => {
       (trip.matches || []).filter(m => m.status === 'pending').forEach(m => {
-        notifs.push({ id: `pending_${trip._id}_${m._id}`, icon: '🙋', text: `${m.requesterName} wants to join ${trip.origin}→${trip.destination}`, time: m._id ? new Date(parseInt(m._id.substring(0,8),16)*1000) : new Date() });
+        notifs.push({ id: `pending_${trip._id}_${m._id}`, icon: '🙋', text: `${m.requesterName} wants to join ${trip.origin}→${trip.destination}`, time: m._id ? new Date(parseInt(m._id.substring(0,8),16)*1000) : new Date(), tripId: trip._id, tripObj: trip, action: 'my_trips' });
       });
     });
     (myTrips.requested || []).forEach(trip => {
       const myMatch = trip.matches?.find(m => m.requesterUid === user?.uid);
       if (myMatch?.status === 'accepted') {
-        notifs.push({ id: `accepted_${trip._id}`, icon: '✅', text: `Accepted! Join ${trip.origin}→${trip.destination}`, time: new Date() });
+        notifs.push({ id: `accepted_${trip._id}`, icon: '✅', text: `Accepted! Join ${trip.origin}→${trip.destination}`, time: new Date(), tripId: trip._id, tripObj: trip, action: 'open_chat' });
       }
     });
-    return notifs.slice(0, 10);
+    // Unread message notifications
+    [...(myTrips.created || []), ...(myTrips.requested || [])].forEach(trip => {
+      if (hasUnreadMessages(trip)) {
+        const unreadMsgs = (trip.messages || []).filter(m => m.senderUid !== user?.uid && new Date(m.timestamp).getTime() > getLastRead(trip._id));
+        const lastMsg = unreadMsgs[unreadMsgs.length - 1];
+        const preview = lastMsg ? `: "${lastMsg.text.slice(0, 28)}${lastMsg.text.length > 28 ? '…' : ''}"` : '';
+        const notifId = `msg_${trip._id}_${lastMsg?._id || unreadMsgs.length}`;
+        notifs.push({ id: notifId, icon: '💬', text: `New message in ${trip.origin}→${trip.destination}${preview}`, time: lastMsg ? new Date(lastMsg.timestamp) : new Date(), tripId: trip._id, tripObj: trip, action: 'open_chat' });
+      }
+    });
+    return notifs.sort((a, b) => b.time - a.time).slice(0, 10);
   };
   const notifications = getNotifications();
   const unreadNotifCount = notifications.filter(n => !notifRead[n.id]).length;
@@ -990,11 +1000,29 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
                   </div>
                   {notifications.length === 0 && <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem', textAlign: 'center', padding: '12px 0' }}>No notifications</div>}
                   {notifications.map(n => (
-                    <div key={n.id} style={{ display: 'flex', gap: '10px', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.05)',
-                      opacity: notifRead[n.id] ? 0.5 : 1 }}>
+                    <div key={n.id}
+                      onClick={() => {
+                        const updated = { ...notifRead, [n.id]: true };
+                        setNotifRead(updated);
+                        localStorage.setItem('la_notif_read', JSON.stringify(updated));
+                        setShowNotifPanel(false);
+                        if (n.action === 'open_chat' && n.tripObj) {
+                          localStorage.setItem(`lastRead_${n.tripId}`, Date.now().toString());
+                          setActiveChat(n.tripObj);
+                        } else if (n.action === 'my_trips') {
+                          setView('my_trips');
+                        }
+                      }}
+                      style={{ display: 'flex', gap: '10px', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.05)',
+                        opacity: notifRead[n.id] ? 0.5 : 1,
+                        cursor: n.tripObj ? 'pointer' : 'default',
+                        borderRadius: '8px',
+                        transition: 'background 0.15s' }}
+                      onMouseEnter={e => { if (n.tripObj) e.currentTarget.style.background = 'rgba(255,183,3,0.06)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
                       <span style={{ fontSize: '1rem' }}>{n.icon}</span>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.75rem', fontFamily: "'DM Sans', sans-serif" }}>{n.text}</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.75rem', fontFamily: "'DM Sans', sans-serif", wordBreak: 'break-word' }}>{n.text}</div>
                         <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.6rem', marginTop: '2px' }}>{n.time ? new Date(n.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</div>
                       </div>
                       {!notifRead[n.id] && <div style={{ width: '6px', height: '6px', background: '#ff5d73', borderRadius: '50%', flexShrink: 0, marginTop: '4px' }} />}

@@ -941,7 +941,7 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
       {/* Navigation Headers */}
       {!hideNav && view !== 'profile' && (
         <div style={{ marginBottom: isMobile ? '20px' : '40px' }}>
-          <div style={{ display: 'flex', gap: isMobile ? '6px' : '10px', justifyContent: 'center', flexWrap: 'wrap', position: 'relative' }}>
+          <div style={{ display: 'flex', gap: isMobile ? '5px' : '10px', justifyContent: 'center', flexWrap: 'nowrap', position: 'relative', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
             {[
               { id: 'feed',       label: 'EXPLORE',   icon: <Globe size={16} />,       info: 'Browse trips' },
               { id: 'list',       label: 'LIST TRIP',  icon: <Ticket size={16} />,      info: 'Post your trip' },
@@ -949,8 +949,8 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
             ].map(tab => (
               <button key={tab.id} onClick={() => setView(tab.id)}
                 style={{
-                  padding: isMobile ? '9px 14px' : '11px 22px', borderRadius: '50px',
-                  display: 'flex', alignItems: 'center', gap: '6px', position: 'relative',
+                  padding: isMobile ? '8px 11px' : '11px 22px', borderRadius: '50px', flexShrink: 0,
+                  display: 'flex', alignItems: 'center', gap: '5px', position: 'relative',
                   background: view === tab.id ? 'linear-gradient(135deg, #ffb703, #ff8c00)' : 'rgba(255,255,255,0.05)',
                   color: view === tab.id ? '#081c15' : 'white',
                   border: '1px solid', borderColor: view === tab.id ? 'transparent' : 'rgba(255,255,255,0.1)',
@@ -967,9 +967,9 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
             {/* Feature 9: Notification Bell */}
             <div style={{ position: 'relative' }}>
               <button onClick={() => setShowNotifPanel(p => !p)}
-                style={{ padding: isMobile ? '9px 14px' : '11px 16px', borderRadius: '50px', display: 'flex', alignItems: 'center', gap: '6px',
+                style={{ padding: isMobile ? '8px 11px' : '11px 16px', borderRadius: '50px', display: 'flex', alignItems: 'center', gap: '6px',
                   background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)',
-                  fontWeight: 900, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", position: 'relative' }}>
+                  fontWeight: 900, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", position: 'relative', flexShrink: 0 }}>
                 <Bell size={isMobile ? 13 : 16} color="#ffb703" />
                 {unreadNotifCount > 0 && (
                   <span style={{ position: 'absolute', top: '4px', right: '4px', background: '#ff5d73', color: 'white', borderRadius: '50%', width: '16px', height: '16px', fontSize: '0.5rem', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

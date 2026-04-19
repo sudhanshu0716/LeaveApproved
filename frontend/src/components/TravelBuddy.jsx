@@ -150,6 +150,8 @@ const INDIAN_CITIES = [
 
 export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMatchAccepted, darkMode }) {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const [iosVH, setIosVH] = useState(null);
   const [view, setView] = useState(initialView || 'feed');
   const [trips, setTrips] = useState([]);
   const [myTrips, setMyTrips] = useState({ created: [], requested: [] });
@@ -251,6 +253,15 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
+
+  // iOS Safari: visualViewport tracks the visible area above the keyboard
+  useEffect(() => {
+    if (!isIOS || !window.visualViewport) return;
+    const onVPResize = () => setIosVH(window.visualViewport.height);
+    onVPResize();
+    window.visualViewport.addEventListener('resize', onVPResize);
+    return () => window.visualViewport.removeEventListener('resize', onVPResize);
+  }, [isIOS]);
 
   // Feature 12: fetch weather for visible trips
   useEffect(() => {
@@ -744,7 +755,9 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
   if (activeChat) {
     const chatContent = (
       <div style={isMobile
-        ? { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99990, display: 'flex', flexDirection: 'column' }
+        ? { position: 'fixed', top: 0, left: 0, right: 0,
+            height: isIOS && iosVH ? `${iosVH}px` : '100dvh',
+            zIndex: 99990, display: 'flex', flexDirection: 'column' }
         : { position: 'relative', width: '100%', maxWidth: '1000px' }}>
       {profileModalPortal}
       <ToastUI />

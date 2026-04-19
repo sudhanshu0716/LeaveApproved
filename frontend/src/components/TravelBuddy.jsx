@@ -199,7 +199,7 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
   // Feature 11: cost estimator
   const [costOrigin, setCostOrigin] = useState('');
   const [costDest, setCostDest] = useState('');
-  const [costDays, setCostDays] = useState(3);
+  const [costDays, setCostDays] = useState('');
   const [costStyle, setCostStyle] = useState('Comfort');
   const [costResult, setCostResult] = useState(null);
   const [costLoading, setCostLoading] = useState(false);
@@ -548,7 +548,7 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
 
   // Feature 11: cost estimator
   const handleCostEstimate = async () => {
-    if (!costOrigin.trim() || !costDest.trim()) { showToast('Enter origin and destination', 'error'); return; }
+    if (!costOrigin.trim() || !costDest.trim() || !costDays) { showToast('Please fill all fields', 'error'); return; }
     setCostLoading(true);
     setCostResult(null);
     try {
@@ -951,7 +951,9 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
       {/* Navigation Headers */}
       {!hideNav && view !== 'profile' && (
         <div style={{ marginBottom: isMobile ? '20px' : '40px' }}>
-          <div style={{ display: 'flex', gap: isMobile ? '5px' : '10px', justifyContent: 'center', flexWrap: 'nowrap', position: 'relative', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          {/* Outer flex row: scrollable pills + bell outside overflow */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '5px' : '8px' }}>
+            <div style={{ display: 'flex', gap: isMobile ? '5px' : '10px', flex: 1, justifyContent: 'center', flexWrap: 'nowrap', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
             {[
               { id: 'feed',       label: 'EXPLORE',   icon: <Globe size={16} />,       info: 'Browse trips' },
               { id: 'list',       label: 'LIST TRIP',  icon: <Ticket size={16} />,      info: 'Post your trip' },
@@ -964,7 +966,7 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
                   background: view === tab.id ? 'linear-gradient(135deg, #ffb703, #ff8c00)' : 'rgba(255,255,255,0.05)',
                   color: view === tab.id ? '#081c15' : 'white',
                   border: '1px solid', borderColor: view === tab.id ? 'transparent' : 'rgba(255,255,255,0.1)',
-                  fontWeight: 900, transition: 'all 0.3s ease', cursor: 'pointer',
+                  fontWeight: 900, transition: 'all 0.3s ease', cursor: 'pointer', outline: 'none',
                   boxShadow: view === tab.id ? '0 10px 20px rgba(255,183,3,0.3)' : 'none',
                   letterSpacing: '1px', fontSize: isMobile ? '0.65rem' : '0.75rem',
                   fontFamily: "'DM Sans', sans-serif"
@@ -974,12 +976,13 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
                 {tab.badge && <span style={{ width: '8px', height: '8px', background: '#ff5d73', borderRadius: '50%', position: 'absolute', top: '6px', right: '6px' }} />}
               </button>
             ))}
-            {/* Feature 9: Notification Bell */}
-            <div style={{ position: 'relative' }}>
+            </div>
+            {/* Feature 9: Notification Bell — outside overflow so panel isn't clipped */}
+            <div style={{ position: 'relative', flexShrink: 0 }}>
               <button onClick={() => setShowNotifPanel(p => !p)}
                 style={{ padding: isMobile ? '8px 11px' : '11px 16px', borderRadius: '50px', display: 'flex', alignItems: 'center', gap: '6px',
                   background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)',
-                  fontWeight: 900, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", position: 'relative', flexShrink: 0 }}>
+                  fontWeight: 900, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", position: 'relative', outline: 'none' }}>
                 <Bell size={isMobile ? 13 : 16} color="#ffb703" />
                 {unreadNotifCount > 0 && (
                   <span style={{ position: 'absolute', top: '4px', right: '4px', background: '#ff5d73', color: 'white', borderRadius: '50%', width: '16px', height: '16px', fontSize: '0.5rem', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1669,53 +1672,95 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
           )}
           {/* Feature 11: Cost Estimator */}
           {view === 'cost' && (
-            <div style={{ width: '100%', maxWidth: '860px', padding: isMobile ? '0 12px 100px' : '0 20px 40px', minHeight: isMobile ? 'calc(100svh - 160px)' : 'auto' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '14px', marginBottom: '24px' }}>
-                <div style={{ width: '28px', height: '2px', background: 'linear-gradient(90deg, transparent, #ffb703)' }} />
-                <span style={{ color: '#ffb703', fontWeight: 900, letterSpacing: '4px', fontSize: '0.7rem', fontFamily: "'DM Sans', sans-serif" }}>AI COST ESTIMATOR</span>
-                <div style={{ width: '28px', height: '2px', background: 'linear-gradient(-90deg, transparent, #ffb703)' }} />
+            <div style={{ width: '100%', maxWidth: '520px', margin: '0 auto', padding: isMobile ? '0 0 100px' : '0 20px 60px', minHeight: isMobile ? 'calc(100svh - 160px)' : 'auto' }}>
+              {/* Header */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '20px' }}>
+                <div style={{ width: '32px', height: '1.5px', background: 'linear-gradient(90deg, transparent, #ffb703)' }} />
+                <span style={{ color: '#ffb703', fontWeight: 900, letterSpacing: '3px', fontSize: isMobile ? '0.68rem' : '0.72rem', fontFamily: "'DM Sans', sans-serif" }}>AI COST ESTIMATOR</span>
+                <div style={{ width: '32px', height: '1.5px', background: 'linear-gradient(-90deg, transparent, #ffb703)' }} />
               </div>
-              <div style={{ background: 'rgba(14,26,21,0.85)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', borderRadius: '24px', padding: isMobile ? '20px 16px' : '36px', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 24px 64px rgba(0,0,0,0.5)', marginBottom: '20px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                  <div>
-                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: '0.6rem', fontWeight: 900, letterSpacing: '1px', marginBottom: '6px', fontFamily: "'DM Sans', sans-serif" }}>ORIGIN CITY</label>
-                    <input value={costOrigin} onChange={e => setCostOrigin(e.target.value)} placeholder="e.g. Mumbai"
-                      style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.3)', color: 'white', outline: 'none', fontFamily: "'DM Sans', sans-serif", boxSizing: 'border-box' }} />
+
+              {/* Form card */}
+              <div style={{ background: 'rgba(10,20,16,0.9)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', borderRadius: '24px', padding: isMobile ? '24px 20px 20px' : '36px', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 24px 64px rgba(0,0,0,0.5)', marginBottom: '16px' }}>
+
+                {/* Route row */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', color: 'rgba(255,183,3,0.7)', fontSize: '0.58rem', fontWeight: 900, letterSpacing: '1.5px', marginBottom: '7px', fontFamily: "'DM Sans', sans-serif" }}>FROM</label>
+                    <input value={costOrigin} onChange={e => setCostOrigin(e.target.value)} placeholder="Origin city"
+                      style={{ width: '100%', padding: '14px 16px', borderRadius: '14px', border: '1.5px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: 'white', outline: 'none', fontFamily: "'DM Sans', sans-serif", fontSize: '16px', boxSizing: 'border-box', WebkitAppearance: 'none', WebkitTextFillColor: 'white', transition: 'border-color 0.2s' }}
+                      onFocus={e => e.target.style.borderColor = 'rgba(255,183,3,0.5)'}
+                      onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
                   </div>
-                  <div>
-                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: '0.6rem', fontWeight: 900, letterSpacing: '1px', marginBottom: '6px', fontFamily: "'DM Sans', sans-serif" }}>DESTINATION</label>
-                    <input value={costDest} onChange={e => setCostDest(e.target.value)} placeholder="e.g. Goa"
-                      style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.3)', color: 'white', outline: 'none', fontFamily: "'DM Sans', sans-serif", boxSizing: 'border-box' }} />
+                  <div style={{ marginTop: '20px', width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,183,3,0.12)', border: '1px solid rgba(255,183,3,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <span style={{ color: '#ffb703', fontSize: '0.7rem', fontWeight: 900 }}>→</span>
                   </div>
-                  <div>
-                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: '0.6rem', fontWeight: 900, letterSpacing: '1px', marginBottom: '6px', fontFamily: "'DM Sans', sans-serif" }}>NUMBER OF DAYS</label>
-                    <input type="number" min={1} max={30} value={costDays} onChange={e => setCostDays(Math.min(30, Math.max(1, parseInt(e.target.value) || 1)))}
-                      style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.3)', color: 'white', outline: 'none', fontFamily: "'DM Sans', sans-serif", boxSizing: 'border-box' }} />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: '0.6rem', fontWeight: 900, letterSpacing: '1px', marginBottom: '6px', fontFamily: "'DM Sans', sans-serif" }}>TRAVEL STYLE</label>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      {['Budget', 'Comfort', 'Luxury'].map(style => (
-                        <button key={style} type="button" onClick={() => setCostStyle(style)}
-                          style={{ flex: 1, padding: '12px 8px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontSize: '0.72rem', fontWeight: 700,
-                            background: costStyle === style ? '#ffb703' : 'rgba(255,255,255,0.07)', color: costStyle === style ? '#081c15' : 'rgba(255,255,255,0.6)' }}>
-                          {style}
-                        </button>
-                      ))}
-                    </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', color: 'rgba(255,183,3,0.7)', fontSize: '0.58rem', fontWeight: 900, letterSpacing: '1.5px', marginBottom: '7px', fontFamily: "'DM Sans', sans-serif" }}>TO</label>
+                    <input value={costDest} onChange={e => setCostDest(e.target.value)} placeholder="Destination"
+                      style={{ width: '100%', padding: '14px 16px', borderRadius: '14px', border: '1.5px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: 'white', outline: 'none', fontFamily: "'DM Sans', sans-serif", fontSize: '16px', boxSizing: 'border-box', WebkitAppearance: 'none', WebkitTextFillColor: 'white', transition: 'border-color 0.2s' }}
+                      onFocus={e => e.target.style.borderColor = 'rgba(255,183,3,0.5)'}
+                      onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
                   </div>
                 </div>
+
+                {/* Number of days with stepper */}
+                <div style={{ marginBottom: '14px' }}>
+                  <label style={{ display: 'block', color: 'rgba(255,183,3,0.7)', fontSize: '0.58rem', fontWeight: 900, letterSpacing: '1.5px', marginBottom: '7px', fontFamily: "'DM Sans', sans-serif" }}>NUMBER OF DAYS</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <button type="button" onClick={() => setCostDays(d => Math.max(1, (parseInt(d) || 1) - 1))}
+                      style={{ width: '44px', height: '50px', borderRadius: '12px', border: '1.5px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.05)', color: 'white', fontSize: '1.2rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontFamily: "'DM Sans', sans-serif" }}>−</button>
+                    <input type="number" min={1} max={30} value={costDays} placeholder="e.g. 5"
+                      onChange={e => {
+                        const v = e.target.value;
+                        if (v === '') { setCostDays(''); return; }
+                        const n = parseInt(v);
+                        if (!isNaN(n)) setCostDays(Math.min(30, Math.max(1, n)));
+                      }}
+                      style={{ flex: 1, padding: '14px 16px', borderRadius: '14px', border: '1.5px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: 'white', outline: 'none', fontFamily: "'DM Sans', sans-serif", fontSize: '16px', boxSizing: 'border-box', WebkitAppearance: 'none', WebkitTextFillColor: 'white', textAlign: 'center', fontWeight: 700, transition: 'border-color 0.2s' }}
+                      onFocus={e => e.target.style.borderColor = 'rgba(255,183,3,0.5)'}
+                      onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
+                    <button type="button" onClick={() => setCostDays(d => Math.min(30, (parseInt(d) || 0) + 1))}
+                      style={{ width: '44px', height: '50px', borderRadius: '12px', border: '1.5px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.05)', color: '#ffb703', fontSize: '1.2rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontFamily: "'DM Sans', sans-serif" }}>+</button>
+                  </div>
+                </div>
+
+                {/* Travel Style */}
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ display: 'block', color: 'rgba(255,183,3,0.7)', fontSize: '0.58rem', fontWeight: 900, letterSpacing: '1.5px', marginBottom: '7px', fontFamily: "'DM Sans', sans-serif" }}>TRAVEL STYLE</label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {[
+                      { label: 'Budget', emoji: '🪙' },
+                      { label: 'Comfort', emoji: '✈️' },
+                      { label: 'Luxury', emoji: '💎' },
+                    ].map(({ label, emoji }) => (
+                      <button key={label} type="button" onClick={() => setCostStyle(label)}
+                        style={{ flex: 1, padding: '13px 6px', borderRadius: '14px', border: costStyle === label ? 'none' : '1.5px solid rgba(255,255,255,0.1)', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontSize: '0.72rem', fontWeight: 800, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', transition: 'all 0.2s',
+                          background: costStyle === label ? '#ffb703' : 'rgba(255,255,255,0.04)', color: costStyle === label ? '#081c15' : 'rgba(255,255,255,0.55)' }}>
+                        <span style={{ fontSize: '1.1rem' }}>{emoji}</span>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <button onClick={handleCostEstimate} disabled={costLoading}
-                  style={{ width: '100%', padding: '16px', background: costLoading ? 'rgba(255,183,3,0.3)' : 'linear-gradient(135deg, #ffb703, #ff8c00)', color: '#081c15', border: 'none', borderRadius: '14px', fontWeight: 900, fontSize: '0.95rem', letterSpacing: '2px', cursor: costLoading ? 'not-allowed' : 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
-                  {costLoading ? 'CALCULATING...' : '✨ ESTIMATE COST'}
+                  style={{ width: '100%', padding: '17px', background: costLoading ? 'rgba(255,183,3,0.3)' : 'linear-gradient(135deg, #ffb703 0%, #ff8c00 100%)', color: '#081c15', border: 'none', borderRadius: '16px', fontWeight: 900, fontSize: '1rem', letterSpacing: '2px', cursor: costLoading ? 'not-allowed' : 'pointer', fontFamily: "'DM Sans', sans-serif", boxShadow: costLoading ? 'none' : '0 8px 24px rgba(255,183,3,0.25)', transition: 'all 0.2s' }}>
+                  {costLoading ? '⏳ CALCULATING...' : '✨ ESTIMATE COST'}
                 </button>
               </div>
               {costResult && (
-                <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '20px', padding: isMobile ? '20px' : '28px', border: '1px solid rgba(255,183,3,0.2)' }}>
-                  <div style={{ color: '#ffb703', fontSize: '0.6rem', fontWeight: 900, letterSpacing: '2px', marginBottom: '20px', fontFamily: "'DM Sans', sans-serif" }}>COST BREAKDOWN</div>
+                <div style={{ background: 'rgba(10,20,16,0.9)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', borderRadius: '24px', padding: isMobile ? '22px 20px' : '28px', border: '1px solid rgba(255,183,3,0.2)', boxShadow: '0 16px 48px rgba(0,0,0,0.4)' }}>
+                  {/* Trip summary pill */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '20px', padding: '8px 14px', background: 'rgba(255,183,3,0.08)', borderRadius: '50px', border: '1px solid rgba(255,183,3,0.15)', width: 'fit-content' }}>
+                    <span style={{ fontSize: '0.65rem', color: '#ffb703', fontWeight: 900, fontFamily: "'DM Sans', sans-serif", letterSpacing: '1px' }}>
+                      {costOrigin} → {costDest} · {costDays}D · {costStyle.toUpperCase()}
+                    </span>
+                  </div>
+                  <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.58rem', fontWeight: 900, letterSpacing: '2px', marginBottom: '16px', fontFamily: "'DM Sans', sans-serif" }}>COST BREAKDOWN</div>
                   {[
                     { key: 'transport', label: 'Transport', icon: '✈️' },
-                    { key: 'accommodation', label: 'Accommodation', icon: '🏨' },
+                    { key: 'accommodation', label: 'Stay', icon: '🏨' },
                     { key: 'food', label: 'Food', icon: '🍽️' },
                     { key: 'activities', label: 'Activities', icon: '🎭' },
                     { key: 'misc', label: 'Misc', icon: '💼' },
@@ -1723,32 +1768,35 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
                     const val = costResult[key] || 0;
                     const pct = costResult.total > 0 ? (val / costResult.total * 100) : 0;
                     return (
-                      <div key={key} style={{ marginBottom: '14px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                          <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.78rem', fontFamily: "'DM Sans', sans-serif' " }}>{icon} {label}</span>
-                          <span style={{ color: '#ffb703', fontWeight: 900, fontSize: '0.82rem', fontFamily: "'DM Sans', sans-serif" }}>₹{val.toLocaleString('en-IN')}</span>
+                      <div key={key} style={{ marginBottom: '16px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '7px' }}>
+                          <span style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.78rem', fontFamily: "'DM Sans', sans-serif", display: 'flex', alignItems: 'center', gap: '6px' }}><span>{icon}</span>{label}</span>
+                          <span style={{ color: '#ffb703', fontWeight: 900, fontSize: '0.85rem', fontFamily: "'DM Sans', sans-serif" }}>₹{val.toLocaleString('en-IN')}</span>
                         </div>
-                        <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '4px', height: '6px', overflow: 'hidden' }}>
-                          <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg, #ffb703, #ff8c00)', borderRadius: '4px', transition: 'width 0.8s ease' }} />
+                        <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '6px', height: '7px', overflow: 'hidden' }}>
+                          <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg, rgba(255,183,3,0.6), #ff8c00)', borderRadius: '6px', transition: 'width 0.9s cubic-bezier(0.34,1.56,0.64,1)' }} />
                         </div>
                       </div>
                     );
                   })}
-                  <div style={{ borderTop: '1px solid rgba(255,183,3,0.2)', paddingTop: '16px', marginTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ color: 'white', fontWeight: 900, fontSize: '0.9rem', fontFamily: "'DM Sans', sans-serif" }}>TOTAL</span>
-                    <span style={{ color: '#ffb703', fontWeight: 900, fontSize: '1.4rem', fontFamily: "'Bebas Neue', cursive", letterSpacing: '2px' }}>₹{(costResult.total || 0).toLocaleString('en-IN')}</span>
+                  <div style={{ background: 'rgba(255,183,3,0.07)', borderRadius: '16px', padding: '16px 18px', marginTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(255,183,3,0.15)' }}>
+                    <span style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 700, fontSize: '0.78rem', fontFamily: "'DM Sans', sans-serif", letterSpacing: '1px' }}>ESTIMATED TOTAL</span>
+                    <span style={{ color: '#ffb703', fontWeight: 900, fontSize: '1.5rem', fontFamily: "'Bebas Neue', cursive", letterSpacing: '2px' }}>₹{(costResult.total || 0).toLocaleString('en-IN')}</span>
                   </div>
                   {(costResult.tips || []).length > 0 && (
-                    <div style={{ marginTop: '20px' }}>
-                      <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.6rem', fontWeight: 900, letterSpacing: '1.5px', marginBottom: '10px', fontFamily: "'DM Sans', sans-serif" }}>TIPS</div>
+                    <div style={{ marginTop: '20px', padding: '16px', background: 'rgba(255,255,255,0.03)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.58rem', fontWeight: 900, letterSpacing: '2px', marginBottom: '12px', fontFamily: "'DM Sans', sans-serif" }}>SMART TIPS</div>
                       {costResult.tips.map((tip, i) => (
-                        <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                          <span style={{ color: '#ffb703', fontSize: '0.75rem', flexShrink: 0 }}>•</span>
-                          <span style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.75rem', fontFamily: "'DM Sans', sans-serif" }}>{tip}</span>
+                        <div key={i} style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'flex-start' }}>
+                          <span style={{ color: '#ffb703', fontSize: '0.7rem', flexShrink: 0, marginTop: '1px' }}>✦</span>
+                          <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.78rem', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>{tip}</span>
                         </div>
                       ))}
                     </div>
                   )}
+                  <button onClick={() => setCostResult(null)} style={{ width: '100%', marginTop: '16px', padding: '13px', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.55)', border: '1.5px solid rgba(255,255,255,0.1)', borderRadius: '14px', fontWeight: 700, fontSize: '0.78rem', letterSpacing: '1.5px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
+                    ← NEW ESTIMATE
+                  </button>
                 </div>
               )}
             </div>

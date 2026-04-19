@@ -133,7 +133,7 @@ Return ONLY a valid JSON object with no markdown formatting. The JSON must exact
   ) : null;
 
   return (
-    <div style={{ width: '100%', maxWidth: '860px', padding: isMobile ? '0 12px 20px' : '0 20px 20px' }}>
+    <div style={{ width: '100%', maxWidth: '860px', padding: isMobile ? '0 12px 80px' : '0 20px 20px', minHeight: isMobile ? 'calc(100svh - 160px)' : 'auto' }}>
       <ToastUI />
 
       {/* HUD Header */}
@@ -163,9 +163,9 @@ Return ONLY a valid JSON object with no markdown formatting. The JSON must exact
           {/* Destination inputs — stack on mobile */}
           <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '12px', alignItems: isMobile ? 'stretch' : 'end', marginBottom: '24px' }}>
             <div style={{ flex: 1 }}>
-              <label style={{ color: '#ffb703', fontSize: '0.62rem', fontWeight: 900, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif" }}>OPTION A</label>
+              <label style={{ color: '#ffb703', fontSize: '0.62rem', fontWeight: 900, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif" }}>DESTINATION 1</label>
               <input value={dest1} onChange={e => setDest1(e.target.value)} required
-                placeholder="First destination"
+                placeholder="e.g. Goa"
                 style={{ ...inputStyle, borderColor: 'rgba(255,183,3,0.2)' }}
                 onFocus={e => { e.target.style.borderColor = 'rgba(255,183,3,0.5)'; e.target.style.boxShadow = '0 0 0 3px rgba(255,183,3,0.08)'; }}
                 onBlur={e => { e.target.style.borderColor = 'rgba(255,183,3,0.2)'; e.target.style.boxShadow = 'none'; }} />
@@ -176,9 +176,9 @@ Return ONLY a valid JSON object with no markdown formatting. The JSON must exact
               color: '#ffb703', fontWeight: 900, fontSize: '0.65rem', flexShrink: 0,
               fontFamily: "'DM Sans', sans-serif", alignSelf: isMobile ? 'auto' : 'flex-end', marginBottom: isMobile ? 0 : '10px' }}>VS</div>
             <div style={{ flex: 1 }}>
-              <label style={{ color: '#4cc9f0', fontSize: '0.62rem', fontWeight: 900, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif" }}>OPTION B</label>
+              <label style={{ color: '#4cc9f0', fontSize: '0.62rem', fontWeight: 900, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif" }}>DESTINATION 2</label>
               <input value={dest2} onChange={e => setDest2(e.target.value)} required
-                placeholder="Second destination"
+                placeholder="e.g. Manali"
                 style={{ ...inputStyle, borderColor: 'rgba(76,201,240,0.2)' }}
                 onFocus={e => { e.target.style.borderColor = 'rgba(76,201,240,0.5)'; e.target.style.boxShadow = '0 0 0 3px rgba(76,201,240,0.08)'; }}
                 onBlur={e => { e.target.style.borderColor = 'rgba(76,201,240,0.2)'; e.target.style.boxShadow = 'none'; }} />
@@ -213,12 +213,12 @@ Return ONLY a valid JSON object with no markdown formatting. The JSON must exact
           <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '16px', textAlign: 'center', marginBottom: '36px', alignItems: 'center' }}>
             <div style={{ padding: '16px', background: 'rgba(255,183,3,0.06)', borderRadius: '16px', border: '1px solid rgba(255,183,3,0.15)' }}>
               <h3 style={{ fontSize: '1.6rem', color: '#ffb703', margin: 0, fontFamily: "'Bebas Neue', cursive", letterSpacing: '2px' }}>{result.dest1Name.toUpperCase()}</h3>
-              <span style={{ fontSize: '0.55rem', color: 'rgba(255,183,3,0.5)', fontFamily: "'DM Sans', sans-serif", fontWeight: 700, letterSpacing: '1px' }}>OPTION A</span>
+              <span style={{ fontSize: '0.55rem', color: 'rgba(255,183,3,0.5)', fontFamily: "'DM Sans', sans-serif", fontWeight: 700, letterSpacing: '1px' }}>DESTINATION 1</span>
             </div>
             <span style={{ color: 'rgba(255,255,255,0.25)', fontWeight: 900, fontSize: '0.8rem', fontFamily: "'DM Sans', sans-serif" }}>VS</span>
             <div style={{ padding: '16px', background: 'rgba(76,201,240,0.06)', borderRadius: '16px', border: '1px solid rgba(76,201,240,0.15)' }}>
               <h3 style={{ fontSize: '1.6rem', color: '#4cc9f0', margin: 0, fontFamily: "'Bebas Neue', cursive", letterSpacing: '2px' }}>{result.dest2Name.toUpperCase()}</h3>
-              <span style={{ fontSize: '0.55rem', color: 'rgba(76,201,240,0.5)', fontFamily: "'DM Sans', sans-serif", fontWeight: 700, letterSpacing: '1px' }}>OPTION B</span>
+              <span style={{ fontSize: '0.55rem', color: 'rgba(76,201,240,0.5)', fontFamily: "'DM Sans', sans-serif", fontWeight: 700, letterSpacing: '1px' }}>DESTINATION 2</span>
             </div>
           </div>
 

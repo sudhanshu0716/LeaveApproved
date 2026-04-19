@@ -54,6 +54,8 @@ export default function AdminDashboard() {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [demoActive, setDemoActive] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
+  const [blockingUid, setBlockingUid] = useState(null);
+  const [userSearch, setUserSearch] = useState('');
 
   // Fetch demo status on login
   useEffect(() => {
@@ -149,6 +151,19 @@ export default function AdminDashboard() {
   const markQueryRead = async (id) => {
     try { await axios.patch(`/api/admin/queries/${id}/read`, {}, { headers: adminAuthHeader() }); fetchQueries(); }
     catch (err) { console.error(err); }
+  };
+
+  const toggleBlockUser = async (uid, currentlyBlocked) => {
+    setBlockingUid(uid);
+    try {
+      const endpoint = currentlyBlocked ? `/api/admin/users/${uid}/unblock` : `/api/admin/users/${uid}/block`;
+      await axios.post(endpoint, {}, { headers: adminAuthHeader() });
+      showToast(currentlyBlocked ? 'User unblocked' : 'User blocked', 'success');
+      fetchAnalytics();
+    } catch (err) {
+      showToast(err.response?.data?.error || 'Action failed', 'error');
+    }
+    setBlockingUid(null);
   };
 
   const deleteContribution = async (id) => {
@@ -403,8 +418,10 @@ CRITICAL RULES:
   // ─── TABS CONFIG ─────────────────────────────────────────────────────────────
   const pendingCount = contributions.filter(c => c.status === 'pending').length;
   const unreadQueriesCount = queries.filter(q => !q.read).length;
+  const blockedCount = analytics.filter(a => a.blocked).length;
   const tabs = [
     { id: 'analytics',     icon: <BarChart2 size={17} />,      label: 'Analytics' },
+    { id: 'users',         icon: <Users size={17} />,           label: `Users${blockedCount > 0 ? ` (${blockedCount} blocked)` : ''}` },
     { id: 'places',        icon: <Map size={17} />,             label: 'Trips' },
     { id: 'addPlace',      icon: <Plus size={17} />,            label: editingId ? 'Edit Trip' : 'Add Trip' },
     { id: 'moderation',    icon: <ShieldAlert size={17} />,     label: 'Reviews' },
@@ -709,6 +726,93 @@ CRITICAL RULES:
                   </table>
                 </div>
               </div>
+            </motion.div>
+          )}
+
+          {/* ── USERS / BLOCK MANAGEMENT ── */}
+          {activeTab === 'users' && (
+            <motion.div key="users" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+              {(() => {
+                const filtered = analytics.filter(u => {
+                  const q = userSearch.toLowerCase();
+                  return !q || u.username?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q) || u.company?.toLowerCase().includes(q);
+                });
+                return (
+                  <>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '28px', flexWrap: 'wrap', gap: '16px' }}>
+                      <div>
+                        <h2 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#081c15', margin: 0 }}>User Management</h2>
+                        <p style={{ color: '#888', fontSize: '0.85rem', marginTop: '4px' }}>Block or unblock users from accessing the platform.</p>
+                      </div>
+                      <div style={{ position: 'relative', minWidth: '260px' }}>
+                        <svg style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#aaa', pointerEvents: 'none' }} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <input
+                          placeholder="Search by name, email or company..."
+                          value={userSearch}
+                          onChange={e => setUserSearch(e.target.value)}
+                          style={{ width: '100%', boxSizing: 'border-box', padding: '11px 14px 11px 38px', border: '1.5px solid #e0e0e0', borderRadius: '12px', fontSize: '0.85rem', outline: 'none', fontFamily: 'inherit', color: '#081c15', background: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ background: 'white', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+                      <div style={{ padding: '20px 24px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <Users size={18} color="#1b4332" />
+                        <h4 style={{ margin: 0, fontWeight: 900, color: '#081c15', fontSize: '0.9rem' }}>
+                          {userSearch ? `${filtered.length} result${filtered.length !== 1 ? 's' : ''}` : `All Users (${analytics.length})`}
+                        </h4>
+                        {blockedCount > 0 && (
+                          <span style={{ marginLeft: 'auto', padding: '4px 12px', background: 'rgba(174,32,18,0.08)', color: '#ae2012', borderRadius: '50px', fontSize: '0.7rem', fontWeight: 900 }}>
+                            {blockedCount} blocked
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                          <thead style={{ background: '#f8fdf9' }}>
+                            <tr>
+                              {['Username', 'Company', 'Email', 'Joined', 'Status', 'Action'].map(h => (
+                                <th key={h} style={{ padding: '14px 20px', fontSize: '0.7rem', fontWeight: 900, color: '#1b4332', textAlign: 'left', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {filtered.length === 0 ? (
+                              <tr><td colSpan={6} style={{ padding: '40px', textAlign: 'center', color: '#bbb', fontSize: '0.85rem', fontWeight: 700 }}>No users match "{userSearch}"</td></tr>
+                            ) : filtered.map((u, idx) => (
+                              <tr key={u._id} style={{ borderTop: '1px solid #f5f5f5', background: u.blocked ? 'rgba(174,32,18,0.03)' : idx % 2 === 0 ? 'transparent' : 'rgba(216,243,220,0.06)' }}>
+                                <td style={{ padding: '14px 20px', fontWeight: 800, color: u.blocked ? '#ae2012' : '#081c15', fontSize: '0.88rem' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    {u.blocked && <span style={{ fontSize: '0.55rem', background: 'rgba(174,32,18,0.1)', color: '#ae2012', padding: '2px 8px', borderRadius: '50px', fontWeight: 900 }}>BLOCKED</span>}
+                                    {u.username}
+                                  </div>
+                                </td>
+                                <td style={{ padding: '14px 20px', color: '#2d6a4f', fontWeight: 700, fontSize: '0.85rem' }}>{u.company}</td>
+                                <td style={{ padding: '14px 20px', color: '#888', fontSize: '0.8rem' }}>{u.email}</td>
+                                <td style={{ padding: '14px 20px', color: '#aaa', fontSize: '0.75rem', fontWeight: 600 }}>{new Date(u.createdAt).toLocaleDateString()}</td>
+                                <td style={{ padding: '14px 20px' }}>
+                                  <span style={{ padding: '4px 10px', borderRadius: '50px', fontSize: '0.65rem', fontWeight: 900, background: u.blocked ? 'rgba(174,32,18,0.1)' : 'rgba(82,183,136,0.12)', color: u.blocked ? '#ae2012' : '#1b4332' }}>
+                                    {u.blocked ? 'Blocked' : 'Active'}
+                                  </span>
+                                </td>
+                                <td style={{ padding: '14px 20px' }}>
+                                  <button
+                                    onClick={() => toggleBlockUser(u.uid, u.blocked)}
+                                    disabled={blockingUid === u.uid}
+                                    style={{ padding: '8px 16px', borderRadius: '10px', cursor: blockingUid === u.uid ? 'wait' : 'pointer', fontWeight: 800, fontSize: '0.75rem', background: u.blocked ? '#f0fdf4' : '#fff0f0', color: u.blocked ? '#1b4332' : '#ae2012', border: u.blocked ? '1.5px solid #d8f3dc' : '1.5px solid #fcd0d3', transition: 'all 0.2s', whiteSpace: 'nowrap' }}
+                                  >
+                                    {blockingUid === u.uid ? '...' : u.blocked ? '✓ Unblock' : '✕ Block'}
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
             </motion.div>
           )}
 
@@ -1025,6 +1129,14 @@ CRITICAL RULES:
                           <span style={{ fontSize: '0.65rem', fontWeight: 900, padding: '3px 10px', borderRadius: '50px', background: contrib.status === 'processed' ? '#d8f3dc' : 'rgba(255,183,3,0.12)', color: contrib.status === 'processed' ? '#1b4332' : '#b45309' }}>
                             {contrib.status === 'processed' ? 'Processed' : 'Pending'}
                           </span>
+                          {(() => {
+                            const u = analytics.find(a => (contrib.userUid && a.uid === contrib.userUid) || a.username?.toLowerCase() === contrib.userName?.toLowerCase());
+                            return u?.email ? (
+                              <span style={{ fontSize: '0.62rem', color: '#666', background: '#f0f4f2', border: '1px solid #e0e0e0', padding: '2px 8px', borderRadius: '6px', fontWeight: 600 }}>
+                                {u.email}
+                              </span>
+                            ) : null;
+                          })()}
                           <span style={{ fontSize: '0.7rem', color: '#bbb' }}>{new Date(contrib.createdAt).toLocaleString()}</span>
                         </div>
                         <p style={{ margin: 0, color: '#555', fontSize: '0.92rem', lineHeight: 1.6 }}>"{contrib.text}"</p>

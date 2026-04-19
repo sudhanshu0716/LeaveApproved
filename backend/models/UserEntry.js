@@ -7,6 +7,7 @@ const userEntrySchema = new mongoose.Schema({
   company:  { type: String, required: true, trim: true },
   uid:      { type: String },
   xp:       { type: Number, default: 45 },
+  blocked:  { type: Boolean, default: false },
   createdAt:{ type: Date, default: Date.now }
 });
 

@@ -88,6 +88,41 @@ router.get('/admin/uptime', verifyAdmin, async (req, res) => {
   request.end();
 });
 
+// ── User Block / Unblock ─────────────────────────────────────────
+router.post('/admin/users/:uid/block', verifyAdmin, async (req, res) => {
+  try {
+    await UserEntry.findOneAndUpdate({ uid: req.params.uid }, { blocked: true });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/admin/users/:uid/unblock', verifyAdmin, async (req, res) => {
+  try {
+    await UserEntry.findOneAndUpdate({ uid: req.params.uid }, { blocked: false });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Check user blocked status (user-auth) ─────────────────────────
+router.get('/auth/check-status', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'No token' });
+    const jwt = require('jsonwebtoken');
+    const SECRET = process.env.JWT_SECRET || 'fallback_secret';
+    const decoded = jwt.verify(token, SECRET);
+    const user = await UserEntry.findOne({ uid: decoded.uid }, 'blocked uid');
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({ blocked: user.blocked });
+  } catch (err) {
+    res.status(401).json({ error: 'Invalid token' });
+  }
+});
+
 // ── Contributions ─────────────────────────────────────────────────
 router.get('/admin/contributions', verifyAdmin, async (req, res) => {
   try {

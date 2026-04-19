@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const ContributionSchema = new mongoose.Schema({
   userName: { type: String, required: true },
+  userUid: { type: String, default: '' },
   text: { type: String, required: true },
   status: { type: String, enum: ['pending', 'processed'], default: 'pending' },
   _demoSeed: { type: Boolean, default: false },

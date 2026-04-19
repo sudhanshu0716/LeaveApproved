@@ -225,6 +225,20 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
       .catch(() => {});
   }, [user.uid]);
 
+  // Check if account is blocked
+  useEffect(() => {
+    if (!user.uid) return;
+    axios.get('/api/auth/check-status', { headers: getUserAuthHeader() })
+      .then(r => {
+        if (r.data?.blocked) {
+          localStorage.removeItem('travel_user');
+          localStorage.removeItem('travel_token');
+          navigate('/?blocked=1');
+        }
+      })
+      .catch(() => {});
+  }, [user.uid]);
+
   useEffect(() => {
     if (!showProfile || !user.uid) return;
     axios.get(`/api/buddy/my-trips?uid=${user.uid}`, { headers: getUserAuthHeader() })

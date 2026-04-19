@@ -60,6 +60,8 @@ router.post('/auth/login', async (req, res) => {
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json({ error: 'Incorrect password.' });
 
+    if (user.blocked) return res.status(403).json({ error: 'Your account has been suspended. Please contact the admin.' });
+
     const token = signToken({ uid: user.uid, username: user.username, role: 'user' });
     res.json({ token, uid: user.uid, username: user.username, name: user.username, company: user.company, xp: user.xp });
   } catch (err) {

@@ -7,6 +7,42 @@ import TripDetail from './components/TripDetail';
 import axios from 'axios';
 import './index.css';
 
+const REPORT_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSd44ADuCUXEsldR0sXMZP2Bf3VMz121Qb-WMUw3G-2-i3iT-w/viewform?usp=publish-editor';
+
+function ReportIssueButton() {
+  const location = useLocation();
+  // Don't show on admin page
+  if (location.pathname === '/admin') return null;
+  return (
+    <a
+      href={REPORT_FORM_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{
+        position: 'fixed', bottom: '20px', left: '20px', zIndex: 99999,
+        display: 'flex', alignItems: 'center', gap: '7px',
+        padding: '9px 14px',
+        background: 'rgba(5,14,9,0.85)', backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        border: '1px solid rgba(255,183,3,0.25)',
+        borderRadius: '50px', textDecoration: 'none',
+        color: 'rgba(255,183,3,0.8)', fontSize: '0.6rem',
+        fontWeight: 900, letterSpacing: '1.5px',
+        fontFamily: "'DM Sans', sans-serif",
+        boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+        transition: 'all 0.2s',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,183,3,0.12)'; e.currentTarget.style.borderColor = 'rgba(255,183,3,0.6)'; e.currentTarget.style.color = '#ffb703'; }}
+      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(5,14,9,0.85)'; e.currentTarget.style.borderColor = 'rgba(255,183,3,0.25)'; e.currentTarget.style.color = 'rgba(255,183,3,0.8)'; }}
+    >
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      REPORT ISSUE
+    </a>
+  );
+}
+
 // Generate or retrieve a stable session ID for this browser tab
 function getSessionId() {
   let id = sessionStorage.getItem('_la_sid');
@@ -46,6 +82,7 @@ function App() {
   return (
     <Router>
       <Heartbeat />
+      <ReportIssueButton />
       <div className="app-wrapper">
         <Routes>
           <Route path="/" element={<LoginPage />} />

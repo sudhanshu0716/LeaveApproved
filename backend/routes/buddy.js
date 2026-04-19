@@ -214,7 +214,7 @@ router.post('/contribute', verifyToken, async (req, res) => {
   try {
     const { userName, text } = req.body;
     if (!userName || !text) return res.status(400).json({ error: 'Name and itinerary text are required.' });
-    const contribution = new Contribution({ userName, text });
+    const contribution = new Contribution({ userName, userUid: req.user.uid || '', text });
     await contribution.save();
     res.status(201).json(contribution);
   } catch (err) {

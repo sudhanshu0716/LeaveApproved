@@ -5,7 +5,7 @@ import {
   ArrowRight, Scissors, User, Plane, Compass, Settings,
   Eye, EyeOff, Mail, Lock, Building2, AtSign, CheckCircle2, Circle
 } from 'lucide-react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 
 // ── Password rules (mirrors backend) ──────────────────────────
 const PWD_RULES = [
@@ -29,7 +29,8 @@ export default function LoginPage() {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [mode, setMode] = useState('signin'); // 'signin' | 'signup'
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [searchParams] = useSearchParams();
+  const [error, setError] = useState(searchParams.get('blocked') === '1' ? 'Your account has been suspended. Please contact the admin.' : '');
   const [isCutting, setIsCutting] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);

@@ -571,6 +571,29 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
         </div>
       )}
 
+      {/* ── DESKTOP LOGO for non-itinerary tabs ── */}
+      {!isMobile && !(activeTab === 'itineraries' && step === 1) && (
+        <div style={{ position: 'fixed', top: '30px', left: '40px', zIndex: 1200 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+            <div style={{ background: '#1b4332', padding: '7px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <PlaneTakeoff size={16} color="white" />
+            </div>
+            <span style={{ fontSize: '0.95rem', color: 'white', letterSpacing: '-1px', fontWeight: 850 }}>LEAVE APPROVED.</span>
+          </div>
+          <div>
+            <span style={{ fontSize: '0.55rem', fontWeight: 900, color: '#d8f3dc', opacity: 0.55, letterSpacing: '4px' }}>
+              {activeTab === 'buddy' ? 'BUDDY SYNC' : activeTab === 'comparison' ? 'TRIP COMPARE' : activeTab === 'contribute' ? 'CONTRIBUTE' : 'ABOUT'}
+            </span>
+            <div className="title" style={{ fontSize: '1.4rem', color: 'white', letterSpacing: '1px' }}>
+              {activeTab === 'buddy' ? 'MY BUDDY' : activeTab === 'comparison' ? 'SIDE BY SIDE' : activeTab === 'contribute' ? 'SHARE & BUILD' : 'OUR STORY'}
+            </div>
+            <div style={{ color: '#ffb703', fontSize: '0.6rem', fontWeight: 900, marginTop: '4px', letterSpacing: '1px', opacity: 0.8 }}>
+              {activeTab === 'buddy' ? 'FIND YOUR TRAVEL TRIBE' : activeTab === 'comparison' ? 'PICK YOUR ROUTE' : activeTab === 'contribute' ? 'AI CONVERTS YOUR STORY' : 'TRAVEL WITH PURPOSE'}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── DESKTOP USER/EXIT for non-itinerary tabs ── */}
       {!isMobile && !(activeTab === 'itineraries' && step === 1) && (
         <div style={{ position: 'fixed', top: '20px', right: '24px', zIndex: 1200,
@@ -662,11 +685,11 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
           padding: '30px 60px 30px 40px',
           background: 'linear-gradient(to bottom, rgba(8,28,21,0.9), transparent)',
           boxSizing: 'border-box' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '30px' }}>
-            <div style={{ background: '#1b4332', padding: '10px', borderRadius: '14px' }}>
-              <PlaneTakeoff size={24} color="white" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+            <div style={{ background: '#1b4332', padding: '7px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <PlaneTakeoff size={16} color="white" />
             </div>
-            <span style={{ fontSize: '1.2rem', color: 'white', letterSpacing: '-1.5px', fontWeight: 850 }}>LEAVE APPROVED.</span>
+            <span style={{ fontSize: '0.95rem', color: 'white', letterSpacing: '-1px', fontWeight: 850 }}>LEAVE APPROVED.</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
             <div>

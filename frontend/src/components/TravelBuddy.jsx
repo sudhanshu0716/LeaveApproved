@@ -855,14 +855,14 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
 
         {/* Expenses Tab */}
         {chatTab === 'expenses' && (
-          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: isMobile ? '16px' : '20px 32px', background: 'rgba(248,246,240,0.6)' }}>
+          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', padding: isMobile ? '16px' : '20px 32px', background: 'rgba(248,246,240,0.6)', boxSizing: 'border-box', width: '100%' }}>
             {(() => {
               const groupSize = 1 + (activeChat.matches?.filter(m => m.status === 'accepted').length || 0);
               const total = expenses.reduce((sum, e) => sum + e.amount, 0);
               const perPerson = groupSize > 0 ? total / groupSize : 0;
               return (
                 <>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', padding: '16px 20px', background: 'linear-gradient(135deg, #081c15, #1b4332)', borderRadius: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', padding: '16px 20px', background: 'linear-gradient(135deg, #081c15, #1b4332)', borderRadius: '16px', boxSizing: 'border-box', width: '100%', overflow: 'hidden' }}>
                     <div>
                       <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.55rem', fontWeight: 900, letterSpacing: '1.5px', fontFamily: "'DM Sans', sans-serif" }}>TOTAL SPENT</div>
                       <div style={{ color: '#ffb703', fontSize: '1.3rem', fontWeight: 900, fontFamily: "'Bebas Neue', cursive" }}>₹{total.toLocaleString('en-IN')}</div>
@@ -988,7 +988,8 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
                 )}
               </button>
               {showNotifPanel && (
-                <div style={{ position: 'fixed', top: '120px', left: isMobile ? '12px' : 'auto', right: isMobile ? '12px' : 0, zIndex: 9999, width: isMobile ? 'auto' : '300px',
+                <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 9999,
+                  width: isMobile ? '280px' : '300px', maxWidth: 'calc(100vw - 24px)',
                   background: 'rgba(8,20,14,0.97)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,183,3,0.2)',
                   borderRadius: '16px', padding: '16px', boxShadow: '0 16px 40px rgba(0,0,0,0.5)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
@@ -1194,7 +1195,7 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
                   </div>
                   <div>
                     <label style={{ display: 'block', color: 'rgba(212,175,55,0.65)', fontSize: '0.58rem', fontWeight: 700, marginBottom: '8px', letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif" }}>TRIP DATE</label>
-                    <input type="date" required value={date} onChange={e => setDate(e.target.value)} style={{ width: '100%', padding: '12px 10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', color: date ? 'white' : 'rgba(255,255,255,0.3)', fontSize: '0.75rem', fontWeight: 700, outline: 'none', fontFamily: "'DM Sans', sans-serif", boxSizing: 'border-box', colorScheme: 'dark' }} />
+                    <input type="date" required value={date} onChange={e => setDate(e.target.value)} style={{ width: '100%', padding: '12px 10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '12px', color: 'white', WebkitTextFillColor: 'white', fontSize: '0.85rem', fontWeight: 700, outline: 'none', fontFamily: "'DM Sans', sans-serif", boxSizing: 'border-box', colorScheme: 'dark', WebkitAppearance: 'none', minHeight: '44px' }} />
                   </div>
                   <div>
                     <label style={{ display: 'block', color: 'rgba(212,175,55,0.65)', fontSize: '0.58rem', fontWeight: 700, marginBottom: '8px', letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif" }}>MAX BUDDIES</label>
@@ -1478,7 +1479,7 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', borderTop: '2px solid rgba(8,28,21,0.1)', paddingTop: '15px' }}>
                         <div style={{ minWidth: 0 }}>
                            <div style={{ fontSize: '0.6rem', color: 'rgba(8,28,21,0.5)', fontWeight: 900, fontFamily: "'DM Sans', sans-serif" }}>DATE</div>
-                           <div style={{ fontSize: isMobile ? '0.8rem' : '0.9rem', color: '#081c15', fontWeight: 900, fontFamily: "'DM Sans', sans-serif", wordBreak: 'break-all' }}>{new Date(trip.date).toLocaleDateString()}</div>
+                           <div style={{ fontSize: isMobile ? '0.78rem' : '0.9rem', color: '#081c15', fontWeight: 900, fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap' }}>{new Date(trip.date).toLocaleDateString('en-GB')}</div>
                         </div>
                         <div style={{ minWidth: 0, textAlign: 'right' }}>
                            <div style={{ fontSize: '0.6rem', color: 'rgba(8,28,21,0.5)', fontWeight: 900, fontFamily: "'DM Sans', sans-serif" }}>CLASS</div>
@@ -1668,7 +1669,7 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
           )}
           {/* Feature 11: Cost Estimator */}
           {view === 'cost' && (
-            <div style={{ width: '100%', maxWidth: '860px', padding: isMobile ? '0 12px 20px' : '0 20px 20px' }}>
+            <div style={{ width: '100%', maxWidth: '860px', padding: isMobile ? '0 12px 100px' : '0 20px 40px', minHeight: isMobile ? 'calc(100svh - 160px)' : 'auto' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '14px', marginBottom: '24px' }}>
                 <div style={{ width: '28px', height: '2px', background: 'linear-gradient(90deg, transparent, #ffb703)' }} />
                 <span style={{ color: '#ffb703', fontWeight: 900, letterSpacing: '4px', fontSize: '0.7rem', fontFamily: "'DM Sans', sans-serif" }}>AI COST ESTIMATOR</span>

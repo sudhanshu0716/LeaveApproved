@@ -270,13 +270,13 @@ export default function LoginPage() {
                 <motion.form key="signin-mobile" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}
                   onSubmit={handleSignIn} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <div style={{ position: 'relative' }}>
-                    <AtSign size={16} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.4)' }} />
+                    <AtSign size={16} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.8)', zIndex: 1, pointerEvents: 'none' }} />
                     <input placeholder="Username or email" value={signIn.login} onChange={e => setSignIn({ ...signIn, login: e.target.value })} required style={mobileInputStyle} />
                   </div>
                   <div style={{ position: 'relative' }}>
-                    <Lock size={16} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.4)' }} />
+                    <Lock size={16} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.8)', zIndex: 1, pointerEvents: 'none' }} />
                     <input type={showPass ? 'text' : 'password'} placeholder="Password" value={signIn.password} onChange={e => setSignIn({ ...signIn, password: e.target.value })} required style={{ ...mobileInputStyle, paddingRight: '46px' }} />
-                    <button type="button" onClick={() => setShowPass(p => !p)} style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', padding: '4px' }}>
+                    <button type="button" onClick={() => setShowPass(p => !p)} style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', cursor: 'pointer', padding: '4px' }}>
                       {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
@@ -291,22 +291,22 @@ export default function LoginPage() {
                 <motion.form key="signup-mobile" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}
                   onSubmit={handleSignUp} style={{ display: 'flex', flexDirection: 'column', gap: '11px' }}>
                   <div style={{ position: 'relative' }}>
-                    <User size={16} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.4)' }} />
+                    <User size={16} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.8)', zIndex: 1, pointerEvents: 'none' }} />
                     <input placeholder="Username" value={signUp.username} onChange={e => setSignUp({ ...signUp, username: e.target.value })} required style={mobileInputStyle} />
                   </div>
                   <div style={{ position: 'relative' }}>
-                    <Mail size={16} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.4)' }} />
+                    <Mail size={16} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.8)', zIndex: 1, pointerEvents: 'none' }} />
                     <input type="email" placeholder="Email address" value={signUp.email} onChange={e => setSignUp({ ...signUp, email: e.target.value })} required style={mobileInputStyle} />
                   </div>
                   <div style={{ position: 'relative' }}>
-                    <Building2 size={16} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.4)' }} />
+                    <Building2 size={16} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.8)', zIndex: 1, pointerEvents: 'none' }} />
                     <input placeholder="Company name" value={signUp.company} onChange={e => setSignUp({ ...signUp, company: e.target.value })} required style={mobileInputStyle} />
                   </div>
                   <div>
                     <div style={{ position: 'relative' }}>
-                      <Lock size={16} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.4)' }} />
+                      <Lock size={16} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.8)', zIndex: 1, pointerEvents: 'none' }} />
                       <input type={showPass ? 'text' : 'password'} placeholder="Password" value={signUp.password} onChange={e => setSignUp({ ...signUp, password: e.target.value })} required style={{ ...mobileInputStyle, paddingRight: '46px' }} />
-                      <button type="button" onClick={() => setShowPass(p => !p)} style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', padding: '4px' }}>
+                      <button type="button" onClick={() => setShowPass(p => !p)} style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', cursor: 'pointer', padding: '4px' }}>
                         {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                     </div>
@@ -317,9 +317,9 @@ export default function LoginPage() {
                     )}
                   </div>
                   <div style={{ position: 'relative' }}>
-                    <Lock size={16} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.4)' }} />
+                    <Lock size={16} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.8)', zIndex: 1, pointerEvents: 'none' }} />
                     <input type={showConfirm ? 'text' : 'password'} placeholder="Confirm password" value={signUp.confirm} onChange={e => setSignUp({ ...signUp, confirm: e.target.value })} required style={{ ...mobileInputStyle, paddingRight: '46px' }} />
-                    <button type="button" onClick={() => setShowConfirm(p => !p)} style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', padding: '4px' }}>
+                    <button type="button" onClick={() => setShowConfirm(p => !p)} style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', cursor: 'pointer', padding: '4px' }}>
                       {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>

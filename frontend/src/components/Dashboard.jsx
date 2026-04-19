@@ -99,6 +99,10 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
   const [buddyNotif, setBuddyNotif] = useState(0); // pending match requests count
   const [buddyInitView, setBuddyInitView] = useState('feed'); // used to deep-link into MY TRIPS
   const [buddyNavKey, setBuddyNavKey] = useState(0);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [pendingFilter, setPendingFilter] = useState({ type: '', value: '' });
+  const [locationFrom, setLocationFrom] = useState('');
+  const [activeOrigin, setActiveOrigin] = useState('');
   const navigate = useNavigate();
 
   // Navigate to a tab by updating the URL
@@ -315,14 +319,15 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
     }
   };
 
-  const fetchPlaces = async (type, value, search = '', sort = 'newest') => {
+  const fetchPlaces = async (type, value, search = '', sort = 'newest', origin = '', dest = '') => {
     setPlacesLoading(true);
     try {
       const clean = value.replace(' rupees', '').replace('km', '');
       const params = new URLSearchParams({ type, value: clean, sort });
       if (search.trim()) params.set('search', search.trim());
+      if (origin.trim()) params.set('origin', origin.trim());
+      if (dest.trim()) params.set('destination', dest.trim());
       const res = await axios.get(`/api/places?${params}`);
-      // Handle both old (array) and new (object) response shapes
       if (Array.isArray(res.data)) {
         setPlaces(res.data);
         setPlacesTotal(res.data.length);
@@ -334,13 +339,23 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
     setPlacesLoading(false);
   };
 
-  const handleSelection = async (type, value) => {
+  const handleSelection = (type, value) => {
+    // Show location picker before fetching
+    setPendingFilter({ type, value });
+    setLocationFrom('');
+    setShowLocationPicker(true);
+  };
+
+  const confirmLocationAndFetch = async () => {
+    const { type, value } = pendingFilter;
     handleXpGain(15);
     setLastFilter({ type, value });
+    setActiveOrigin(locationFrom);
     setSearchQuery('');
     setSortBy('newest');
+    setShowLocationPicker(false);
     setTransitionLoading(true);
-    await fetchPlaces(type, value, '', 'newest');
+    await fetchPlaces(type, value, '', 'newest', locationFrom, '');
     setSearchParams({ filter: type, value }, { replace: false });
     setTransitionLoading(false);
   };
@@ -935,6 +950,22 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
                   </button>
                 </div>
 
+                {/* Location filter pill */}
+                {activeOrigin && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', background: 'rgba(76,201,240,0.08)', border: '1px solid rgba(76,201,240,0.25)', borderRadius: '50px' }}>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#4cc9f0" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 1 8 8c0 5-8 13-8 13S4 15 4 10a8 8 0 0 1 8-8z"/></svg>
+                      <span style={{ fontSize: '0.6rem', color: '#4cc9f0', fontWeight: 700, fontFamily: "'DM Sans', sans-serif", letterSpacing: '0.5px' }}>
+                        <span style={{ opacity: 0.6 }}>FROM </span>{activeOrigin.toUpperCase()}
+                      </span>
+                    </div>
+                    <button onClick={() => { setActiveOrigin(''); fetchPlaces(lastFilter.type, lastFilter.value, searchQuery, sortBy, '', ''); }}
+                      style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.35)', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '50px', padding: '5px 12px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontWeight: 700, letterSpacing: '0.5px' }}>
+                      CLEAR
+                    </button>
+                  </div>
+                )}
+
                 {/* Search + Sort bar */}
                 <div style={{ display: 'flex', gap: '10px', marginBottom: isMobile ? '16px' : '32px', flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
                   <div style={{ position: 'relative', flex: 1, minWidth: '180px' }}>
@@ -943,7 +974,7 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
                       value={searchQuery}
                       onChange={e => {
                         setSearchQuery(e.target.value);
-                        fetchPlaces(lastFilter.type, lastFilter.value, e.target.value, sortBy);
+                        fetchPlaces(lastFilter.type, lastFilter.value, e.target.value, sortBy, activeOrigin, '');
                       }}
                       placeholder="Search destinations..."
                       style={{ width: '100%', boxSizing: 'border-box', padding: '12px 16px 12px 38px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '50px', color: 'white', fontSize: '0.82rem', fontFamily: "'DM Sans', sans-serif", outline: 'none' }}
@@ -970,7 +1001,7 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
                           {[{ value: 'newest', label: 'Newest' }, { value: 'popular', label: 'Most Liked' }, { value: 'name', label: 'A → Z' }].map(opt => (
                             <button
                               key={opt.value}
-                              onClick={() => { setSortBy(opt.value); fetchPlaces(lastFilter.type, lastFilter.value, searchQuery, opt.value); setShowSortDropdown(false); }}
+                              onClick={() => { setSortBy(opt.value); fetchPlaces(lastFilter.type, lastFilter.value, searchQuery, opt.value, activeOrigin, ''); setShowSortDropdown(false); }}
                               style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '12px 18px', background: sortBy === opt.value ? 'rgba(212,175,55,0.12)' : 'transparent', border: 'none', color: sortBy === opt.value ? '#d4af37' : 'rgba(255,255,255,0.75)', fontSize: '0.8rem', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer', textAlign: 'left', transition: 'background 0.15s ease', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
                               onMouseEnter={e => { if (sortBy !== opt.value) e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
                               onMouseLeave={e => { if (sortBy !== opt.value) e.currentTarget.style.background = 'transparent'; }}>
@@ -1578,6 +1609,64 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
                 <div style={{ fontSize: '0.55rem', color: '#ffb703', fontWeight: 900, letterSpacing: '1.5px', fontFamily: "'DM Sans', sans-serif", marginBottom: '4px' }}>LEVEL UP</div>
                 <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.4)', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>XP needed per level increases gradually — starting at 50 XP, then 70, 90, 110... making early levels quick to earn and later ones more rewarding.</div>
               </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ── LOCATION PICKER MODAL ── */}
+      {showLocationPicker && createPortal(
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 99999,
+          background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px',
+        }}>
+          <div style={{
+            width: '100%', maxWidth: '420px',
+            background: 'linear-gradient(160deg,#0d2318 0%,#081c15 100%)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '28px', overflow: 'hidden',
+            boxShadow: '0 24px 80px rgba(0,0,0,0.8)',
+          }}>
+            {/* Top accent */}
+            <div style={{ height: '3px', background: 'linear-gradient(90deg,#4cc9f0,#7209b7,#4cc9f0)', backgroundSize: '200% 100%' }} />
+            <div style={{ padding: '28px 28px 32px' }}>
+              <div style={{ marginBottom: '6px', fontSize: '0.45rem', color: 'rgba(255,255,255,0.3)', fontWeight: 900, letterSpacing: '3px', fontFamily: "'DM Sans', sans-serif" }}>
+                {pendingFilter.type.toUpperCase()} · {pendingFilter.value.toUpperCase()}
+              </div>
+              <div style={{ fontSize: isMobile ? '1.8rem' : '2.2rem', color: 'white', fontFamily: "'Bebas Neue', cursive", lineHeight: 1, marginBottom: '6px' }}>WHERE ARE YOU GOING?</div>
+              <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', fontFamily: "'DM Sans', sans-serif", marginBottom: '28px' }}>Optional — leave blank to see all itineraries</div>
+
+              {/* From input */}
+              <div style={{ marginBottom: '28px' }}>
+                <label style={{ display: 'block', fontSize: '0.48rem', color: 'rgba(255,255,255,0.4)', fontWeight: 900, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif", marginBottom: '8px' }}>STARTING FROM</label>
+                <div style={{ position: 'relative' }}>
+                  <svg style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 1 8 8c0 5-8 13-8 13S4 15 4 10a8 8 0 0 1 8-8z"/></svg>
+                  <input
+                    value={locationFrom}
+                    onChange={e => setLocationFrom(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && confirmLocationAndFetch()}
+                    placeholder="e.g. New York, Tokyo, Mumbai..."
+                    style={{ width: '100%', boxSizing: 'border-box', padding: '14px 16px 14px 40px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', color: 'white', fontSize: '0.88rem', fontFamily: "'DM Sans', sans-serif", outline: 'none' }}
+                  />
+                </div>
+              </div>
+
+
+              {/* Actions */}
+              <button
+                onClick={confirmLocationAndFetch}
+                style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg,#4cc9f0,#7209b7)', border: 'none', borderRadius: '14px', color: 'white', fontSize: '0.75rem', fontWeight: 900, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer', marginBottom: '10px' }}
+              >
+                FIND ITINERARIES →
+              </button>
+              <button
+                onClick={() => setShowLocationPicker(false)}
+                style={{ width: '100%', padding: '12px', background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', color: 'rgba(255,255,255,0.3)', fontSize: '0.65rem', fontWeight: 700, letterSpacing: '1.5px', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer' }}
+              >
+                CANCEL
+              </button>
             </div>
           </div>
         </div>,

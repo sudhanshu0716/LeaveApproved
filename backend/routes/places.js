@@ -6,10 +6,10 @@ const { verifyAdmin, verifyToken } = require('../middleware/auth');
 // Get places (with optional filters, search, sort, pagination)
 router.get('/places', async (req, res) => {
   try {
-    const { type, value, search, sort = 'newest', page = 1, limit = 50 } = req.query;
+    const { type, value, search, sort = 'newest', page = 1, limit = 50, origin, destination } = req.query;
     let query = {};
 
-    // Filter
+    // Filter by card type
     if (type === 'budget') {
       query.budgetRange = new RegExp(value, 'i');
     } else if (type === 'days') {
@@ -22,7 +22,17 @@ router.get('/places', async (req, res) => {
       query.distance = new RegExp(value, 'i');
     }
 
-    // Search by name or destination
+    // Filter by origin (from field)
+    if (origin && origin.trim()) {
+      query.from = new RegExp(origin.trim(), 'i');
+    }
+
+    // Filter by destination (name field)
+    if (destination && destination.trim()) {
+      query.name = new RegExp(destination.trim(), 'i');
+    }
+
+    // Full-text search across name, from, description
     if (search && search.trim()) {
       query.$or = [
         { name: new RegExp(search.trim(), 'i') },

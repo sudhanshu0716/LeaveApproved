@@ -22,6 +22,7 @@ export default function TripComparison() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [showAllChips, setShowAllChips] = useState(false);
   const { toast, show: showToast } = useToast();
 
   React.useEffect(() => {
@@ -136,21 +137,67 @@ Return ONLY a valid JSON object with no markdown formatting. The JSON must exact
     <div style={{ width: '100%', maxWidth: '860px', padding: isMobile ? '0 12px 80px' : '0 20px 20px', minHeight: isMobile ? 'calc(100svh - 160px)' : 'auto' }}>
       <ToastUI />
 
-      {/* HUD Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '14px', marginBottom: '20px' }}>
-        <div style={{ width: '28px', height: '2px', background: 'linear-gradient(90deg, transparent, #ffb703)' }} />
-        <span style={{ color: '#ffb703', fontWeight: 900, letterSpacing: '4px', fontSize: '0.7rem', fontFamily: "'DM Sans', sans-serif" }}>AI COMPARISON</span>
-        <div style={{ width: '28px', height: '2px', background: 'linear-gradient(-90deg, transparent, #ffb703)' }} />
-      </div>
+      {/* Hero Section */}
+      {!result && !loading && (
+        <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }}
+          style={{ textAlign: 'center', marginBottom: isMobile ? '20px' : '28px', padding: isMobile ? '0 4px' : '0' }}>
+          {/* badge */}
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', padding: '5px 14px',
+            background: 'rgba(255,183,3,0.1)', border: '1px solid rgba(255,183,3,0.25)',
+            borderRadius: '50px', marginBottom: '14px' }}>
+            <Plane size={11} color="#ffb703" />
+            <span style={{ color: '#ffb703', fontSize: '0.58rem', fontWeight: 900, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif" }}>AI-POWERED</span>
+          </div>
+
+          <h2 style={{ margin: '0 0 10px', fontFamily: "'Bebas Neue', cursive", fontSize: isMobile ? '2.2rem' : '2.8rem',
+            letterSpacing: '2px', color: 'white', lineHeight: 1 }}>
+            COMPARE TWO TRIPS
+          </h2>
+          <p style={{ margin: '0 0 18px', color: 'rgba(255,255,255,0.45)', fontSize: isMobile ? '0.8rem' : '0.88rem',
+            fontFamily: "'DM Sans', sans-serif", lineHeight: '1.6', maxWidth: '420px', marginLeft: 'auto', marginRight: 'auto' }}>
+            Can't decide where to go? Enter your starting city and two destinations — our AI scores them head-to-head across 11 travel factors.
+          </p>
+
+          {/* feature chips */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center' }}>
+            {['Food & Dining', 'Affordability', 'Safety', 'Adventure', 'Weather', 'Nightlife'].map(tag => (
+              <span key={tag} style={{ padding: '4px 12px', borderRadius: '50px',
+                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                color: 'rgba(255,255,255,0.45)', fontSize: '0.65rem', fontFamily: "'DM Sans', sans-serif", fontWeight: 700, letterSpacing: '0.5px' }}>
+                {tag}
+              </span>
+            ))}
+            {showAllChips && ['Travel Time', 'Peaceful Vibe', 'Public Transit', 'Attractions', 'Shopping'].map(tag => (
+              <span key={tag} style={{ padding: '4px 12px', borderRadius: '50px',
+                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                color: 'rgba(255,255,255,0.45)', fontSize: '0.65rem', fontFamily: "'DM Sans', sans-serif", fontWeight: 700, letterSpacing: '0.5px' }}>
+                {tag}
+              </span>
+            ))}
+            {!showAllChips && (
+              <span onClick={() => setShowAllChips(true)}
+                style={{ padding: '4px 12px', borderRadius: '50px', cursor: 'pointer',
+                  background: 'rgba(255,183,3,0.08)', border: '1px solid rgba(255,183,3,0.2)',
+                  color: 'rgba(255,183,3,0.7)', fontSize: '0.65rem', fontFamily: "'DM Sans', sans-serif", fontWeight: 700, letterSpacing: '0.5px',
+                  transition: 'all 0.2s' }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,183,3,0.18)'; e.currentTarget.style.color = '#ffb703'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,183,3,0.08)'; e.currentTarget.style.color = 'rgba(255,183,3,0.7)'; }}>
+                +5 more
+              </span>
+            )}
+          </div>
+
+        </motion.div>
+      )}
 
       {!result && !loading && (
         <motion.form onSubmit={handleCompare} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
           style={{ padding: isMobile ? '20px 16px' : '36px', borderRadius: '24px', background: 'rgba(14,26,21,0.85)',
             backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.08)',
-            boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}>
+            boxShadow: '0 24px 64px rgba(0,0,0,0.5)', marginBottom: '12px' }}>
 
           <div style={{ marginBottom: '20px' }}>
-            <label style={{ color: '#ffb703', fontSize: '0.62rem', fontWeight: 900, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif" }}>
+            <label style={{ color: '#ffb703', fontSize: '0.62rem', fontWeight: 900, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif", display: 'block', textAlign: isMobile ? 'left' : 'center', marginBottom: '10px' }}>
               YOUR STARTING POINT
             </label>
             <input value={origin} onChange={e => setOrigin(e.target.value)} required
@@ -163,20 +210,22 @@ Return ONLY a valid JSON object with no markdown formatting. The JSON must exact
           {/* Destination inputs — stack on mobile */}
           <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '12px', alignItems: isMobile ? 'stretch' : 'end', marginBottom: '24px' }}>
             <div style={{ flex: 1 }}>
-              <label style={{ color: '#ffb703', fontSize: '0.62rem', fontWeight: 900, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif" }}>DESTINATION 1</label>
+              <label style={{ color: '#4cc9f0', fontSize: '0.62rem', fontWeight: 900, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif", display: 'block', textAlign: isMobile ? 'left' : 'center', marginBottom: '10px' }}>DESTINATION 1</label>
               <input value={dest1} onChange={e => setDest1(e.target.value)} required
                 placeholder="e.g. Goa"
-                style={{ ...inputStyle, borderColor: 'rgba(255,183,3,0.2)' }}
-                onFocus={e => { e.target.style.borderColor = 'rgba(255,183,3,0.5)'; e.target.style.boxShadow = '0 0 0 3px rgba(255,183,3,0.08)'; }}
-                onBlur={e => { e.target.style.borderColor = 'rgba(255,183,3,0.2)'; e.target.style.boxShadow = 'none'; }} />
+                style={{ ...inputStyle, borderColor: 'rgba(76,201,240,0.2)' }}
+                onFocus={e => { e.target.style.borderColor = 'rgba(76,201,240,0.5)'; e.target.style.boxShadow = '0 0 0 3px rgba(76,201,240,0.08)'; }}
+                onBlur={e => { e.target.style.borderColor = 'rgba(76,201,240,0.2)'; e.target.style.boxShadow = 'none'; }} />
             </div>
-            <div style={{ width: isMobile ? '100%' : '40px', height: isMobile ? '28px' : '40px', borderRadius: isMobile ? '8px' : '50%',
+            <div style={{ width: isMobile ? 'auto' : '40px', height: isMobile ? 'auto' : '40px',
+              borderRadius: '50px',
               background: 'rgba(255,183,3,0.1)', border: '1px solid rgba(255,183,3,0.3)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#ffb703', fontWeight: 900, fontSize: '0.65rem', flexShrink: 0,
-              fontFamily: "'DM Sans', sans-serif", alignSelf: isMobile ? 'auto' : 'flex-end', marginBottom: isMobile ? 0 : '10px' }}>VS</div>
+              padding: isMobile ? '4px 14px' : '0',
+              color: '#ffb703', fontWeight: 900, fontSize: '0.6rem', flexShrink: 0,
+              fontFamily: "'DM Sans', sans-serif", alignSelf: isMobile ? 'center' : 'flex-end', marginBottom: isMobile ? 0 : '10px' }}>VS</div>
             <div style={{ flex: 1 }}>
-              <label style={{ color: '#4cc9f0', fontSize: '0.62rem', fontWeight: 900, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif" }}>DESTINATION 2</label>
+              <label style={{ color: '#4cc9f0', fontSize: '0.62rem', fontWeight: 900, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif", display: 'block', textAlign: isMobile ? 'left' : 'center', marginBottom: '10px' }}>DESTINATION 2</label>
               <input value={dest2} onChange={e => setDest2(e.target.value)} required
                 placeholder="e.g. Manali"
                 style={{ ...inputStyle, borderColor: 'rgba(76,201,240,0.2)' }}

@@ -737,10 +737,10 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
       {profileModalPortal}
       <ToastUI />
       <div style={{ width: '100%', borderRadius: isMobile ? '20px' : '28px', overflow: 'hidden',
-        background: 'rgba(255,252,245,0.97)', backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)',
+        background: 'rgba(5,14,9,0.97)', backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)',
         border: '1px solid rgba(255,183,3,0.25)', boxShadow: '0 24px 80px rgba(0,0,0,0.45)',
         display: 'flex', flexDirection: 'column',
-        height: isMobile ? 'calc(100svh - 140px)' : 'calc(100vh - 200px)' }}>
+        height: isMobile ? 'calc(100dvh - 140px)' : 'calc(100vh - 200px)' }}>
 
         {/* ── Header ── */}
         <div style={{ padding: isMobile ? '14px 16px 12px' : '20px 28px 18px',
@@ -783,11 +783,11 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
         </div>
 
         {/* CHAT / EXPENSES Tab switcher */}
-        <div style={{ display: 'flex', borderBottom: '2px solid rgba(8,28,21,0.08)', background: 'rgba(255,255,255,0.9)' }}>
+        <div style={{ display: 'flex', borderBottom: '2px solid rgba(255,255,255,0.06)', background: 'rgba(8,28,21,0.6)', backdropFilter: 'blur(12px)' }}>
           {['chat', 'expenses'].map(tab => (
             <button key={tab} onClick={() => setChatTab(tab)}
               style={{ flex: 1, padding: '13px', background: 'none', border: 'none', cursor: 'pointer',
-                color: chatTab === tab ? '#081c15' : 'rgba(8,28,21,0.35)',
+                color: chatTab === tab ? '#ffb703' : 'rgba(255,255,255,0.35)',
                 fontWeight: 900, fontSize: '0.7rem', letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif",
                 borderBottom: chatTab === tab ? '2px solid #ffb703' : '2px solid transparent',
                 marginBottom: '-2px', transition: 'all 0.2s' }}>
@@ -799,7 +799,7 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
         {/* ── Messages ── */}
         {chatTab === 'chat' && <div ref={chatContainerRef} style={{ flex: 1, minHeight: 0, padding: isMobile ? '16px' : '24px 32px', overflowY: 'auto',
           display: 'flex', flexDirection: 'column', gap: '12px',
-          background: 'rgba(248,246,240,0.6)' }}>
+          background: 'rgba(5,14,9,0.55)' }}>
           <div style={{ alignSelf: 'center', background: 'rgba(255,183,3,0.12)', color: 'rgba(140,90,0,0.8)',
             padding: '5px 16px', borderRadius: '50px', fontSize: '0.6rem', fontWeight: 700,
             letterSpacing: '1px', fontFamily: "'DM Sans', sans-serif", border: '1px solid rgba(255,183,3,0.2)' }}>
@@ -832,14 +832,15 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
                       </div>
                     )}
                     <div style={{
-                      background: isMe ? 'linear-gradient(135deg, #ffb703 0%, #fb8500 100%)' : 'white',
-                      color: isMe ? '#081c15' : '#2d3a33',
+                      background: isMe ? 'linear-gradient(135deg, #ffb703 0%, #fb8500 100%)' : 'rgba(255,255,255,0.1)',
+                      color: isMe ? '#081c15' : 'rgba(255,255,255,0.9)',
                       padding: '10px 14px', borderRadius: '18px',
                       borderBottomRightRadius: isMe ? '4px' : '18px',
                       borderBottomLeftRadius: isMe ? '18px' : '4px',
                       maxWidth: '380px',
-                      border: isMe ? 'none' : '1px solid rgba(8,28,21,0.1)',
-                      boxShadow: isMe ? '0 4px 16px rgba(255,183,3,0.3)' : '0 2px 8px rgba(0,0,0,0.06)',
+                      border: isMe ? 'none' : '1px solid rgba(255,255,255,0.1)',
+                      backdropFilter: isMe ? 'none' : 'blur(8px)',
+                      boxShadow: isMe ? '0 4px 16px rgba(255,183,3,0.3)' : '0 2px 8px rgba(0,0,0,0.2)',
                     }}>
                       <div style={{ fontSize: '0.88rem', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.45, fontWeight: 500 }}>{msg.text}</div>
                       <div style={{ fontSize: '0.55rem', opacity: 0.55, marginTop: '4px', textAlign: 'right', fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
@@ -855,7 +856,7 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
 
         {/* Expenses Tab */}
         {chatTab === 'expenses' && (
-          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', padding: isMobile ? '16px' : '20px 32px', background: 'rgba(248,246,240,0.6)', boxSizing: 'border-box', width: '100%' }}>
+          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', padding: isMobile ? '16px' : '20px 32px', background: 'rgba(5,14,9,0.55)', boxSizing: 'border-box', width: '100%' }}>
             {(() => {
               const groupSize = 1 + (activeChat.matches?.filter(m => m.status === 'accepted').length || 0);
               const total = expenses.reduce((sum, e) => sum + e.amount, 0);
@@ -873,22 +874,24 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
                     </div>
                   </div>
                   {expenses.map((exp, i) => (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid rgba(8,28,21,0.07)' }}>
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                       <div>
-                        <div style={{ color: '#081c15', fontSize: '0.82rem', fontFamily: "'DM Sans', sans-serif", fontWeight: 700 }}>{exp.description}</div>
-                        <div style={{ color: 'rgba(8,28,21,0.45)', fontSize: '0.6rem', marginTop: '2px', fontFamily: "'DM Sans', sans-serif" }}>Paid by {exp.paidByName} · {new Date(exp.date).toLocaleDateString()}</div>
+                        <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: '0.82rem', fontFamily: "'DM Sans', sans-serif", fontWeight: 700 }}>{exp.description}</div>
+                        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.6rem', marginTop: '2px', fontFamily: "'DM Sans', sans-serif" }}>Paid by {exp.paidByName} · {new Date(exp.date).toLocaleDateString()}</div>
                       </div>
-                      <div style={{ color: '#1b4332', fontWeight: 900, fontSize: '0.9rem', fontFamily: "'DM Sans', sans-serif" }}>₹{exp.amount.toLocaleString('en-IN')}</div>
+                      <div style={{ color: '#ffb703', fontWeight: 900, fontSize: '0.9rem', fontFamily: "'DM Sans', sans-serif" }}>₹{exp.amount.toLocaleString('en-IN')}</div>
                     </div>
                   ))}
-                  {expenses.length === 0 && <div style={{ color: 'rgba(8,28,21,0.35)', textAlign: 'center', padding: '24px', fontFamily: "'DM Sans', sans-serif", fontSize: '0.8rem' }}>No expenses yet</div>}
-                  <div style={{ marginTop: '20px', display: 'flex', gap: '8px' }}>
-                    <input value={expDesc} onChange={e => setExpDesc(e.target.value)} placeholder="Description"
-                      style={{ flex: 2, padding: '10px 14px', borderRadius: '10px', border: '1.5px solid rgba(8,28,21,0.12)', background: 'white', color: '#081c15', outline: 'none', fontFamily: "'DM Sans', sans-serif", fontSize: '0.82rem' }} />
-                    <input value={expAmount} onChange={e => setExpAmount(e.target.value)} placeholder="₹ Amount" type="number"
-                      style={{ flex: 1, padding: '10px 14px', borderRadius: '10px', border: '1.5px solid rgba(8,28,21,0.12)', background: 'white', color: '#081c15', outline: 'none', fontFamily: "'DM Sans', sans-serif", fontSize: '0.82rem' }} />
+                  {expenses.length === 0 && <div style={{ color: 'rgba(255,255,255,0.3)', textAlign: 'center', padding: '24px', fontFamily: "'DM Sans', sans-serif", fontSize: '0.8rem' }}>No expenses yet</div>}
+                  <div style={{ marginTop: '20px', display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '8px', boxSizing: 'border-box', width: '100%' }}>
+                    <div style={{ display: 'flex', gap: '8px', flex: 1 }}>
+                      <input value={expDesc} onChange={e => setExpDesc(e.target.value)} placeholder="Description"
+                        style={{ flex: 2, padding: '10px 14px', borderRadius: '10px', border: '1.5px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.07)', color: 'white', outline: 'none', fontFamily: "'DM Sans', sans-serif", fontSize: '0.82rem', boxSizing: 'border-box', minWidth: 0 }} />
+                      <input value={expAmount} onChange={e => setExpAmount(e.target.value)} placeholder="₹ Amount" type="number"
+                        style={{ flex: 1, padding: '10px 14px', borderRadius: '10px', border: '1.5px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.07)', color: 'white', outline: 'none', fontFamily: "'DM Sans', sans-serif", fontSize: '0.82rem', boxSizing: 'border-box', minWidth: 0 }} />
+                    </div>
                     <button onClick={handleAddExpense}
-                      style={{ padding: '10px 16px', borderRadius: '10px', background: '#ffb703', color: '#081c15', border: 'none', fontWeight: 900, cursor: 'pointer', fontSize: '0.72rem', fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap' }}>
+                      style={{ padding: '10px 16px', borderRadius: '10px', background: '#ffb703', color: '#081c15', border: 'none', fontWeight: 900, cursor: 'pointer', fontSize: '0.72rem', fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap', width: isMobile ? '100%' : 'auto' }}>
                       I PAID
                     </button>
                   </div>
@@ -900,14 +903,14 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
 
         {/* ── Typing indicator ── */}
         {chatTab === 'chat' && typingUsers.length > 0 && (
-          <div style={{ padding: '4px 32px 0', display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(248,246,240,0.6)' }}>
+          <div style={{ padding: '4px 32px 0', display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(5,14,9,0.55)' }}>
             <div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
               {[0,1,2].map(i => (
                 <div key={i} style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#ffb703',
                   animation: `bounce 1s ease ${i * 0.15}s infinite` }} />
               ))}
             </div>
-            <span style={{ color: 'rgba(140,90,0,0.8)', fontSize: '0.65rem', fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
+            <span style={{ color: 'rgba(255,183,3,0.7)', fontSize: '0.65rem', fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
               {typingUsers.join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...
             </span>
           </div>
@@ -915,16 +918,16 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
 
         {/* ── Input ── */}
         {chatTab === 'chat' && <div style={{ padding: isMobile ? '10px 12px' : '14px 28px 16px',
-          borderTop: '1.5px solid rgba(8,28,21,0.08)',
-          display: 'flex', gap: '8px', alignItems: 'center', background: 'white', flexShrink: 0 }}>
+          borderTop: '1.5px solid rgba(255,255,255,0.08)',
+          display: 'flex', gap: '8px', alignItems: 'center', background: 'rgba(8,28,21,0.7)', backdropFilter: 'blur(12px)', flexShrink: 0 }}>
           <input
             value={chatMessage}
             onChange={(e) => handleTyping(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
             placeholder="Type a message..."
             style={{ flex: 1, padding: '12px 18px', borderRadius: '50px',
-              border: '1.5px solid rgba(8,28,21,0.12)', background: 'rgba(248,246,240,0.8)',
-              color: '#081c15', outline: 'none', fontFamily: "'DM Sans', sans-serif", fontSize: '0.88rem' }}
+              border: '1.5px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.07)',
+              color: 'white', outline: 'none', fontFamily: "'DM Sans', sans-serif", fontSize: '0.88rem' }}
           />
           <button onClick={handleSendMessage}
             style={{ padding: '12px 22px', borderRadius: '50px', background: 'linear-gradient(135deg, #ffb703 0%, #fb8500 100%)',
@@ -1675,11 +1678,22 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
           {/* Feature 11: Cost Estimator */}
           {view === 'cost' && (
             <div style={{ width: '100%', maxWidth: '520px', margin: '0 auto', padding: isMobile ? '0 0 100px' : '0 20px 60px', minHeight: isMobile ? 'calc(100svh - 160px)' : 'auto' }}>
-              {/* Header */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '20px' }}>
-                <div style={{ width: '32px', height: '1.5px', background: 'linear-gradient(90deg, transparent, #ffb703)' }} />
-                <span style={{ color: '#ffb703', fontWeight: 900, letterSpacing: '3px', fontSize: isMobile ? '0.68rem' : '0.72rem', fontFamily: "'DM Sans', sans-serif" }}>AI COST ESTIMATOR</span>
-                <div style={{ width: '32px', height: '1.5px', background: 'linear-gradient(-90deg, transparent, #ffb703)' }} />
+              {/* Hero Header */}
+              <div style={{ textAlign: 'center', marginBottom: isMobile ? '20px' : '26px' }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', padding: '5px 14px',
+                  background: 'rgba(255,183,3,0.1)', border: '1px solid rgba(255,183,3,0.25)',
+                  borderRadius: '50px', marginBottom: '12px' }}>
+                  <span style={{ fontSize: '0.65rem' }}>💰</span>
+                  <span style={{ color: '#ffb703', fontSize: '0.58rem', fontWeight: 900, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif" }}>AI-POWERED</span>
+                </div>
+                <h2 style={{ margin: '0 0 10px', fontFamily: "'Bebas Neue', cursive", fontSize: isMobile ? '2.2rem' : '2.6rem',
+                  letterSpacing: '2px', color: 'white', lineHeight: 1 }}>
+                  ESTIMATE YOUR TRIP COST
+                </h2>
+                <p style={{ margin: 0, color: 'rgba(255,255,255,0.45)', fontSize: isMobile ? '0.8rem' : '0.86rem',
+                  fontFamily: "'DM Sans', sans-serif", lineHeight: '1.6', maxWidth: '380px', marginLeft: 'auto', marginRight: 'auto' }}>
+                  Pick a route, set your days & travel style — our AI breaks down your expected spend across hotels, food, transport & more.
+                </p>
               </div>
 
               {/* Form card */}
@@ -1732,7 +1746,7 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
                   <label style={{ display: 'block', color: 'rgba(255,183,3,0.7)', fontSize: '0.58rem', fontWeight: 900, letterSpacing: '1.5px', marginBottom: '7px', fontFamily: "'DM Sans', sans-serif" }}>TRAVEL STYLE</label>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     {[
-                      { label: 'Budget', emoji: '🪙' },
+                      { label: 'Budget', emoji: '🚆' },
                       { label: 'Comfort', emoji: '✈️' },
                       { label: 'Luxury', emoji: '💎' },
                     ].map(({ label, emoji }) => (

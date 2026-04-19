@@ -152,6 +152,7 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
   const [iosVH, setIosVH] = useState(null);
+  const [iosOffsetTop, setIosOffsetTop] = useState(0);
   const [view, setView] = useState(initialView || 'feed');
   const [trips, setTrips] = useState([]);
   const [myTrips, setMyTrips] = useState({ created: [], requested: [] });
@@ -257,10 +258,17 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
   // iOS Safari: visualViewport tracks the visible area above the keyboard
   useEffect(() => {
     if (!isIOS || !window.visualViewport) return;
-    const onVPResize = () => setIosVH(window.visualViewport.height);
-    onVPResize();
-    window.visualViewport.addEventListener('resize', onVPResize);
-    return () => window.visualViewport.removeEventListener('resize', onVPResize);
+    const onVPChange = () => {
+      setIosVH(window.visualViewport.height);
+      setIosOffsetTop(window.visualViewport.offsetTop);
+    };
+    onVPChange();
+    window.visualViewport.addEventListener('resize', onVPChange);
+    window.visualViewport.addEventListener('scroll', onVPChange);
+    return () => {
+      window.visualViewport.removeEventListener('resize', onVPChange);
+      window.visualViewport.removeEventListener('scroll', onVPChange);
+    };
   }, [isIOS]);
 
   // Feature 12: fetch weather for visible trips
@@ -755,7 +763,9 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
   if (activeChat) {
     const chatContent = (
       <div style={isMobile
-        ? { position: 'fixed', top: 0, left: 0, right: 0,
+        ? { position: 'fixed',
+            top: isIOS && iosVH ? `${iosOffsetTop}px` : 0,
+            left: 0, right: 0,
             height: isIOS && iosVH ? `${iosVH}px` : '100dvh',
             zIndex: 99990, display: 'flex', flexDirection: 'column' }
         : { position: 'relative', width: '100%', maxWidth: '1000px' }}>

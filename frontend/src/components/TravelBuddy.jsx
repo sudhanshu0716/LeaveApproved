@@ -742,8 +742,10 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
   ) : null;
 
   if (activeChat) {
-    return (
-      <div style={isMobile ? { position: 'fixed', inset: 0, zIndex: 9999 } : { position: 'relative', width: '100%', maxWidth: '1000px' }}>
+    const chatContent = (
+      <div style={isMobile
+        ? { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99990, display: 'flex', flexDirection: 'column' }
+        : { position: 'relative', width: '100%', maxWidth: '1000px' }}>
       {profileModalPortal}
       <ToastUI />
 
@@ -793,11 +795,13 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
         </div>,
         document.body
       )}
-      <div style={{ width: '100%', borderRadius: isMobile ? '0' : '28px', overflow: 'hidden',
+      <div style={{ width: '100%', borderRadius: isMobile ? '0' : '28px',
         background: 'rgba(5,14,9,0.97)', backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)',
         border: isMobile ? 'none' : '1px solid rgba(255,183,3,0.25)', boxShadow: isMobile ? 'none' : '0 24px 80px rgba(0,0,0,0.45)',
-        display: 'flex', flexDirection: 'column',
-        height: isMobile ? '100dvh' : 'calc(100vh - 200px)' }}>
+        display: 'flex', flexDirection: 'column', overflow: 'hidden',
+        flex: isMobile ? 1 : 'unset',
+        height: isMobile ? '100%' : 'calc(100vh - 200px)',
+        minHeight: 0 }}>
 
         {/* ── Header ── */}
         <div style={{ padding: isMobile ? '14px 16px 12px' : '20px 28px 18px',
@@ -1004,6 +1008,7 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
       </div>
       </div>
     );
+    return isMobile ? createPortal(chatContent, document.body) : chatContent;
   }
 
   return (

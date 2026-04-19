@@ -240,6 +240,7 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
   const [chatMessage, setChatMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [typingUsers, setTypingUsers] = useState([]);
+  const [showMembers, setShowMembers] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const chatContainerRef = React.useRef(null);
   const socketRef = useRef(null);
@@ -334,6 +335,15 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
 
     // Fetch message history from REST
     axios.get(`/api/buddy/trips/${activeChat._id}/chat`).then(res => setMessages(res.data)).catch(() => {});
+
+    // Pre-fetch avatars for all members
+    const memberUids = [activeChat.creatorUid, ...(activeChat.matches?.filter(m => m.status === 'accepted').map(m => m.requesterUid) || [])].filter(Boolean);
+    memberUids.forEach(uid => {
+      if (profileCache[uid]) return;
+      axios.get(`/api/buddy/users/${uid}/profile`).then(r => {
+        if (r.data.avatarUrl) setProfileCache(prev => ({ ...prev, [uid]: r.data.avatarUrl }));
+      }).catch(() => {});
+    });
 
     // Feature 13: fetch expenses
     setChatTab('chat');
@@ -736,6 +746,53 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
       <div style={{ position: 'relative', width: '100%', maxWidth: '1000px' }}>
       {profileModalPortal}
       <ToastUI />
+
+      {/* Members panel */}
+      {showMembers && createPortal(
+        <div onClick={() => setShowMembers(false)} style={{ position: 'fixed', inset: 0, zIndex: 99998,
+          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'linear-gradient(135deg, #081c15, #0d2418)', border: '1px solid rgba(255,183,3,0.25)',
+            borderRadius: '24px', padding: '28px', width: '100%', maxWidth: '360px', boxShadow: '0 24px 80px rgba(0,0,0,0.6)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+              <span style={{ color: '#ffb703', fontWeight: 900, fontSize: '0.7rem', letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif" }}>GROUP MEMBERS</span>
+              <button onClick={() => setShowMembers(false)} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%', width: '28px', height: '28px', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {[{ uid: activeChat.creatorUid, name: activeChat.creatorName, company: activeChat.creatorCompany, role: 'ORGANISER' },
+                ...(activeChat.matches?.filter(m => m.status === 'accepted').map(m => ({ uid: m.requesterUid, name: m.requesterName, company: m.requesterCompany, role: 'BUDDY' })) || [])
+              ].map(member => {
+                const av = getAvatar(member.name);
+                return (
+                  <div key={member.uid} onClick={() => { setShowMembers(false); openProfileModal(member.uid, member.name); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', borderRadius: '14px',
+                      background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', cursor: 'pointer', transition: 'all 0.2s' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,183,3,0.08)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: av.bg, flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900,
+                      color: 'white', fontSize: '0.75rem', fontFamily: "'DM Sans', sans-serif", overflow: 'hidden',
+                      border: '2px solid rgba(255,183,3,0.3)' }}>
+                      {profileCache[member.uid]
+                        ? <img src={profileCache[member.uid]} alt={member.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : av.initials}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ color: 'white', fontWeight: 800, fontSize: '0.88rem', fontFamily: "'DM Sans', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{member.name}</div>
+                      {member.company && <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.65rem', fontFamily: "'DM Sans', sans-serif" }}>{member.company}</div>}
+                    </div>
+                    <span style={{ fontSize: '0.55rem', fontWeight: 900, letterSpacing: '1px', padding: '3px 8px', borderRadius: '50px',
+                      background: member.role === 'ORGANISER' ? 'rgba(255,183,3,0.15)' : 'rgba(76,201,240,0.1)',
+                      color: member.role === 'ORGANISER' ? '#ffb703' : '#4cc9f0',
+                      border: `1px solid ${member.role === 'ORGANISER' ? 'rgba(255,183,3,0.3)' : 'rgba(76,201,240,0.2)'}`,
+                      fontFamily: "'DM Sans', sans-serif" }}>{member.role}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
       <div style={{ width: '100%', borderRadius: isMobile ? '20px' : '28px', overflow: 'hidden',
         background: 'rgba(5,14,9,0.97)', backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)',
         border: '1px solid rgba(255,183,3,0.25)', boxShadow: '0 24px 80px rgba(0,0,0,0.45)',
@@ -758,8 +815,10 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
               <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.55rem', fontWeight: 800, letterSpacing: '2px', fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap' }}>GROUP CHAT</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(255,183,3,0.15)',
-                border: '1px solid rgba(255,183,3,0.3)', borderRadius: '50px', padding: isMobile ? '4px 8px' : '5px 14px' }}>
+              <div onClick={() => setShowMembers(true)} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(255,183,3,0.15)',
+                border: '1px solid rgba(255,183,3,0.3)', borderRadius: '50px', padding: isMobile ? '4px 8px' : '5px 14px', cursor: 'pointer', transition: 'all 0.2s' }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,183,3,0.25)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,183,3,0.15)'}>
                 <Users size={11} color="#ffb703" />
                 <span style={{ color: '#ffb703', fontSize: '0.65rem', fontWeight: 800, fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap' }}>
                   {1 + (activeChat.matches?.filter(m => m.status === 'accepted').length || 0)}
@@ -817,10 +876,12 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
                   {!isMe && (
                     <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: av.bg, flexShrink: 0,
                       display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem',
-                      fontWeight: 900, color: 'white', fontFamily: "'DM Sans', sans-serif",
+                      fontWeight: 900, color: 'white', fontFamily: "'DM Sans', sans-serif", overflow: 'hidden',
                       visibility: showAvatar ? 'visible' : 'hidden', cursor: 'pointer' }}
                       onClick={() => showAvatar && openProfileModal(msg.senderUid, msg.senderName)}>
-                      {av.initials}
+                      {profileCache[msg.senderUid]
+                        ? <img src={profileCache[msg.senderUid]} alt={msg.senderName} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                        : av.initials}
                     </div>
                   )}
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>

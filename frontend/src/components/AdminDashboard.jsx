@@ -499,17 +499,26 @@ CRITICAL RULES:
       {/* Mobile drawer */}
       <AnimatePresence>
         {mobileMenuOpen && (
-          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} style={{ position: 'fixed', top: '90px', left: '16px', right: '16px', background: 'white', borderRadius: '20px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', zIndex: 999, padding: '16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {tabs.map(tab => (
-              <button key={tab.id} onClick={() => goToTab(tab.id)} style={{ padding: '14px 16px', fontSize: '0.9rem', fontWeight: 700, borderRadius: '12px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', background: activeTab === tab.id ? '#1b4332' : '#f8fdf9', color: activeTab === tab.id ? 'white' : '#1b4332', textAlign: 'left' }}>
-                {tab.icon} {tab.label}
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setMobileMenuOpen(false)}
+              style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 998, backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
+            />
+            {/* Drawer */}
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} style={{ position: 'fixed', top: '90px', left: '16px', right: '16px', background: 'white', borderRadius: '20px', boxShadow: '0 20px 60px rgba(0,0,0,0.25)', zIndex: 999, padding: '16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {tabs.map(tab => (
+                <button key={tab.id} onClick={() => goToTab(tab.id)} style={{ padding: '14px 16px', fontSize: '0.9rem', fontWeight: 700, borderRadius: '12px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', background: activeTab === tab.id ? '#1b4332' : '#f8fdf9', color: activeTab === tab.id ? 'white' : '#1b4332', textAlign: 'left' }}>
+                  {tab.icon} {tab.label}
+                </button>
+              ))}
+              <div style={{ height: '1px', background: '#f0f0f0', margin: '4px 0' }} />
+              <button onClick={() => { localStorage.removeItem('admin_token'); setIsAuthenticated(false); setMobileMenuOpen(false); }} style={{ padding: '14px 16px', fontSize: '0.9rem', fontWeight: 700, borderRadius: '12px', border: '1.5px solid rgba(174,32,18,0.15)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', background: '#fff5f5', color: '#ae2012', textAlign: 'left' }}>
+                <Lock size={17} /> Logout
               </button>
-            ))}
-            <div style={{ height: '1px', background: '#f0f0f0', margin: '4px 0' }} />
-            <button onClick={() => { localStorage.removeItem('admin_token'); setIsAuthenticated(false); setMobileMenuOpen(false); }} style={{ padding: '14px 16px', fontSize: '0.9rem', fontWeight: 700, borderRadius: '12px', border: '1.5px solid rgba(174,32,18,0.15)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', background: '#fff5f5', color: '#ae2012', textAlign: 'left' }}>
-              <Lock size={17} /> Logout
-            </button>
-          </motion.div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
 

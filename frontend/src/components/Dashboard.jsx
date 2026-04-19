@@ -138,7 +138,7 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
     { id: 'buddy',       label: 'BUDDY',       icon: <Users size={16} />,         info: 'Find travel companions — post your trip or join others heading to the same destination' },
     { id: 'comparison',  label: 'COMPARE',     icon: <ArrowRightLeft size={16} />, info: 'Side-by-side trip comparison — pick the best route, budget & timing for your getaway' },
     { id: 'contribute',  label: 'CONTRIBUTE',  icon: <FileText size={16} />,      info: 'Share your travel story in plain text — AI converts it into a full interactive itinerary' },
-    { id: 'about',       label: 'ABOUT',       icon: null,                         info: 'About Leave Approved — our mission & how to get in touch' },
+    { id: 'about',       label: 'ABOUT',       icon: <Info size={16} />,            info: 'About Leave Approved — our mission & how to get in touch' },
   ];
 
   const levels = [
@@ -403,9 +403,9 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
         {/* ── FILTER PILL NAV ── */}
         <div style={{ position: 'absolute', top: 'calc(env(safe-area-inset-top) + 80px)', left: 0, right: 0, zIndex: 30,
           display: 'flex', justifyContent: 'center' }}>
-          <div style={{ display: 'inline-flex', gap: '5px', background: 'rgba(4,12,8,0.82)', backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '50px',
-            padding: '4px 5px' }}>
+          <div style={{ display: 'inline-flex', gap: '5px', background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(28px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(28px) saturate(180%)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: '50px',
+            padding: '4px 5px', boxShadow: '0 4px 24px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.12)' }}>
             {[{ idx: 0, icon: '💰', label: 'Budget' }, { idx: 1, icon: '🕐', label: 'Duration' }, { idx: 2, icon: '📍', label: 'Distance' }].map(({ idx, icon, label }) => (
               <button key={idx} onClick={() => setCurrentCard(idx)}
                 style={{ padding: '6px 14px', borderRadius: '50px', border: 'none', cursor: 'pointer',
@@ -651,12 +651,12 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
       {/* ── MOBILE BOTTOM NAV ── */}
       {isMobile && (
         <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1200,
-          background: 'rgba(4,12,8,0.97)', backdropFilter: 'blur(24px)',
+          background: 'rgba(4,12,8,0.78)', backdropFilter: 'blur(24px)',
           WebkitBackdropFilter: 'blur(24px)',
           borderTop: '1px solid rgba(255,255,255,0.06)',
           display: 'flex', justifyContent: 'space-around', alignItems: 'center',
-          padding: '8px 4px max(16px,env(safe-area-inset-bottom))',
-          boxShadow: '0 -4px 24px rgba(0,0,0,0.5)' }}>
+          padding: '8px 2px max(16px,env(safe-area-inset-bottom))',
+          boxShadow: '0 -4px 24px rgba(0,0,0,0.4)' }}>
           {tabs.map(tab => {
             const isActive = activeTab === tab.id;
             return (
@@ -666,11 +666,12 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
                   setActiveTab(tab.id);
                   if (tab.id === 'itineraries') setStep(1);
                 }}
-                style={{ background: isActive ? 'rgba(255,183,3,0.1)' : 'none',
-                  border: isActive ? '1px solid rgba(255,183,3,0.2)' : '1px solid transparent',
+                style={{
+                  background: isActive ? 'rgba(255,183,3,0.18)' : 'none',
+                  border: isActive ? '1px solid rgba(255,183,3,0.45)' : '1px solid transparent',
                   borderRadius: '14px', cursor: 'pointer', position: 'relative',
                   display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
-                  padding: '7px 12px', minWidth: '48px',
+                  padding: '7px 10px', minWidth: '44px',
                   color: isActive ? '#ffb703' : 'rgba(255,255,255,0.35)',
                   transition: 'all 0.2s ease', fontFamily: "'DM Sans', sans-serif" }}>
                 {tab.icon}
@@ -683,11 +684,23 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
               </button>
             );
           })}
+          {/* Report Issue */}
+          <a href="https://docs.google.com/forms/d/e/1FAIpQLSd44ADuCUXEsldR0sXMZP2Bf3VMz121Qb-WMUw3G-2-i3iT-w/viewform?usp=publish-editor"
+            target="_blank" rel="noopener noreferrer"
+            style={{ background: 'none', border: '1px solid transparent', borderRadius: '14px', cursor: 'pointer',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
+              padding: '7px 10px', minWidth: '44px', fontFamily: "'DM Sans', sans-serif",
+              color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <span style={{ fontSize: '0.48rem', fontWeight: 700, letterSpacing: '0.5px' }}>REPORT</span>
+          </a>
           {/* Profile / XP button */}
           <button onClick={() => setShowProfile(true)}
             style={{ background: 'none', border: '1px solid transparent', borderRadius: '14px', cursor: 'pointer',
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
-              padding: '7px 12px', minWidth: '48px', fontFamily: "'DM Sans', sans-serif" }}>
+              padding: '7px 10px', minWidth: '44px', fontFamily: "'DM Sans', sans-serif" }}>
             <div style={{ position: 'relative', width: '22px', height: '22px',
               display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg width="22" height="22" viewBox="0 0 46 46" style={{ position: 'absolute', transform: 'rotate(-90deg)' }}>

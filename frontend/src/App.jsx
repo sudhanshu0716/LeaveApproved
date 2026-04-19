@@ -11,15 +11,25 @@ const REPORT_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSd44ADuCUXEsld
 
 function ReportIssueButton() {
   const location = useLocation();
-  // Don't show on admin page
+  const [isMobile, setIsMobile] = React.useState(window.innerWidth < 768);
+  React.useEffect(() => {
+    const h = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', h);
+    return () => window.removeEventListener('resize', h);
+  }, []);
   if (location.pathname === '/admin') return null;
+
+  // Mobile: handled in Dashboard bottom nav
+  if (isMobile) return null;
+
+  // Desktop: pill with text
   return (
     <a
       href={REPORT_FORM_URL}
       target="_blank"
       rel="noopener noreferrer"
       style={{
-        position: 'fixed', bottom: '20px', left: '20px', zIndex: 99999,
+        position: 'fixed', bottom: '24px', left: '24px', zIndex: 99999,
         display: 'flex', alignItems: 'center', gap: '7px',
         padding: '9px 14px',
         background: 'rgba(5,14,9,0.85)', backdropFilter: 'blur(16px)',

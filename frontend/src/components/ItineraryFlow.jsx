@@ -9,7 +9,7 @@ import { Heart, ZoomIn, ZoomOut, Maximize, Minimize, Send, Trash2, MapPin, Calen
 import confetti from 'canvas-confetti';
 import { getUserAuthHeader } from '../utils/auth';
 
-function FlowContent({ place }) {
+function FlowContent({ place, onLike }) {
   const { zoomIn, zoomOut, fitView } = useReactFlow();
   const flowInstanceRef = useRef(null);
   const containerRef = useRef(null);
@@ -91,6 +91,7 @@ function FlowContent({ place }) {
         });
       }
       setLikedBy(newLikedBy);
+      if (onLike) onLike(place._id, newLikedBy);
     } catch (err) {
       console.error("Like Error:", err);
     }
@@ -481,13 +482,13 @@ function FlowContent({ place }) {
   );
 }
 
-export default function ItineraryFlow({ place }) {
+export default function ItineraryFlow({ place, onLike }) {
   if (!place) return null;
   return (
     <>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       <ReactFlowProvider>
-        <FlowContent place={place} />
+        <FlowContent place={place} onLike={onLike} />
       </ReactFlowProvider>
     </>
   );

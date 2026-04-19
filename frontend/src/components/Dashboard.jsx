@@ -1142,7 +1142,9 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
                   overflow: 'hidden',
                   margin: isMobile ? '0 10px' : '0',
                   boxShadow: '0 30px 80px rgba(0,0,0,0.6)' }}>
-                  <ItineraryFlow place={selectedPlace} />
+                  <ItineraryFlow place={selectedPlace} onLike={(id, newLikedBy) => {
+                    setPlaces(prev => prev.map(p => p._id === id ? { ...p, likedBy: newLikedBy } : p));
+                  }} />
                 </div>
               </motion.div>
             )}

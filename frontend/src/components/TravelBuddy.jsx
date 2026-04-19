@@ -1407,58 +1407,60 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
 
                 return (
                 <div key={trip._id} className="ticket-card" style={{ display: 'flex', background: 'rgba(255,255,255,0.95)', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.3)', transition: 'transform 0.2s', position: 'relative', width: '100%', maxWidth: '100%', boxSizing: 'border-box', minWidth: 0 }}>
-                  {/* Countdown badge */}
-                  {countdown.urgent && (
-                    <div style={{ position: 'absolute', top: '10px', left: '10px', background: countdown.color, color: countdown.color === '#22c55e' ? 'white' : '#081c15',
-                      padding: '3px 10px', borderRadius: '50px', fontSize: '0.55rem', fontWeight: 900, letterSpacing: '1px',
-                      fontFamily: "'DM Sans', sans-serif", zIndex: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
-                      {countdown.label}
-                    </div>
-                  )}
                   {/* Left Main Ticket Panel */}
-                  <div style={{ flex: 1, padding: isMobile ? '18px 16px' : '25px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minWidth: 0 }}>
+                  <div style={{ flex: 1, padding: isMobile ? '14px 14px' : '25px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minWidth: 0 }}>
                      <div>
-                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                          <div style={{ color: '#081c15', fontWeight: 900, letterSpacing: '2px', fontSize: '0.7rem', fontFamily: "'DM Sans', sans-serif" }}>POSTED BY</div>
+                       {/* Header row: countdown badge + POSTED BY + actions */}
+                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            {countdown.urgent && (
+                              <div style={{ background: countdown.color, color: countdown.color === '#22c55e' ? 'white' : '#081c15',
+                                padding: '2px 8px', borderRadius: '50px', fontSize: '0.52rem', fontWeight: 900, letterSpacing: '1px',
+                                fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap' }}>
+                                {countdown.label}
+                              </div>
+                            )}
+                            <div style={{ color: 'rgba(8,28,21,0.45)', fontWeight: 900, letterSpacing: '1.5px', fontSize: '0.58rem', fontFamily: "'DM Sans', sans-serif" }}>POSTED BY</div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                             <button onClick={() => toggleBookmark(trip._id)} title="Bookmark"
-                              style={{ background: 'rgba(8,28,21,0.07)', border: 'none', borderRadius: '50%', width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                              <Bookmark size={13} color={bookmarks.includes(trip._id) ? '#ffb703' : 'rgba(8,28,21,0.4)'} fill={bookmarks.includes(trip._id) ? '#ffb703' : 'none'} />
+                              style={{ background: 'rgba(8,28,21,0.07)', border: 'none', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                              <Bookmark size={12} color={bookmarks.includes(trip._id) ? '#ffb703' : 'rgba(8,28,21,0.4)'} fill={bookmarks.includes(trip._id) ? '#ffb703' : 'none'} />
                             </button>
                             <div style={{ position: 'relative' }}>
                               <button onClick={() => handleCopyLink(trip)} title="Copy link"
-                                style={{ background: 'rgba(8,28,21,0.07)', border: 'none', borderRadius: '50%', width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                                <Copy size={13} color={copiedId === trip._id ? '#22c55e' : 'rgba(8,28,21,0.4)'} />
+                                style={{ background: 'rgba(8,28,21,0.07)', border: 'none', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                                <Copy size={12} color={copiedId === trip._id ? '#22c55e' : 'rgba(8,28,21,0.4)'} />
                               </button>
                               {copiedId === trip._id && (
-                                <div style={{ position: 'absolute', top: '36px', right: 0, background: '#1b4332', color: '#d8f3dc', padding: '3px 10px', borderRadius: '50px', fontSize: '0.58rem', fontWeight: 900, whiteSpace: 'nowrap', zIndex: 10, fontFamily: "'DM Sans', sans-serif" }}>Copied!</div>
+                                <div style={{ position: 'absolute', top: '32px', right: 0, background: '#1b4332', color: '#d8f3dc', padding: '3px 10px', borderRadius: '50px', fontSize: '0.58rem', fontWeight: 900, whiteSpace: 'nowrap', zIndex: 10, fontFamily: "'DM Sans', sans-serif" }}>Copied!</div>
                               )}
                             </div>
                           </div>
                        </div>
                        {/* Creator row with avatar — clickable profile */}
-                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', cursor: 'pointer' }}
+                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: isMobile ? '10px' : '16px', cursor: 'pointer' }}
                          onClick={() => openProfileModal(trip.creatorUid, trip.creatorName)}>
                          {profileCache[trip.creatorUid]
-                           ? <img src={profileCache[trip.creatorUid]} alt={trip.creatorName} style={{ width: '34px', height: '34px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid #ffb703' }} />
-                           : <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: creatorAv.bg, flexShrink: 0,
-                               display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 900, color: 'white', fontFamily: "'DM Sans', sans-serif" }}>
+                           ? <img src={profileCache[trip.creatorUid]} alt={trip.creatorName} style={{ width: '30px', height: '30px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid #ffb703' }} />
+                           : <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: creatorAv.bg, flexShrink: 0,
+                               display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', fontWeight: 900, color: 'white', fontFamily: "'DM Sans', sans-serif" }}>
                                {creatorAv.initials}
                              </div>
                          }
-                         <div style={{ fontSize: '1rem', color: '#081c15', fontWeight: 900, fontFamily: "'DM Sans', sans-serif", textDecoration: 'underline', textDecorationColor: 'rgba(8,28,21,0.2)' }}>{trip.creatorName.toUpperCase()}</div>
+                         <div style={{ fontSize: isMobile ? '0.85rem' : '1rem', color: '#081c15', fontWeight: 900, fontFamily: "'DM Sans', sans-serif", textDecoration: 'underline', textDecorationColor: 'rgba(8,28,21,0.2)' }}>{trip.creatorName.toUpperCase()}</div>
                        </div>
 
                        {/* Trip Route UI */}
-                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                           <div style={{ textAlign: 'left' }}>
-                             <div style={{ fontSize: isMobile ? '1.8rem' : '2.5rem', fontWeight: 900, color: '#081c15', lineHeight: 1 }}>{shortOrig}</div>
-                             <div style={{ fontSize: '0.65rem', color: 'rgba(8,28,21,0.5)', fontWeight: 900, marginTop: '4px', fontFamily: "'DM Sans', sans-serif" }}>{trip.origin}</div>
+                             <div style={{ fontSize: isMobile ? '1.5rem' : '2.5rem', fontWeight: 900, color: '#081c15', lineHeight: 1 }}>{shortOrig}</div>
+                             <div style={{ fontSize: '0.6rem', color: 'rgba(8,28,21,0.5)', fontWeight: 700, marginTop: '2px', fontFamily: "'DM Sans', sans-serif" }}>{trip.origin}</div>
                           </div>
-                          <Plane color="#ffb703" size={isMobile ? 22 : 30} style={{ opacity: 0.8 }} />
+                          <Plane color="#ffb703" size={isMobile ? 18 : 30} style={{ opacity: 0.8 }} />
                           <div style={{ textAlign: 'right' }}>
-                             <div style={{ fontSize: isMobile ? '1.8rem' : '2.5rem', fontWeight: 900, color: '#081c15', lineHeight: 1 }}>{shortDest}</div>
-                             <div style={{ fontSize: '0.65rem', color: 'rgba(8,28,21,0.5)', fontWeight: 900, marginTop: '4px', fontFamily: "'DM Sans', sans-serif" }}>{trip.destination}</div>
+                             <div style={{ fontSize: isMobile ? '1.5rem' : '2.5rem', fontWeight: 900, color: '#081c15', lineHeight: 1 }}>{shortDest}</div>
+                             <div style={{ fontSize: '0.6rem', color: 'rgba(8,28,21,0.5)', fontWeight: 700, marginTop: '2px', fontFamily: "'DM Sans', sans-serif" }}>{trip.destination}</div>
                           </div>
                        </div>
 
@@ -1479,7 +1481,7 @@ export default function TravelBuddy({ user, onXpGain, initialView, hideNav, onMa
                        )}
                      </div>
 
-                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', borderTop: '2px solid rgba(8,28,21,0.1)', paddingTop: '15px' }}>
+                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', borderTop: '1.5px solid rgba(8,28,21,0.08)', paddingTop: isMobile ? '10px' : '15px', marginTop: isMobile ? '8px' : '0' }}>
                         <div style={{ minWidth: 0 }}>
                            <div style={{ fontSize: '0.6rem', color: 'rgba(8,28,21,0.5)', fontWeight: 900, fontFamily: "'DM Sans', sans-serif" }}>DATE</div>
                            <div style={{ fontSize: isMobile ? '0.78rem' : '0.9rem', color: '#081c15', fontWeight: 900, fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap' }}>{new Date(trip.date).toLocaleDateString('en-GB')}</div>

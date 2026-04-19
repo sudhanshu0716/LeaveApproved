@@ -43,6 +43,17 @@ router.get('/trips', async (req, res) => {
   }
 });
 
+// Get single trip by ID (public)
+router.get('/trips/:id', async (req, res) => {
+  try {
+    const trip = await TripListing.findById(req.params.id);
+    if (!trip) return res.status(404).json({ error: 'Trip not found' });
+    res.json(trip);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Request a match (authenticated)
 router.post('/trips/:id/match', verifyToken, async (req, res) => {
   try {

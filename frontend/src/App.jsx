@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import LoginPage from './components/LoginPage';
 import Dashboard from './components/Dashboard';
 import AdminDashboard from './components/AdminDashboard';
+import TripDetail from './components/TripDetail';
 import axios from 'axios';
 import './index.css';
 
@@ -52,6 +53,7 @@ function App() {
           <Route path="/dashboard/itineraries/:placeId" element={<Dashboard darkMode={darkMode} setDarkMode={setDarkMode} />} />
           <Route path="/dashboard/:tab" element={<Dashboard darkMode={darkMode} setDarkMode={setDarkMode} />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/trip/:id" element={<TripDetail />} />
           <Route path="*" element={
             <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#050e09', color: 'white', fontFamily: "'DM Sans', sans-serif" }}>
               <div style={{ fontSize: '8rem', fontWeight: 900, fontFamily: "'Bebas Neue', cursive", color: '#ffb703', lineHeight: 1 }}>404</div>

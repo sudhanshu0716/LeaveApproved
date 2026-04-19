@@ -87,6 +87,7 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
   const [weekActivity, setWeekActivity] = useState([0,0,0,0,0,0,0]);
   const [showActivityInfo, setShowActivityInfo] = useState(false);
   const [placesLoading, setPlacesLoading] = useState(false);
+  const [transitionLoading, setTransitionLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [placesTotal, setPlacesTotal] = useState(0);
@@ -298,9 +299,10 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
     setLastFilter({ type, value });
     setSearchQuery('');
     setSortBy('newest');
+    setTransitionLoading(true);
     await fetchPlaces(type, value, '', 'newest');
-    // Encode filter in URL so refresh restores step 2
     setSearchParams({ filter: type, value }, { replace: false });
+    setTransitionLoading(false);
   };
 
   const logout = () => { localStorage.removeItem('travel_user'); localStorage.removeItem('travel_token'); navigate('/'); };
@@ -494,6 +496,14 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
   ──────────────────────────────────────────────── */
   return (
     <div className="safari-theme" style={{ width: '100%', height: !isMobile ? '100vh' : 'auto', minHeight: isMobile ? '100vh' : 'unset', background: darkMode ? currentTheme.bg : '#f8f5ee', position: 'relative', overflow: !isMobile ? 'hidden' : 'visible', overflowX: 'hidden', color: darkMode ? 'white' : '#081c15' }}>
+
+      {/* Golden transition loader */}
+      {transitionLoading && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(5,14,9,0.92)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '20px' }}>
+          <div style={{ width: '52px', height: '52px', borderRadius: '50%', border: '3px solid rgba(212,175,55,0.15)', borderTopColor: '#d4af37', animation: 'spin 0.75s linear infinite' }} />
+          <span style={{ color: 'rgba(212,175,55,0.7)', fontSize: '0.68rem', fontWeight: 900, letterSpacing: '3px', fontFamily: "'DM Sans', sans-serif" }}>LOADING TRIPS...</span>
+        </div>
+      )}
 
       {/* BG VIDEO (desktop) */}
       {!isMobile && (

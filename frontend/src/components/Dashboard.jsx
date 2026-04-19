@@ -736,7 +736,7 @@ export default function Dashboard({ darkMode = true, setDarkMode }) {
             {step === 1 && !isMobile && (
               <motion.div key="step1-desktop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  position: 'relative', padding: '160px 0 100px' }}>
+                  position: 'relative', padding: '120px 0 40px' }}>
                 {currentCard > 0 && (
                   <button onClick={() => setCurrentCard(c => c - 1)}
                     style={{ position: 'fixed', left: '32px', top: '50%', transform: 'translateY(-50%)',

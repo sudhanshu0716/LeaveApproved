@@ -254,6 +254,19 @@ export default function AdminDashboard() {
     } catch (err) {}
   };
 
+  // Merge multiple edges between same source→target into one edge with combined options[]
+  const mergeEdges = (edges) => {
+    const seen = {};
+    (edges || []).forEach(e => {
+      const key = `${e.source}__${e.target}`;
+      if (!seen[key]) seen[key] = { ...e, data: { color: e.data?.color || '#1b4332', options: [] } };
+      const existing = seen[key];
+      if (e.data?.options?.length > 0) existing.data.options.push(...e.data.options);
+      else if (e.data?.transport) existing.data.options.push({ mode: e.data.transport, details: e.data.transportDetails || '' });
+    });
+    return Object.values(seen);
+  };
+
   const generateTripAI = async (overrideText) => {
     const inputText = (typeof overrideText === 'string' ? overrideText : null) || aiInput;
     if (!inputText) { showToast('Please enter a trip description first.', 'error'); return; }
@@ -289,18 +302,33 @@ REQUIRED JSON STRUCTURE (fill all fields with real extracted data from the input
     }
   ],
   "edges": [
-    { "id": "unique-id", "source": "node-id", "target": "node-id", "type": "customEdge", "data": {"transport": "BUS|TRAIN|CAB|FLIGHT", "color": "#1b4332"} }
+    {
+      "id": "e0",
+      "source": "node-0",
+      "target": "node-1",
+      "type": "customEdge",
+      "data": {
+        "color": "#1b4332",
+        "options": [
+          { "mode": "TRAIN", "details": "name, duration, cost from text" },
+          { "mode": "BUS",   "details": "name, duration, cost from text" },
+          { "mode": "CAR",   "details": "route, duration, cost from text" }
+        ]
+      }
+    }
   ]
 }
 
 CRITICAL RULES:
 - Create one node per major city or stop (e.g. Bangalore, Madurai, Munnar = 3 nodes)
-- Extract REAL names from the text — no generic words like "Budget Hotel", "Local cuisine", or "Sightseeing"
-- Node positions: x starts at 100 and increases by 850 per node; y alternates 150 and 400
+- Extract REAL names — no generic placeholders like "Budget Hotel", "Local cuisine", or "Sightseeing"
+- Node positions: x starts at 100, increases by 850 per node; y alternates 150 and 400
+- arrivalTime/departureTime must be HH:MM 24h format. If unknown use "". NEVER write "HH:MM" literally.
 - The "from" = starting city, "name" = main/final destination
-- For "days": count the Day 1, Day 2, Day 3 mentions and use "3+ days" if 3 or more
-- For "budgetRange": add all costs mentioned and pick the closest bracket
-- For edges "transport": pick BUS, TRAIN, CAB, or FLIGHT based on what the text says
+- For "days": count the Day 1, Day 2, Day 3 mentions; use "3+ days" if 3 or more
+- For "budgetRange": find the max cost; if >5000→"over 5000 rupees"; if >2000→"under 5000 rupees"; if >1000→"under 2000 rupees"; else "under 1000 rupees"
+- For edges: create EXACTLY ONE edge per city pair. Put ALL transport options for that leg inside the "options" array. Each option: "mode" = one word (TRAIN/BUS/CAB/CAR/FLIGHT/AUTO/BIKE/FERRY/WALK), "details" = route/duration/cost from text.
+- Edges go forward only (source → next city in journey). Do NOT create return/backward edges.
 - Return ONLY raw JSON with no markdown or explanation.`;
 
       const response = await axios.post('/api/ai/generate', { prompt, model: aiModel });
@@ -329,9 +357,10 @@ CRITICAL RULES:
           ...n,
           position: { x: 100 + idx * 850, y: 150 + (idx % 2 === 0 ? 0 : 250) }
         }));
-        setNodes(staggeredNodes);
+        const last = staggeredNodes.length - 1;
+        setNodes(staggeredNodes.map((n, idx) => ({ ...n, data: { ...n.data, isStart: idx === 0, isEnd: idx === last } })));
       }
-      if (parsed.edges) setEdges(parsed.edges);
+      if (parsed.edges) setEdges(mergeEdges(parsed.edges));
       showToast('AI synthesis complete! Review the generated details below.', 'success');
     } catch (err) {
       console.error('AI Synthesis Error:', err);

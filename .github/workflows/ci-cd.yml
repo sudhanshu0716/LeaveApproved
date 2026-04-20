@@ -2,7 +2,7 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ "main", "dev"]
+    branches: ["main", "dev"]
 
 jobs:
   build:
@@ -29,3 +29,22 @@ jobs:
         run: |
           cd frontend
           npm run build
+
+  merge-to-main:
+    if: github.ref == 'refs/heads/dev'
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Merge dev into main
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+
+          git fetch origin
+          git checkout main
+          git merge origin/dev --no-edit
+          git push origin main
